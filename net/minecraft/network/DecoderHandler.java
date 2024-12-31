@@ -24,7 +24,7 @@ public class DecoderHandler extends ByteToMessageDecoder {
 		if (byteBuf.readableBytes() != 0) {
 			PacketByteBuf packetByteBuf = new PacketByteBuf(byteBuf);
 			int i = packetByteBuf.readVarInt();
-			Packet<?> packet = ((NetworkState)channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get()).createPacket(this.side, i);
+			Packet<?> packet = ((NetworkState)channelHandlerContext.channel().attr(ClientConnection.ATTR_KEY_PROTOCOL).get()).getPacketHandler(this.side, i);
 			if (packet == null) {
 				throw new IOException("Bad packet id " + i);
 			} else {

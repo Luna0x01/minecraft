@@ -10,9 +10,13 @@ import net.minecraft.util.Identifier;
 public interface ResourceManager {
 	Set<String> getAllNamespaces();
 
-	Resource getResource(Identifier id) throws IOException;
+	Resource getResource(Identifier identifier) throws IOException;
 
-	List<Resource> getAllResources(Identifier id) throws IOException;
+	boolean containsResource(Identifier identifier);
 
-	Collection<Identifier> method_21372(String string, Predicate<String> predicate);
+	List<Resource> getAllResources(Identifier identifier) throws IOException;
+
+	Collection<Identifier> findResources(String string, Predicate<String> predicate);
+
+	void addPack(ResourcePack resourcePack);
 }

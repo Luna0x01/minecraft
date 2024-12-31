@@ -1,13 +1,13 @@
 package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.class_3915;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CommandBlock;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -16,30 +16,30 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
 
 public class CommandBlockBlockEntity extends BlockEntity {
-	private boolean field_12844;
-	private boolean field_12845;
-	private boolean field_12846;
-	private boolean field_12847;
-	private final CommandBlockExecutor executor = new CommandBlockExecutor() {
+	private boolean powered;
+	private boolean auto;
+	private boolean conditionMet;
+	private boolean needsUpdatePacket;
+	private final CommandBlockExecutor commandExecutor = new CommandBlockExecutor() {
 		@Override
-		public void setCommand(String command) {
-			super.setCommand(command);
+		public void setCommand(String string) {
+			super.setCommand(string);
 			CommandBlockBlockEntity.this.markDirty();
 		}
 
 		@Override
-		public ServerWorld method_16273() {
+		public ServerWorld getWorld() {
 			return (ServerWorld)CommandBlockBlockEntity.this.world;
 		}
 
 		@Override
 		public void markDirty() {
 			BlockState blockState = CommandBlockBlockEntity.this.world.getBlockState(CommandBlockBlockEntity.this.pos);
-			this.method_16273().method_11481(CommandBlockBlockEntity.this.pos, blockState, blockState, 3);
+			this.getWorld().updateListeners(CommandBlockBlockEntity.this.pos, blockState, blockState, 3);
 		}
 
 		@Override
-		public Vec3d method_16274() {
+		public Vec3d getPos() {
 			return new Vec3d(
 				(double)CommandBlockBlockEntity.this.pos.getX() + 0.5,
 				(double)CommandBlockBlockEntity.this.pos.getY() + 0.5,
@@ -48,8 +48,8 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		}
 
 		@Override
-		public class_3915 method_16276() {
-			return new class_3915(
+		public ServerCommandSource getSource() {
+			return new ServerCommandSource(
 				this,
 				new Vec3d(
 					(double)CommandBlockBlockEntity.this.pos.getX() + 0.5,
@@ -57,136 +57,136 @@ public class CommandBlockBlockEntity extends BlockEntity {
 					(double)CommandBlockBlockEntity.this.pos.getZ() + 0.5
 				),
 				Vec2f.ZERO,
-				this.method_16273(),
+				this.getWorld(),
 				2,
-				this.method_16277().getString(),
-				this.method_16277(),
-				this.method_16273().getServer(),
+				this.getCustomName().getString(),
+				this.getCustomName(),
+				this.getWorld().getServer(),
 				null
 			);
 		}
 	};
 
 	public CommandBlockBlockEntity() {
-		super(BlockEntityType.COMMAND_BLOCK);
+		super(BlockEntityType.field_11904);
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
-		this.executor.toNbt(nbt);
-		nbt.putBoolean("powered", this.method_11653());
-		nbt.putBoolean("conditionMet", this.method_11655());
-		nbt.putBoolean("auto", this.method_11654());
-		return nbt;
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
+		this.commandExecutor.serialize(compoundTag);
+		compoundTag.putBoolean("powered", this.isPowered());
+		compoundTag.putBoolean("conditionMet", this.isConditionMet());
+		compoundTag.putBoolean("auto", this.isAuto());
+		return compoundTag;
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		super.fromNbt(nbt);
-		this.executor.fromNbt(nbt);
-		this.field_12844 = nbt.getBoolean("powered");
-		this.field_12846 = nbt.getBoolean("conditionMet");
-		this.method_11650(nbt.getBoolean("auto"));
+	public void fromTag(CompoundTag compoundTag) {
+		super.fromTag(compoundTag);
+		this.commandExecutor.deserialize(compoundTag);
+		this.powered = compoundTag.getBoolean("powered");
+		this.conditionMet = compoundTag.getBoolean("conditionMet");
+		this.setAuto(compoundTag.getBoolean("auto"));
 	}
 
 	@Nullable
 	@Override
-	public BlockEntityUpdateS2CPacket getUpdatePacket() {
-		if (this.method_11656()) {
-			this.method_11652(false);
-			NbtCompound nbtCompound = this.toNbt(new NbtCompound());
-			return new BlockEntityUpdateS2CPacket(this.pos, 2, nbtCompound);
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		if (this.needsUpdatePacket()) {
+			this.setNeedsUpdatePacket(false);
+			CompoundTag compoundTag = this.toTag(new CompoundTag());
+			return new BlockEntityUpdateS2CPacket(this.pos, 2, compoundTag);
 		} else {
 			return null;
 		}
 	}
 
 	@Override
-	public boolean shouldNotCopyNbtFromItem() {
+	public boolean shouldNotCopyTagFromItem() {
 		return true;
 	}
 
 	public CommandBlockExecutor getCommandExecutor() {
-		return this.executor;
+		return this.commandExecutor;
 	}
 
-	public void method_11649(boolean bl) {
-		this.field_12844 = bl;
+	public void setPowered(boolean bl) {
+		this.powered = bl;
 	}
 
-	public boolean method_11653() {
-		return this.field_12844;
+	public boolean isPowered() {
+		return this.powered;
 	}
 
-	public boolean method_11654() {
-		return this.field_12845;
+	public boolean isAuto() {
+		return this.auto;
 	}
 
-	public void method_11650(boolean bl) {
-		boolean bl2 = this.field_12845;
-		this.field_12845 = bl;
-		if (!bl2 && bl && !this.field_12844 && this.world != null && this.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE) {
-			Block block = this.method_16783().getBlock();
+	public void setAuto(boolean bl) {
+		boolean bl2 = this.auto;
+		this.auto = bl;
+		if (!bl2 && bl && !this.powered && this.world != null && this.getType() != CommandBlockBlockEntity.Type.field_11922) {
+			Block block = this.getCachedState().getBlock();
 			if (block instanceof CommandBlock) {
-				this.method_14368();
-				this.world.getBlockTickScheduler().schedule(this.pos, block, block.getTickDelay(this.world));
+				this.updateConditionMet();
+				this.world.getBlockTickScheduler().schedule(this.pos, block, block.getTickRate(this.world));
 			}
 		}
 	}
 
-	public boolean method_11655() {
-		return this.field_12846;
+	public boolean isConditionMet() {
+		return this.conditionMet;
 	}
 
-	public boolean method_14368() {
-		this.field_12846 = true;
-		if (this.method_11658()) {
-			BlockPos blockPos = this.pos.offset(((Direction)this.world.getBlockState(this.pos).getProperty(CommandBlock.FACING)).getOpposite());
+	public boolean updateConditionMet() {
+		this.conditionMet = true;
+		if (this.isConditionalCommandBlock()) {
+			BlockPos blockPos = this.pos.offset(((Direction)this.world.getBlockState(this.pos).get(CommandBlock.FACING)).getOpposite());
 			if (this.world.getBlockState(blockPos).getBlock() instanceof CommandBlock) {
 				BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
-				this.field_12846 = blockEntity instanceof CommandBlockBlockEntity && ((CommandBlockBlockEntity)blockEntity).getCommandExecutor().getSuccessCount() > 0;
+				this.conditionMet = blockEntity instanceof CommandBlockBlockEntity && ((CommandBlockBlockEntity)blockEntity).getCommandExecutor().getSuccessCount() > 0;
 			} else {
-				this.field_12846 = false;
+				this.conditionMet = false;
 			}
 		}
 
-		return this.field_12846;
+		return this.conditionMet;
 	}
 
-	public boolean method_11656() {
-		return this.field_12847;
+	public boolean needsUpdatePacket() {
+		return this.needsUpdatePacket;
 	}
 
-	public void method_11652(boolean bl) {
-		this.field_12847 = bl;
+	public void setNeedsUpdatePacket(boolean bl) {
+		this.needsUpdatePacket = bl;
 	}
 
-	public CommandBlockBlockEntity.class_2736 method_11657() {
-		Block block = this.method_16783().getBlock();
-		if (block == Blocks.COMMAND_BLOCK) {
-			return CommandBlockBlockEntity.class_2736.REDSTONE;
-		} else if (block == Blocks.REPEATING_COMMAND_BLOCK) {
-			return CommandBlockBlockEntity.class_2736.AUTO;
+	public CommandBlockBlockEntity.Type getType() {
+		Block block = this.getCachedState().getBlock();
+		if (block == Blocks.field_10525) {
+			return CommandBlockBlockEntity.Type.field_11924;
+		} else if (block == Blocks.field_10263) {
+			return CommandBlockBlockEntity.Type.field_11923;
 		} else {
-			return block == Blocks.CHAIN_COMMAND_BLOCK ? CommandBlockBlockEntity.class_2736.SEQUENCE : CommandBlockBlockEntity.class_2736.REDSTONE;
+			return block == Blocks.field_10395 ? CommandBlockBlockEntity.Type.field_11922 : CommandBlockBlockEntity.Type.field_11924;
 		}
 	}
 
-	public boolean method_11658() {
+	public boolean isConditionalCommandBlock() {
 		BlockState blockState = this.world.getBlockState(this.getPos());
-		return blockState.getBlock() instanceof CommandBlock ? (Boolean)blockState.getProperty(CommandBlock.CONDITIONAL) : false;
+		return blockState.getBlock() instanceof CommandBlock ? (Boolean)blockState.get(CommandBlock.CONDITIONAL) : false;
 	}
 
 	@Override
-	public void cancelRemoval() {
+	public void validate() {
 		this.resetBlock();
-		super.cancelRemoval();
+		super.validate();
 	}
 
-	public static enum class_2736 {
-		SEQUENCE,
-		AUTO,
-		REDSTONE;
+	public static enum Type {
+		field_11922,
+		field_11923,
+		field_11924;
 	}
 }

@@ -2,88 +2,80 @@ package net.minecraft.client.sound;
 
 import java.util.Random;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
-import net.minecraft.util.Tickable;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.MathHelper;
 
-public class MusicTracker implements Tickable {
+public class MusicTracker {
 	private final Random random = new Random();
-	private final MinecraftClient field_8172;
-	private SoundInstance field_8173;
+	private final MinecraftClient client;
+	private SoundInstance current;
 	private int timeUntilNextSong = 100;
-	private boolean field_21129;
 
 	public MusicTracker(MinecraftClient minecraftClient) {
-		this.field_8172 = minecraftClient;
+		this.client = minecraftClient;
 	}
 
-	@Override
 	public void tick() {
-		MusicTracker.MusicType musicType = this.field_8172.getMusicType();
-		if (this.field_8173 != null) {
-			if (!musicType.method_7086().getId().equals(this.field_8173.getIdentifier())) {
-				this.field_8172.getSoundManager().stop(this.field_8173);
+		MusicTracker.MusicType musicType = this.client.getMusicType();
+		if (this.current != null) {
+			if (!musicType.getSound().getId().equals(this.current.getId())) {
+				this.client.getSoundManager().stop(this.current);
 				this.timeUntilNextSong = MathHelper.nextInt(this.random, 0, musicType.getMinDelay() / 2);
-				this.field_21129 = false;
 			}
 
-			if (!this.field_21129 && !this.field_8172.getSoundManager().isPlaying(this.field_8173)) {
-				this.field_8173 = null;
+			if (!this.client.getSoundManager().isPlaying(this.current)) {
+				this.current = null;
 				this.timeUntilNextSong = Math.min(MathHelper.nextInt(this.random, musicType.getMinDelay(), musicType.getMaxDelay()), this.timeUntilNextSong);
-			} else if (this.field_8172.getSoundManager().isPlaying(this.field_8173)) {
-				this.field_21129 = false;
 			}
 		}
 
 		this.timeUntilNextSong = Math.min(this.timeUntilNextSong, musicType.getMaxDelay());
-		if (this.field_8173 == null && this.timeUntilNextSong-- <= 0) {
+		if (this.current == null && this.timeUntilNextSong-- <= 0) {
 			this.play(musicType);
 		}
 	}
 
 	public void play(MusicTracker.MusicType musicType) {
-		this.field_8173 = PositionedSoundInstance.method_12520(musicType.method_7086());
-		this.field_8172.getSoundManager().play(this.field_8173);
+		this.current = PositionedSoundInstance.music(musicType.getSound());
+		this.client.getSoundManager().play(this.current);
 		this.timeUntilNextSong = Integer.MAX_VALUE;
-		this.field_21129 = true;
 	}
 
-	public void method_19622() {
-		if (this.field_8173 != null) {
-			this.field_8172.getSoundManager().stop(this.field_8173);
-			this.field_8173 = null;
+	public void stop() {
+		if (this.current != null) {
+			this.client.getSoundManager().stop(this.current);
+			this.current = null;
 			this.timeUntilNextSong = 0;
-			this.field_21129 = false;
 		}
 	}
 
-	public boolean method_19623(MusicTracker.MusicType musicType) {
-		return this.field_8173 == null ? false : musicType.method_7086().getId().equals(this.field_8173.getIdentifier());
+	public boolean isPlayingType(MusicTracker.MusicType musicType) {
+		return this.current == null ? false : musicType.getSound().getId().equals(this.current.getId());
 	}
 
 	public static enum MusicType {
-		MENU(Sounds.MUSIC_MENU, 20, 600),
-		GAME(Sounds.MUSIC_GAME, 12000, 24000),
-		CREATIVE(Sounds.MUSIC_CREATIVE, 1200, 3600),
-		CREDITS(Sounds.MUSIC_CREDITS, 0, 0),
-		NETHER(Sounds.MUSIC_NETHER, 1200, 3600),
-		END_BOSS(Sounds.MUSIC_DRAGON, 0, 0),
-		END(Sounds.MUSIC_END, 6000, 24000),
-		UNDER_WATER(Sounds.MUSIC_UNDER_WATER, 12000, 24000);
+		field_5585(SoundEvents.field_15129, 20, 600),
+		field_5586(SoundEvents.field_14681, 12000, 24000),
+		field_5581(SoundEvents.field_14995, 1200, 3600),
+		field_5578(SoundEvents.field_14755, 0, 0),
+		field_5582(SoundEvents.field_14893, 1200, 3600),
+		field_5580(SoundEvents.field_14837, 0, 0),
+		field_5583(SoundEvents.field_14631, 6000, 24000),
+		field_5576(SoundEvents.field_15198, 12000, 24000);
 
-		private final Sound field_13698;
+		private final SoundEvent sound;
 		private final int minDelay;
 		private final int maxDelay;
 
-		private MusicType(Sound sound, int j, int k) {
-			this.field_13698 = sound;
+		private MusicType(SoundEvent soundEvent, int j, int k) {
+			this.sound = soundEvent;
 			this.minDelay = j;
 			this.maxDelay = k;
 		}
 
-		public Sound method_7086() {
-			return this.field_13698;
+		public SoundEvent getSound() {
+			return this.sound;
 		}
 
 		public int getMinDelay() {

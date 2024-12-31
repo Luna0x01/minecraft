@@ -1,9 +1,7 @@
 package net.minecraft.client.gl;
 
-import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Locale;
-import net.minecraft.util.JsonHelper;
 
 public class GlBlendState {
 	private static GlBlendState activeBlendState;
@@ -49,7 +47,7 @@ public class GlBlendState {
 				GlStateManager.enableBlend();
 			}
 
-			GlStateManager.method_12305(this.func);
+			GlStateManager.blendEquation(this.func);
 			if (this.separateBlend) {
 				GlStateManager.blendFuncSeparate(this.srcRgb, this.dstRgb, this.srcAlpha, this.dstAlpha);
 			} else {
@@ -95,65 +93,7 @@ public class GlBlendState {
 		return this.blendDisabled;
 	}
 
-	public static GlBlendState deserializeBlendState(JsonObject json) {
-		if (json == null) {
-			return new GlBlendState();
-		} else {
-			int i = 32774;
-			int j = 1;
-			int k = 0;
-			int l = 1;
-			int m = 0;
-			boolean bl = true;
-			boolean bl2 = false;
-			if (JsonHelper.hasString(json, "func")) {
-				i = getFuncFromString(json.get("func").getAsString());
-				if (i != 32774) {
-					bl = false;
-				}
-			}
-
-			if (JsonHelper.hasString(json, "srcrgb")) {
-				j = getComponentFromString(json.get("srcrgb").getAsString());
-				if (j != 1) {
-					bl = false;
-				}
-			}
-
-			if (JsonHelper.hasString(json, "dstrgb")) {
-				k = getComponentFromString(json.get("dstrgb").getAsString());
-				if (k != 0) {
-					bl = false;
-				}
-			}
-
-			if (JsonHelper.hasString(json, "srcalpha")) {
-				l = getComponentFromString(json.get("srcalpha").getAsString());
-				if (l != 1) {
-					bl = false;
-				}
-
-				bl2 = true;
-			}
-
-			if (JsonHelper.hasString(json, "dstalpha")) {
-				m = getComponentFromString(json.get("dstalpha").getAsString());
-				if (m != 0) {
-					bl = false;
-				}
-
-				bl2 = true;
-			}
-
-			if (bl) {
-				return new GlBlendState();
-			} else {
-				return bl2 ? new GlBlendState(j, k, l, m, i) : new GlBlendState(j, k, i);
-			}
-		}
-	}
-
-	private static int getFuncFromString(String string) {
+	public static int getFuncFromString(String string) {
 		String string2 = string.trim().toLowerCase(Locale.ROOT);
 		if ("add".equals(string2)) {
 			return 32774;
@@ -170,7 +110,7 @@ public class GlBlendState {
 		}
 	}
 
-	private static int getComponentFromString(String string) {
+	public static int getComponentFromString(String string) {
 		String string2 = string.trim().toLowerCase(Locale.ROOT);
 		string2 = string2.replaceAll("_", "");
 		string2 = string2.replaceAll("one", "1");

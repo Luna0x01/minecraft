@@ -1,48 +1,28 @@
 package net.minecraft.recipe;
 
-import net.minecraft.class_3578;
+import java.util.Optional;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
-public interface RecipeType {
-	boolean method_3500(Inventory inventory, World world);
+public interface RecipeType<T extends Recipe<?>> {
+	RecipeType<CraftingRecipe> CRAFTING = register("crafting");
+	RecipeType<SmeltingRecipe> SMELTING = register("smelting");
+	RecipeType<BlastingRecipe> BLASTING = register("blasting");
+	RecipeType<SmokingRecipe> SMOKING = register("smoking");
+	RecipeType<CampfireCookingRecipe> CAMPFIRE_COOKING = register("campfire_cooking");
+	RecipeType<StonecuttingRecipe> field_17641 = register("stonecutting");
 
-	ItemStack method_16201(Inventory inventory);
-
-	boolean method_14250(int i, int j);
-
-	ItemStack getOutput();
-
-	default DefaultedList<ItemStack> method_16203(Inventory inventory) {
-		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(inventory.getInvSize(), ItemStack.EMPTY);
-
-		for (int i = 0; i < defaultedList.size(); i++) {
-			Item item = inventory.getInvStack(i).getItem();
-			if (item.isFood()) {
-				defaultedList.set(i, new ItemStack(item.getRecipeRemainder()));
+	static <T extends Recipe<?>> RecipeType<T> register(String string) {
+		return Registry.register(Registry.RECIPE_TYPE, new Identifier(string), new RecipeType<T>() {
+			public String toString() {
+				return string;
 			}
-		}
-
-		return defaultedList;
+		});
 	}
 
-	default DefaultedList<Ingredient> method_14252() {
-		return DefaultedList.of();
+	default <C extends Inventory> Optional<T> get(Recipe<C> recipe, World world, C inventory) {
+		return recipe.matches(inventory, world) ? Optional.of(recipe) : Optional.empty();
 	}
-
-	default boolean method_14251() {
-		return false;
-	}
-
-	default String method_14253() {
-		return "";
-	}
-
-	Identifier method_16202();
-
-	class_3578<?> method_16200();
 }

@@ -5,108 +5,105 @@ import com.google.common.collect.HashBiMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import javax.annotation.Nullable;
-import net.minecraft.class_2929;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Int2ObjectBiMap;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SimpleRegistry<V> implements Registry<V> {
-	protected static final Logger field_21312 = LogManager.getLogger();
-	protected final class_2929<V> field_13718 = new class_2929<>(256);
-	protected final BiMap<Identifier, V> field_21313 = HashBiMap.create();
-	protected Object[] field_21314;
-	private int field_21315;
+public class SimpleRegistry<T> extends MutableRegistry<T> {
+	protected static final Logger LOGGER = LogManager.getLogger();
+	protected final Int2ObjectBiMap<T> indexedEntries = new Int2ObjectBiMap<>(256);
+	protected final BiMap<Identifier, T> entries = HashBiMap.create();
+	protected Object[] randomEntries;
+	private int nextId;
 
 	@Override
-	public void set(int rawId, Identifier identifier, V object) {
-		this.field_13718.add(object, rawId);
+	public <V extends T> V set(int i, Identifier identifier, V object) {
+		this.indexedEntries.put((T)object, i);
 		Validate.notNull(identifier);
 		Validate.notNull(object);
-		this.field_21314 = null;
-		if (this.field_21313.containsKey(identifier)) {
-			field_21312.debug("Adding duplicate key '{}' to registry", identifier);
+		this.randomEntries = null;
+		if (this.entries.containsKey(identifier)) {
+			LOGGER.debug("Adding duplicate key '{}' to registry", identifier);
 		}
 
-		this.field_21313.put(identifier, object);
-		if (this.field_21315 <= rawId) {
-			this.field_21315 = rawId + 1;
+		this.entries.put(identifier, object);
+		if (this.nextId <= i) {
+			this.nextId = i + 1;
 		}
+
+		return object;
 	}
 
 	@Override
-	public void add(Identifier identifier, V object) {
-		this.set(this.field_21315, identifier, object);
-	}
-
-	@Nullable
-	@Override
-	public Identifier getId(V object) {
-		return (Identifier)this.field_21313.inverse().get(object);
-	}
-
-	@Override
-	public V get(@Nullable Identifier identifier) {
-		throw new UnsupportedOperationException("No default value");
-	}
-
-	@Override
-	public Identifier getDefaultId() {
-		throw new UnsupportedOperationException("No default key");
-	}
-
-	@Override
-	public int getRawId(@Nullable V object) {
-		return this.field_13718.getId(object);
+	public <V extends T> V add(Identifier identifier, V object) {
+		return this.set(this.nextId, identifier, object);
 	}
 
 	@Nullable
 	@Override
-	public V getByRawId(int rawId) {
-		return this.field_13718.getById(rawId);
+	public Identifier getId(T object) {
+		return (Identifier)this.entries.inverse().get(object);
 	}
 
 	@Override
-	public Iterator<V> iterator() {
-		return this.field_13718.iterator();
+	public int getRawId(@Nullable T object) {
+		return this.indexedEntries.getId(object);
 	}
 
 	@Nullable
 	@Override
-	public V getByIdentifier(@Nullable Identifier identifier) {
-		return (V)this.field_21313.get(identifier);
+	public T get(int i) {
+		return this.indexedEntries.get(i);
+	}
+
+	public Iterator<T> iterator() {
+		return this.indexedEntries.iterator();
+	}
+
+	@Nullable
+	@Override
+	public T get(@Nullable Identifier identifier) {
+		return (T)this.entries.get(identifier);
 	}
 
 	@Override
-	public Set<Identifier> getKeySet() {
-		return Collections.unmodifiableSet(this.field_21313.keySet());
+	public Optional<T> getOrEmpty(@Nullable Identifier identifier) {
+		return Optional.ofNullable(this.entries.get(identifier));
+	}
+
+	@Override
+	public Set<Identifier> getIds() {
+		return Collections.unmodifiableSet(this.entries.keySet());
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return this.field_21313.isEmpty();
+		return this.entries.isEmpty();
 	}
 
 	@Nullable
 	@Override
-	public V getRandom(Random random) {
-		if (this.field_21314 == null) {
-			Collection<?> collection = this.field_21313.values();
+	public T getRandom(Random random) {
+		if (this.randomEntries == null) {
+			Collection<?> collection = this.entries.values();
 			if (collection.isEmpty()) {
 				return null;
 			}
 
-			this.field_21314 = collection.toArray(new Object[collection.size()]);
+			this.randomEntries = collection.toArray(new Object[collection.size()]);
 		}
 
-		return (V)this.field_21314[random.nextInt(this.field_21314.length)];
+		return (T)this.randomEntries[random.nextInt(this.randomEntries.length)];
 	}
 
 	@Override
 	public boolean containsId(Identifier identifier) {
-		return this.field_21313.containsKey(identifier);
+		return this.entries.containsKey(identifier);
 	}
 }

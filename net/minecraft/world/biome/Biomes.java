@@ -1,172 +1,137 @@
 package net.minecraft.world.biome;
 
-import net.minecraft.Bootstrap;
+import java.util.Collections;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public abstract class Biomes {
-	public static final Biome OCEAN;
-	public static final Biome DEFAULT;
-	public static final Biome PLAINS;
-	public static final Biome DESERT;
-	public static final Biome EXTREME_HILLS;
-	public static final Biome FOREST;
-	public static final Biome TAIGA;
-	public static final Biome SWAMP;
-	public static final Biome RIVER;
-	public static final Biome NETHER;
-	public static final Biome SKY;
-	public static final Biome FROZEN_OCEAN;
-	public static final Biome FROZEN_RIVER;
-	public static final Biome ICE_FLATS;
-	public static final Biome ICE_MOUNTAINS;
-	public static final Biome MUSHROOM_ISLAND;
-	public static final Biome MUSHROOM_ISLAND_SHORE;
-	public static final Biome BEACH;
-	public static final Biome DESERT_HILLS;
-	public static final Biome FOREST_HILLS;
-	public static final Biome TAIGA_HILLS;
-	public static final Biome ExTREME_HILLS_SMALLER;
-	public static final Biome JUNGLE;
-	public static final Biome JUNGLE_HILLS;
-	public static final Biome JUNGLE_EDGE;
-	public static final Biome DEEP_OCEAN;
-	public static final Biome STONE_BEACH;
-	public static final Biome COLD_BEACH;
-	public static final Biome BIRCH_FOREST;
-	public static final Biome BIRCH_FOREST_HILLS;
-	public static final Biome ROOFED_FOREST;
-	public static final Biome TAIGA_COLD;
-	public static final Biome TAIGA_COLD_HILLS;
-	public static final Biome GIANT_TREE_TAIGA;
-	public static final Biome GIANT_TREE_TAIGA_HILLS;
-	public static final Biome EXTREME_HILLS_WITH_TREES;
-	public static final Biome SAVANNA;
-	public static final Biome SAVANNA_PLATEAU;
-	public static final Biome MESA;
-	public static final Biome WOODED_BADLANDS_PLATEAU;
-	public static final Biome BADLANDS_PLATEAU;
-	public static final Biome SMALL_END_ISLANDS;
-	public static final Biome END_MIDLANDS;
-	public static final Biome END_HIGHLANDS;
-	public static final Biome END_BARRENS;
-	public static final Biome WARM_OCEAN;
-	public static final Biome LUKEWARM_OCEAN;
-	public static final Biome COLD_OCEAN;
-	public static final Biome DEEP_WARM_OCEAN;
-	public static final Biome DEEP_LUKEWARM_OCEAN;
-	public static final Biome DEEP_COLD_OCEAN;
-	public static final Biome DEEP_FROZEN_OCEAN;
-	public static final Biome VOID;
-	public static final Biome PLAINS_M;
-	public static final Biome DESERT_M;
-	public static final Biome EXTREME_HILLS_M;
-	public static final Biome FOREST_M;
-	public static final Biome TAIGA_M;
-	public static final Biome SWAMP_M;
-	public static final Biome ICE_FLATS_M;
-	public static final Biome JUNGLE_M;
-	public static final Biome JUNGLE_EDGE_M;
-	public static final Biome BIRCH_FOREST_M;
-	public static final Biome BIRCH_FOREST_HILLS_M;
-	public static final Biome ROOFED_FOREST_M;
-	public static final Biome TAIGA_COLD_M;
-	public static final Biome GIANT_SPRUCE_TAIGA;
-	public static final Biome GIANT_SPRUCE_TAIGA_HILLS;
-	public static final Biome EXTREME_HILLS_WITH_TREES_M;
-	public static final Biome SAVANNA_M;
-	public static final Biome SHATTERED_SAVANNA_PLATEAU;
-	public static final Biome MESA_M;
-	public static final Biome MODIFIED_WOODED_BADLANDS_PLATEAU;
-	public static final Biome MODIFIED_BADLANDS_PLATEAU;
+	public static final Biome field_9423 = register(0, "ocean", new OceanBiome());
+	public static final Biome DEFAULT = field_9423;
+	public static final Biome field_9451 = register(1, "plains", new PlainsBiome());
+	public static final Biome field_9424 = register(2, "desert", new DesertBiome());
+	public static final Biome field_9472 = register(3, "mountains", new MountainsBiome());
+	public static final Biome field_9409 = register(4, "forest", new ForestBiome());
+	public static final Biome field_9420 = register(5, "taiga", new TaigaBiome());
+	public static final Biome field_9471 = register(6, "swamp", new SwampBiome());
+	public static final Biome field_9438 = register(7, "river", new RiverBiome());
+	public static final Biome field_9461 = register(8, "nether", new NetherBiome());
+	public static final Biome field_9411 = register(9, "the_end", new EndBiome());
+	public static final Biome field_9435 = register(10, "frozen_ocean", new FrozenOceanBiome());
+	public static final Biome field_9463 = register(11, "frozen_river", new FrozenRiverBiome());
+	public static final Biome field_9452 = register(12, "snowy_tundra", new SnowyTundraBiome());
+	public static final Biome field_9444 = register(13, "snowy_mountains", new SnowyMountainsBiome());
+	public static final Biome field_9462 = register(14, "mushroom_fields", new MushroomFieldsBiome());
+	public static final Biome field_9407 = register(15, "mushroom_field_shore", new MushroomFieldShoreBiome());
+	public static final Biome field_9434 = register(16, "beach", new BeachBiome());
+	public static final Biome field_9466 = register(17, "desert_hills", new DesertHillsBiome());
+	public static final Biome field_9459 = register(18, "wooded_hills", new WoodedHillsBiome());
+	public static final Biome field_9428 = register(19, "taiga_hills", new TaigaHillsBiome());
+	public static final Biome field_9464 = register(20, "mountain_edge", new MountainEdgeBiome());
+	public static final Biome field_9417 = register(21, "jungle", new JungleBiome());
+	public static final Biome field_9432 = register(22, "jungle_hills", new JungleHillsBiome());
+	public static final Biome field_9474 = register(23, "jungle_edge", new JungleEdgeBiome());
+	public static final Biome field_9446 = register(24, "deep_ocean", new DeepOceanBiome());
+	public static final Biome field_9419 = register(25, "stone_shore", new StoneShoreBiome());
+	public static final Biome field_9478 = register(26, "snowy_beach", new SnowyBeachBiome());
+	public static final Biome field_9412 = register(27, "birch_forest", new BirchForestBiome());
+	public static final Biome field_9421 = register(28, "birch_forest_hills", new BirchForestHillsBiome());
+	public static final Biome field_9475 = register(29, "dark_forest", new DarkForestBiome());
+	public static final Biome field_9454 = register(30, "snowy_taiga", new SnowyTaigaBiome());
+	public static final Biome field_9425 = register(31, "snowy_taiga_hills", new SnowyTaigaHillsBiome());
+	public static final Biome field_9477 = register(32, "giant_tree_taiga", new GiantTreeTaigaBiome());
+	public static final Biome field_9429 = register(33, "giant_tree_taiga_hills", new GiantTreeTaigaHillsBiome());
+	public static final Biome field_9460 = register(34, "wooded_mountains", new WoodedMountainsBiome());
+	public static final Biome field_9449 = register(35, "savanna", new SavannaBiome());
+	public static final Biome field_9430 = register(36, "savanna_plateau", new SavannaPlateauBiome());
+	public static final Biome field_9415 = register(37, "badlands", new BadlandsBiome());
+	public static final Biome field_9410 = register(38, "wooded_badlands_plateau", new WoodedBadlandsPlateauBiome());
+	public static final Biome field_9433 = register(39, "badlands_plateau", new BadlandsPlateauBiome());
+	public static final Biome field_9457 = register(40, "small_end_islands", new EndIslandsSmallBiome());
+	public static final Biome field_9447 = register(41, "end_midlands", new EndMidlandsBiome());
+	public static final Biome field_9442 = register(42, "end_highlands", new EndHighlandsBiome());
+	public static final Biome field_9465 = register(43, "end_barrens", new EndBarrensBiome());
+	public static final Biome field_9408 = register(44, "warm_ocean", new OceanWarmBiome());
+	public static final Biome field_9441 = register(45, "lukewarm_ocean", new OceanLukewarmBiome());
+	public static final Biome field_9467 = register(46, "cold_ocean", new OceanColdBiome());
+	public static final Biome field_9448 = register(47, "deep_warm_ocean", new OceanDeepWarmBiome());
+	public static final Biome field_9439 = register(48, "deep_lukewarm_ocean", new OceanDeepLukewarmBiome());
+	public static final Biome field_9470 = register(49, "deep_cold_ocean", new OceanDeepColdBiome());
+	public static final Biome field_9418 = register(50, "deep_frozen_ocean", new OceanDeepFrozenBiome());
+	public static final Biome field_9473 = register(127, "the_void", new VoidBiome());
+	public static final Biome field_9455 = register(129, "sunflower_plains", new SunflowerPlainsBiome());
+	public static final Biome field_9427 = register(130, "desert_lakes", new DesertLakesBiome());
+	public static final Biome field_9476 = register(131, "gravelly_mountains", new GravellyMountainsBiome());
+	public static final Biome field_9414 = register(132, "flower_forest", new FlowerForestBiome());
+	public static final Biome field_9422 = register(133, "taiga_mountains", new TaigaMountainsBiome());
+	public static final Biome field_9479 = register(134, "swamp_hills", new SwampHillsBiome());
+	public static final Biome field_9453 = register(140, "ice_spikes", new IceSpikesBiome());
+	public static final Biome field_9426 = register(149, "modified_jungle", new ModifiedJungleBiome());
+	public static final Biome field_9405 = register(151, "modified_jungle_edge", new ModifiedJungleEdgeBiome());
+	public static final Biome field_9431 = register(155, "tall_birch_forest", new TallBirchForestBiome());
+	public static final Biome field_9458 = register(156, "tall_birch_hills", new TallBirchHillsBiome());
+	public static final Biome field_9450 = register(157, "dark_forest_hills", new DarkForestHillsBiome());
+	public static final Biome field_9437 = register(158, "snowy_taiga_mountains", new SnowyTaigaMountainsBiome());
+	public static final Biome field_9416 = register(160, "giant_spruce_taiga", new GiantSpruceTaigaBiome());
+	public static final Biome field_9404 = register(161, "giant_spruce_taiga_hills", new GiantSpruceTaigaHillsBiome());
+	public static final Biome field_9436 = register(162, "modified_gravelly_mountains", new ModifiedGravellyMountainsBiome());
+	public static final Biome field_9456 = register(163, "shattered_savanna", new ShatteredSavannaBiome());
+	public static final Biome field_9445 = register(164, "shattered_savanna_plateau", new ShatteredSavannaPlateauBiome());
+	public static final Biome field_9443 = register(165, "eroded_badlands", new ErodedBadlandsBiome());
+	public static final Biome field_9413 = register(166, "modified_wooded_badlands_plateau", new ModifiedWoodedBadlandsPlateauBiome());
+	public static final Biome field_9406 = register(167, "modified_badlands_plateau", new ModifiedBadlandsPlateauBiome());
+	public static final Biome field_9440 = register(168, "bamboo_jungle", new BambooJungleBiome());
+	public static final Biome field_9468 = register(169, "bamboo_jungle_hills", new BambooJungleHillsBiome());
 
-	private static Biome getBiome(String biomeName) {
-		Biome biome = Registry.BIOME.getByIdentifier(new Identifier(biomeName));
-		if (biome == null) {
-			throw new IllegalStateException("Invalid Biome requested: " + biomeName);
-		} else {
-			return biome;
+	private static Biome register(int i, String string, Biome biome) {
+		Registry.register(Registry.BIOME, i, string, biome);
+		if (biome.hasParent()) {
+			Biome.PARENT_BIOME_ID_MAP.set(biome, Registry.BIOME.getRawId(Registry.BIOME.get(new Identifier(biome.parent))));
 		}
+
+		return biome;
 	}
 
 	static {
-		if (!Bootstrap.isInitialized()) {
-			throw new RuntimeException("Accessed Biomes before Bootstrap!");
-		} else {
-			OCEAN = getBiome("ocean");
-			DEFAULT = OCEAN;
-			PLAINS = getBiome("plains");
-			DESERT = getBiome("desert");
-			EXTREME_HILLS = getBiome("mountains");
-			FOREST = getBiome("forest");
-			TAIGA = getBiome("taiga");
-			SWAMP = getBiome("swamp");
-			RIVER = getBiome("river");
-			NETHER = getBiome("nether");
-			SKY = getBiome("the_end");
-			FROZEN_OCEAN = getBiome("frozen_ocean");
-			FROZEN_RIVER = getBiome("frozen_river");
-			ICE_FLATS = getBiome("snowy_tundra");
-			ICE_MOUNTAINS = getBiome("snowy_mountains");
-			MUSHROOM_ISLAND = getBiome("mushroom_fields");
-			MUSHROOM_ISLAND_SHORE = getBiome("mushroom_field_shore");
-			BEACH = getBiome("beach");
-			DESERT_HILLS = getBiome("desert_hills");
-			FOREST_HILLS = getBiome("wooded_hills");
-			TAIGA_HILLS = getBiome("taiga_hills");
-			ExTREME_HILLS_SMALLER = getBiome("mountain_edge");
-			JUNGLE = getBiome("jungle");
-			JUNGLE_HILLS = getBiome("jungle_hills");
-			JUNGLE_EDGE = getBiome("jungle_edge");
-			DEEP_OCEAN = getBiome("deep_ocean");
-			STONE_BEACH = getBiome("stone_shore");
-			COLD_BEACH = getBiome("snowy_beach");
-			BIRCH_FOREST = getBiome("birch_forest");
-			BIRCH_FOREST_HILLS = getBiome("birch_forest_hills");
-			ROOFED_FOREST = getBiome("dark_forest");
-			TAIGA_COLD = getBiome("snowy_taiga");
-			TAIGA_COLD_HILLS = getBiome("snowy_taiga_hills");
-			GIANT_TREE_TAIGA = getBiome("giant_tree_taiga");
-			GIANT_TREE_TAIGA_HILLS = getBiome("giant_tree_taiga_hills");
-			EXTREME_HILLS_WITH_TREES = getBiome("wooded_mountains");
-			SAVANNA = getBiome("savanna");
-			SAVANNA_PLATEAU = getBiome("savanna_plateau");
-			MESA = getBiome("badlands");
-			WOODED_BADLANDS_PLATEAU = getBiome("wooded_badlands_plateau");
-			BADLANDS_PLATEAU = getBiome("badlands_plateau");
-			SMALL_END_ISLANDS = getBiome("small_end_islands");
-			END_MIDLANDS = getBiome("end_midlands");
-			END_HIGHLANDS = getBiome("end_highlands");
-			END_BARRENS = getBiome("end_barrens");
-			WARM_OCEAN = getBiome("warm_ocean");
-			LUKEWARM_OCEAN = getBiome("lukewarm_ocean");
-			COLD_OCEAN = getBiome("cold_ocean");
-			DEEP_WARM_OCEAN = getBiome("deep_warm_ocean");
-			DEEP_LUKEWARM_OCEAN = getBiome("deep_lukewarm_ocean");
-			DEEP_COLD_OCEAN = getBiome("deep_cold_ocean");
-			DEEP_FROZEN_OCEAN = getBiome("deep_frozen_ocean");
-			VOID = getBiome("the_void");
-			PLAINS_M = getBiome("sunflower_plains");
-			DESERT_M = getBiome("desert_lakes");
-			EXTREME_HILLS_M = getBiome("gravelly_mountains");
-			FOREST_M = getBiome("flower_forest");
-			TAIGA_M = getBiome("taiga_mountains");
-			SWAMP_M = getBiome("swamp_hills");
-			ICE_FLATS_M = getBiome("ice_spikes");
-			JUNGLE_M = getBiome("modified_jungle");
-			JUNGLE_EDGE_M = getBiome("modified_jungle_edge");
-			BIRCH_FOREST_M = getBiome("tall_birch_forest");
-			BIRCH_FOREST_HILLS_M = getBiome("tall_birch_hills");
-			ROOFED_FOREST_M = getBiome("dark_forest_hills");
-			TAIGA_COLD_M = getBiome("snowy_taiga_mountains");
-			GIANT_SPRUCE_TAIGA = getBiome("giant_spruce_taiga");
-			GIANT_SPRUCE_TAIGA_HILLS = getBiome("giant_spruce_taiga_hills");
-			EXTREME_HILLS_WITH_TREES_M = getBiome("modified_gravelly_mountains");
-			SAVANNA_M = getBiome("shattered_savanna");
-			SHATTERED_SAVANNA_PLATEAU = getBiome("shattered_savanna_plateau");
-			MESA_M = getBiome("eroded_badlands");
-			MODIFIED_WOODED_BADLANDS_PLATEAU = getBiome("modified_wooded_badlands_plateau");
-			MODIFIED_BADLANDS_PLATEAU = getBiome("modified_badlands_plateau");
-		}
+		Collections.addAll(
+			Biome.BIOMES,
+			new Biome[]{
+				field_9423,
+				field_9451,
+				field_9424,
+				field_9472,
+				field_9409,
+				field_9420,
+				field_9471,
+				field_9438,
+				field_9463,
+				field_9452,
+				field_9444,
+				field_9462,
+				field_9407,
+				field_9434,
+				field_9466,
+				field_9459,
+				field_9428,
+				field_9417,
+				field_9432,
+				field_9474,
+				field_9446,
+				field_9419,
+				field_9478,
+				field_9412,
+				field_9421,
+				field_9475,
+				field_9454,
+				field_9425,
+				field_9477,
+				field_9429,
+				field_9460,
+				field_9449,
+				field_9430,
+				field_9415,
+				field_9410,
+				field_9433
+			}
+		);
 	}
 }

@@ -16,7 +16,7 @@ public class BannedIpEntry extends BanEntry<String> {
 	}
 
 	@Override
-	public Text method_21379() {
+	public Text toText() {
 		return new LiteralText(this.getKey());
 	}
 
@@ -24,8 +24,8 @@ public class BannedIpEntry extends BanEntry<String> {
 		super(getIpFromJson(jsonObject), jsonObject);
 	}
 
-	private static String getIpFromJson(JsonObject json) {
-		return json.has("ip") ? json.get("ip").getAsString() : null;
+	private static String getIpFromJson(JsonObject jsonObject) {
+		return jsonObject.has("ip") ? jsonObject.get("ip").getAsString() : null;
 	}
 
 	@Override

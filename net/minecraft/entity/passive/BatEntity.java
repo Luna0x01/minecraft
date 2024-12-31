@@ -2,40 +2,44 @@ package net.minecraft.entity.passive;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
+import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AmbientEntity;
-import net.minecraft.loot.LootTables;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
-import net.minecraft.util.Identifier;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class BatEntity extends AmbientEntity {
-	private static final TrackedData<Byte> field_14610 = DataTracker.registerData(BatEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private BlockPos field_5365;
+	private static final TrackedData<Byte> BAT_FLAGS = DataTracker.registerData(BatEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final TargetPredicate CLOSE_PLAYER_PREDICATE = new TargetPredicate().setBaseMaxDistance(4.0).includeTeammates();
+	private BlockPos hangingPosition;
 
-	public BatEntity(World world) {
-		super(EntityType.BAT, world);
-		this.setBounds(0.5F, 0.9F);
+	public BatEntity(EntityType<? extends BatEntity> entityType, World world) {
+		super(entityType, world);
 		this.setRoosting(true);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_14610, (byte)0);
+		this.dataTracker.startTracking(BAT_FLAGS, (byte)0);
 	}
 
 	@Override
@@ -50,18 +54,18 @@ public class BatEntity extends AmbientEntity {
 
 	@Nullable
 	@Override
-	public Sound ambientSound() {
-		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : Sounds.ENTITY_BAT_AMBIENT;
+	public SoundEvent getAmbientSound() {
+		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : SoundEvents.field_15009;
 	}
 
 	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_BAT_HURT;
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
+		return SoundEvents.field_14746;
 	}
 
 	@Override
-	protected Sound deathSound() {
-		return Sounds.ENTITY_BAT_DEATH;
+	protected SoundEvent getDeathSound() {
+		return SoundEvents.field_14911;
 	}
 
 	@Override
@@ -74,25 +78,25 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	protected void tickCramming() {
+	protected void tickPushing() {
 	}
 
 	@Override
-	protected void initializeAttributes() {
-		super.initializeAttributes();
-		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(6.0);
+	protected void initAttributes() {
+		super.initAttributes();
+		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(6.0);
 	}
 
 	public boolean isRoosting() {
-		return (this.dataTracker.get(field_14610) & 1) != 0;
+		return (this.dataTracker.get(BAT_FLAGS) & 1) != 0;
 	}
 
 	public void setRoosting(boolean bl) {
-		byte b = this.dataTracker.get(field_14610);
+		byte b = this.dataTracker.get(BAT_FLAGS);
 		if (bl) {
-			this.dataTracker.set(field_14610, (byte)(b | 1));
+			this.dataTracker.set(BAT_FLAGS, (byte)(b | 1));
 		} else {
-			this.dataTracker.set(field_14610, (byte)(b & -2));
+			this.dataTracker.set(BAT_FLAGS, (byte)(b & -2));
 		}
 	}
 
@@ -100,12 +104,10 @@ public class BatEntity extends AmbientEntity {
 	public void tick() {
 		super.tick();
 		if (this.isRoosting()) {
-			this.velocityX = 0.0;
-			this.velocityY = 0.0;
-			this.velocityZ = 0.0;
-			this.y = (double)MathHelper.floor(this.y) + 1.0 - (double)this.height;
+			this.setVelocity(Vec3d.ZERO);
+			this.y = (double)MathHelper.floor(this.y) + 1.0 - (double)this.getHeight();
 		} else {
-			this.velocityY *= 0.6F;
+			this.setVelocity(this.getVelocity().multiply(1.0, 0.6, 1.0));
 		}
 	}
 
@@ -115,45 +117,43 @@ public class BatEntity extends AmbientEntity {
 		BlockPos blockPos = new BlockPos(this);
 		BlockPos blockPos2 = blockPos.up();
 		if (this.isRoosting()) {
-			if (this.world.getBlockState(blockPos2).method_16907()) {
+			if (this.world.getBlockState(blockPos2).isSimpleFullBlock(this.world, blockPos)) {
 				if (this.random.nextInt(200) == 0) {
 					this.headYaw = (float)this.random.nextInt(360);
 				}
 
-				if (this.world.method_16383(this, 4.0) != null) {
+				if (this.world.getClosestPlayer(CLOSE_PLAYER_PREDICATE, this) != null) {
 					this.setRoosting(false);
-					this.world.syncWorldEvent(null, 1025, blockPos, 0);
+					this.world.playLevelEvent(null, 1025, blockPos, 0);
 				}
 			} else {
 				this.setRoosting(false);
-				this.world.syncWorldEvent(null, 1025, blockPos, 0);
+				this.world.playLevelEvent(null, 1025, blockPos, 0);
 			}
 		} else {
-			if (this.field_5365 != null && (!this.world.method_8579(this.field_5365) || this.field_5365.getY() < 1)) {
-				this.field_5365 = null;
+			if (this.hangingPosition != null && (!this.world.isAir(this.hangingPosition) || this.hangingPosition.getY() < 1)) {
+				this.hangingPosition = null;
 			}
 
-			if (this.field_5365 == null
-				|| this.random.nextInt(30) == 0
-				|| this.field_5365.squaredDistanceTo((double)((int)this.x), (double)((int)this.y), (double)((int)this.z)) < 4.0) {
-				this.field_5365 = new BlockPos(
-					(int)this.x + this.random.nextInt(7) - this.random.nextInt(7),
-					(int)this.y + this.random.nextInt(6) - 2,
-					(int)this.z + this.random.nextInt(7) - this.random.nextInt(7)
+			if (this.hangingPosition == null || this.random.nextInt(30) == 0 || this.hangingPosition.isWithinDistance(this.getPos(), 2.0)) {
+				this.hangingPosition = new BlockPos(
+					this.x + (double)this.random.nextInt(7) - (double)this.random.nextInt(7),
+					this.y + (double)this.random.nextInt(6) - 2.0,
+					this.z + (double)this.random.nextInt(7) - (double)this.random.nextInt(7)
 				);
 			}
 
-			double d = (double)this.field_5365.getX() + 0.5 - this.x;
-			double e = (double)this.field_5365.getY() + 0.1 - this.y;
-			double f = (double)this.field_5365.getZ() + 0.5 - this.z;
-			this.velocityX = this.velocityX + (Math.signum(d) * 0.5 - this.velocityX) * 0.1F;
-			this.velocityY = this.velocityY + (Math.signum(e) * 0.7F - this.velocityY) * 0.1F;
-			this.velocityZ = this.velocityZ + (Math.signum(f) * 0.5 - this.velocityZ) * 0.1F;
-			float g = (float)(MathHelper.atan2(this.velocityZ, this.velocityX) * 180.0F / (float)Math.PI) - 90.0F;
+			double d = (double)this.hangingPosition.getX() + 0.5 - this.x;
+			double e = (double)this.hangingPosition.getY() + 0.1 - this.y;
+			double f = (double)this.hangingPosition.getZ() + 0.5 - this.z;
+			Vec3d vec3d = this.getVelocity();
+			Vec3d vec3d2 = vec3d.add((Math.signum(d) * 0.5 - vec3d.x) * 0.1F, (Math.signum(e) * 0.7F - vec3d.y) * 0.1F, (Math.signum(f) * 0.5 - vec3d.z) * 0.1F);
+			this.setVelocity(vec3d2);
+			float g = (float)(MathHelper.atan2(vec3d2.z, vec3d2.x) * 180.0F / (float)Math.PI) - 90.0F;
 			float h = MathHelper.wrapDegrees(g - this.yaw);
-			this.field_16513 = 0.5F;
+			this.forwardSpeed = 0.5F;
 			this.yaw += h;
-			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).method_16907()) {
+			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).isSimpleFullBlock(this.world, blockPos2)) {
 				this.setRoosting(true);
 			}
 		}
@@ -165,11 +165,11 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public void handleFallDamage(float fallDistance, float damageMultiplier) {
+	public void handleFallDamage(float f, float g) {
 	}
 
 	@Override
-	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPos) {
+	protected void fall(double d, boolean bl, BlockState blockState, BlockPos blockPos) {
 	}
 
 	@Override
@@ -178,49 +178,47 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
+	public boolean damage(DamageSource damageSource, float f) {
+		if (this.isInvulnerableTo(damageSource)) {
 			return false;
 		} else {
 			if (!this.world.isClient && this.isRoosting()) {
 				this.setRoosting(false);
 			}
 
-			return super.damage(source, amount);
+			return super.damage(damageSource, f);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.dataTracker.set(field_14610, nbt.getByte("BatFlags"));
+	public void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		this.dataTracker.set(BAT_FLAGS, compoundTag.getByte("BatFlags"));
 	}
 
 	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putByte("BatFlags", this.dataTracker.get(field_14610));
+	public void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		compoundTag.putByte("BatFlags", this.dataTracker.get(BAT_FLAGS));
 	}
 
-	@Override
-	public boolean method_15652(IWorld iWorld, boolean bl) {
-		BlockPos blockPos = new BlockPos(this.x, this.getBoundingBox().minY, this.z);
-		if (blockPos.getY() >= iWorld.method_8483()) {
+	public static boolean method_20661(EntityType<BatEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		if (blockPos.getY() >= iWorld.getSeaLevel()) {
 			return false;
 		} else {
-			int i = iWorld.method_16358(blockPos);
+			int i = iWorld.getLightLevel(blockPos);
 			int j = 4;
-			if (this.method_15720()) {
+			if (isTodayAroundHalloween()) {
 				j = 7;
-			} else if (this.random.nextBoolean()) {
+			} else if (random.nextBoolean()) {
 				return false;
 			}
 
-			return i > this.random.nextInt(j) ? false : super.method_15652(iWorld, bl);
+			return i > random.nextInt(j) ? false : method_20636(entityType, iWorld, spawnType, blockPos, random);
 		}
 	}
 
-	private boolean method_15720() {
+	private static boolean isTodayAroundHalloween() {
 		LocalDate localDate = LocalDate.now();
 		int i = localDate.get(ChronoField.DAY_OF_MONTH);
 		int j = localDate.get(ChronoField.MONTH_OF_YEAR);
@@ -228,13 +226,7 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public float getEyeHeight() {
-		return this.height / 2.0F;
-	}
-
-	@Nullable
-	@Override
-	protected Identifier getLootTableId() {
-		return LootTables.BAT_ENTITIE;
+	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
+		return entityDimensions.height / 2.0F;
 	}
 }

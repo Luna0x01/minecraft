@@ -6,18 +6,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import net.minecraft.class_3082;
-import net.minecraft.class_4066;
-import net.minecraft.class_4067;
+import net.minecraft.client.network.packet.MapUpdateS2CPacket;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.Packet;
-import net.minecraft.network.packet.s2c.play.MapUpdateS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -29,120 +25,147 @@ import net.minecraft.world.dimension.DimensionType;
 public class MapState extends PersistentState {
 	public int xCenter;
 	public int zCenter;
-	public DimensionType field_19747;
-	public boolean trackingPosition;
-	public boolean field_15238;
+	public DimensionType dimension;
+	public boolean showIcons;
+	public boolean unlimitedTracking;
 	public byte scale;
 	public byte[] colors = new byte[16384];
-	public List<MapState.PlayerUpdateTracker> updateTrackers = Lists.newArrayList();
+	public boolean locked;
+	public final List<MapState.PlayerUpdateTracker> updateTrackers = Lists.newArrayList();
 	private final Map<PlayerEntity, MapState.PlayerUpdateTracker> updateTrackersByPlayer = Maps.newHashMap();
-	private final Map<String, class_4066> field_19748 = Maps.newHashMap();
-	public Map<String, class_3082> icons = Maps.newLinkedHashMap();
-	private final Map<String, class_4067> field_19749 = Maps.newHashMap();
+	private final Map<String, MapBannerMarker> banners = Maps.newHashMap();
+	public final Map<String, MapIcon> icons = Maps.newLinkedHashMap();
+	private final Map<String, MapFrameMarker> frames = Maps.newHashMap();
 
 	public MapState(String string) {
 		super(string);
 	}
 
-	public void method_17931(int i, int j, int k, boolean bl, boolean bl2, DimensionType dimensionType) {
+	public void init(int i, int j, int k, boolean bl, boolean bl2, DimensionType dimensionType) {
 		this.scale = (byte)k;
-		this.method_9308((double)i, (double)j, this.scale);
-		this.field_19747 = dimensionType;
-		this.trackingPosition = bl;
-		this.field_15238 = bl2;
+		this.calculateCenter((double)i, (double)j, this.scale);
+		this.dimension = dimensionType;
+		this.showIcons = bl;
+		this.unlimitedTracking = bl2;
 		this.markDirty();
 	}
 
-	public void method_9308(double x, double z, int scale) {
-		int i = 128 * (1 << scale);
-		int j = MathHelper.floor((x + 64.0) / (double)i);
-		int k = MathHelper.floor((z + 64.0) / (double)i);
-		this.xCenter = j * i + i / 2 - 64;
-		this.zCenter = k * i + i / 2 - 64;
+	public void calculateCenter(double d, double e, int i) {
+		int j = 128 * (1 << i);
+		int k = MathHelper.floor((d + 64.0) / (double)j);
+		int l = MathHelper.floor((e + 64.0) / (double)j);
+		this.xCenter = k * j + j / 2 - 64;
+		this.zCenter = l * j + j / 2 - 64;
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		this.field_19747 = DimensionType.method_17195(nbt.getInt("dimension"));
-		this.xCenter = nbt.getInt("xCenter");
-		this.zCenter = nbt.getInt("zCenter");
-		this.scale = (byte)MathHelper.clamp(nbt.getByte("scale"), 0, 4);
-		this.trackingPosition = !nbt.contains("trackingPosition", 1) || nbt.getBoolean("trackingPosition");
-		this.field_15238 = nbt.getBoolean("unlimitedTracking");
-		this.colors = nbt.getByteArray("colors");
-		if (this.colors.length != 16384) {
-			this.colors = new byte[16384];
-		}
+	public void fromTag(CompoundTag compoundTag) {
+		int i = compoundTag.getInt("dimension");
+		DimensionType dimensionType = DimensionType.byRawId(i);
+		if (dimensionType == null) {
+			throw new IllegalArgumentException("Invalid map dimension: " + i);
+		} else {
+			this.dimension = dimensionType;
+			this.xCenter = compoundTag.getInt("xCenter");
+			this.zCenter = compoundTag.getInt("zCenter");
+			this.scale = (byte)MathHelper.clamp(compoundTag.getByte("scale"), 0, 4);
+			this.showIcons = !compoundTag.containsKey("trackingPosition", 1) || compoundTag.getBoolean("trackingPosition");
+			this.unlimitedTracking = compoundTag.getBoolean("unlimitedTracking");
+			this.locked = compoundTag.getBoolean("locked");
+			this.colors = compoundTag.getByteArray("colors");
+			if (this.colors.length != 16384) {
+				this.colors = new byte[16384];
+			}
 
-		NbtList nbtList = nbt.getList("banners", 10);
+			ListTag listTag = compoundTag.getList("banners", 10);
 
-		for (int i = 0; i < nbtList.size(); i++) {
-			class_4066 lv = class_4066.method_17917(nbtList.getCompound(i));
-			this.field_19748.put(lv.method_17922(), lv);
-			this.method_4126(lv.method_17919(), null, lv.method_17922(), (double)lv.method_17915().getX(), (double)lv.method_17915().getZ(), 180.0, lv.method_17920());
-		}
+			for (int j = 0; j < listTag.size(); j++) {
+				MapBannerMarker mapBannerMarker = MapBannerMarker.fromNbt(listTag.getCompoundTag(j));
+				this.banners.put(mapBannerMarker.getKey(), mapBannerMarker);
+				this.addIcon(
+					mapBannerMarker.getIconType(),
+					null,
+					mapBannerMarker.getKey(),
+					(double)mapBannerMarker.getPos().getX(),
+					(double)mapBannerMarker.getPos().getZ(),
+					180.0,
+					mapBannerMarker.getName()
+				);
+			}
 
-		NbtList nbtList2 = nbt.getList("frames", 10);
+			ListTag listTag2 = compoundTag.getList("frames", 10);
 
-		for (int j = 0; j < nbtList2.size(); j++) {
-			class_4067 lv2 = class_4067.method_17926(nbtList2.getCompound(j));
-			this.field_19749.put(lv2.method_17930(), lv2);
-			this.method_4126(
-				class_3082.class_3083.FRAME,
-				null,
-				"frame-" + lv2.method_17929(),
-				(double)lv2.method_17927().getX(),
-				(double)lv2.method_17927().getZ(),
-				(double)lv2.method_17928(),
-				null
-			);
+			for (int k = 0; k < listTag2.size(); k++) {
+				MapFrameMarker mapFrameMarker = MapFrameMarker.fromTag(listTag2.getCompoundTag(k));
+				this.frames.put(mapFrameMarker.getKey(), mapFrameMarker);
+				this.addIcon(
+					MapIcon.Type.field_95,
+					null,
+					"frame-" + mapFrameMarker.getEntityId(),
+					(double)mapFrameMarker.getPos().getX(),
+					(double)mapFrameMarker.getPos().getZ(),
+					(double)mapFrameMarker.getRotation(),
+					null
+				);
+			}
 		}
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		nbt.putInt("dimension", this.field_19747.method_17201());
-		nbt.putInt("xCenter", this.xCenter);
-		nbt.putInt("zCenter", this.zCenter);
-		nbt.putByte("scale", this.scale);
-		nbt.putByteArray("colors", this.colors);
-		nbt.putBoolean("trackingPosition", this.trackingPosition);
-		nbt.putBoolean("unlimitedTracking", this.field_15238);
-		NbtList nbtList = new NbtList();
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		compoundTag.putInt("dimension", this.dimension.getRawId());
+		compoundTag.putInt("xCenter", this.xCenter);
+		compoundTag.putInt("zCenter", this.zCenter);
+		compoundTag.putByte("scale", this.scale);
+		compoundTag.putByteArray("colors", this.colors);
+		compoundTag.putBoolean("trackingPosition", this.showIcons);
+		compoundTag.putBoolean("unlimitedTracking", this.unlimitedTracking);
+		compoundTag.putBoolean("locked", this.locked);
+		ListTag listTag = new ListTag();
 
-		for (class_4066 lv : this.field_19748.values()) {
-			nbtList.add((NbtElement)lv.method_17921());
+		for (MapBannerMarker mapBannerMarker : this.banners.values()) {
+			listTag.add(mapBannerMarker.getNbt());
 		}
 
-		nbt.put("banners", nbtList);
-		NbtList nbtList2 = new NbtList();
+		compoundTag.put("banners", listTag);
+		ListTag listTag2 = new ListTag();
 
-		for (class_4067 lv2 : this.field_19749.values()) {
-			nbtList2.add((NbtElement)lv2.method_17924());
+		for (MapFrameMarker mapFrameMarker : this.frames.values()) {
+			listTag2.add(mapFrameMarker.toTag());
 		}
 
-		nbt.put("frames", nbtList2);
-		return nbt;
+		compoundTag.put("frames", listTag2);
+		return compoundTag;
 	}
 
-	public void update(PlayerEntity player, ItemStack stack) {
-		if (!this.updateTrackersByPlayer.containsKey(player)) {
-			MapState.PlayerUpdateTracker playerUpdateTracker = new MapState.PlayerUpdateTracker(player);
-			this.updateTrackersByPlayer.put(player, playerUpdateTracker);
+	public void copyFrom(MapState mapState) {
+		this.locked = true;
+		this.xCenter = mapState.xCenter;
+		this.zCenter = mapState.zCenter;
+		this.banners.putAll(mapState.banners);
+		this.icons.putAll(mapState.icons);
+		System.arraycopy(mapState.colors, 0, this.colors, 0, mapState.colors.length);
+		this.markDirty();
+	}
+
+	public void update(PlayerEntity playerEntity, ItemStack itemStack) {
+		if (!this.updateTrackersByPlayer.containsKey(playerEntity)) {
+			MapState.PlayerUpdateTracker playerUpdateTracker = new MapState.PlayerUpdateTracker(playerEntity);
+			this.updateTrackersByPlayer.put(playerEntity, playerUpdateTracker);
 			this.updateTrackers.add(playerUpdateTracker);
 		}
 
-		if (!player.inventory.contains(stack)) {
-			this.icons.remove(player.method_15540().getString());
+		if (!playerEntity.inventory.contains(itemStack)) {
+			this.icons.remove(playerEntity.getName().getString());
 		}
 
 		for (int i = 0; i < this.updateTrackers.size(); i++) {
 			MapState.PlayerUpdateTracker playerUpdateTracker2 = (MapState.PlayerUpdateTracker)this.updateTrackers.get(i);
-			String string = playerUpdateTracker2.player.method_15540().getString();
-			if (!playerUpdateTracker2.player.removed && (playerUpdateTracker2.player.inventory.contains(stack) || stack.isInItemFrame())) {
-				if (!stack.isInItemFrame() && playerUpdateTracker2.player.field_16696 == this.field_19747 && this.trackingPosition) {
-					this.method_4126(
-						class_3082.class_3083.PLAYER,
+			String string = playerUpdateTracker2.player.getName().getString();
+			if (!playerUpdateTracker2.player.removed && (playerUpdateTracker2.player.inventory.contains(itemStack) || itemStack.isInFrame())) {
+				if (!itemStack.isInFrame() && playerUpdateTracker2.player.dimension == this.dimension && this.showIcons) {
+					this.addIcon(
+						MapIcon.Type.field_91,
 						playerUpdateTracker2.player.world,
 						string,
 						playerUpdateTracker2.player.x,
@@ -158,41 +181,41 @@ public class MapState extends PersistentState {
 			}
 		}
 
-		if (stack.isInItemFrame() && this.trackingPosition) {
-			ItemFrameEntity itemFrameEntity = stack.getItemFrame();
-			BlockPos blockPos = itemFrameEntity.getTilePos();
-			class_4067 lv = (class_4067)this.field_19749.get(class_4067.method_17925(blockPos));
-			if (lv != null && itemFrameEntity.getEntityId() != lv.method_17929() && this.field_19749.containsKey(lv.method_17930())) {
-				this.icons.remove("frame-" + lv.method_17929());
+		if (itemStack.isInFrame() && this.showIcons) {
+			ItemFrameEntity itemFrameEntity = itemStack.getFrame();
+			BlockPos blockPos = itemFrameEntity.getDecorationBlockPos();
+			MapFrameMarker mapFrameMarker = (MapFrameMarker)this.frames.get(MapFrameMarker.getKey(blockPos));
+			if (mapFrameMarker != null && itemFrameEntity.getEntityId() != mapFrameMarker.getEntityId() && this.frames.containsKey(mapFrameMarker.getKey())) {
+				this.icons.remove("frame-" + mapFrameMarker.getEntityId());
 			}
 
-			class_4067 lv2 = new class_4067(blockPos, itemFrameEntity.direction.getHorizontal() * 90, itemFrameEntity.getEntityId());
-			this.method_4126(
-				class_3082.class_3083.FRAME,
-				player.world,
+			MapFrameMarker mapFrameMarker2 = new MapFrameMarker(blockPos, itemFrameEntity.getHorizontalFacing().getHorizontal() * 90, itemFrameEntity.getEntityId());
+			this.addIcon(
+				MapIcon.Type.field_95,
+				playerEntity.world,
 				"frame-" + itemFrameEntity.getEntityId(),
 				(double)blockPos.getX(),
 				(double)blockPos.getZ(),
-				(double)(itemFrameEntity.direction.getHorizontal() * 90),
+				(double)(itemFrameEntity.getHorizontalFacing().getHorizontal() * 90),
 				null
 			);
-			this.field_19749.put(lv2.method_17930(), lv2);
+			this.frames.put(mapFrameMarker2.getKey(), mapFrameMarker2);
 		}
 
-		NbtCompound nbtCompound = stack.getNbt();
-		if (nbtCompound != null && nbtCompound.contains("Decorations", 9)) {
-			NbtList nbtList = nbtCompound.getList("Decorations", 10);
+		CompoundTag compoundTag = itemStack.getTag();
+		if (compoundTag != null && compoundTag.containsKey("Decorations", 9)) {
+			ListTag listTag = compoundTag.getList("Decorations", 10);
 
-			for (int j = 0; j < nbtList.size(); j++) {
-				NbtCompound nbtCompound2 = nbtList.getCompound(j);
-				if (!this.icons.containsKey(nbtCompound2.getString("id"))) {
-					this.method_4126(
-						class_3082.class_3083.method_13826(nbtCompound2.getByte("type")),
-						player.world,
-						nbtCompound2.getString("id"),
-						nbtCompound2.getDouble("x"),
-						nbtCompound2.getDouble("z"),
-						nbtCompound2.getDouble("rot"),
+			for (int j = 0; j < listTag.size(); j++) {
+				CompoundTag compoundTag2 = listTag.getCompoundTag(j);
+				if (!this.icons.containsKey(compoundTag2.getString("id"))) {
+					this.addIcon(
+						MapIcon.Type.byId(compoundTag2.getByte("type")),
+						playerEntity.world,
+						compoundTag2.getString("id"),
+						compoundTag2.getDouble("x"),
+						compoundTag2.getDouble("z"),
+						compoundTag2.getDouble("rot"),
 						null
 					);
 				}
@@ -200,29 +223,29 @@ public class MapState extends PersistentState {
 		}
 	}
 
-	public static void method_13830(ItemStack itemStack, BlockPos blockPos, String string, class_3082.class_3083 arg) {
-		NbtList nbtList;
-		if (itemStack.hasNbt() && itemStack.getNbt().contains("Decorations", 9)) {
-			nbtList = itemStack.getNbt().getList("Decorations", 10);
+	public static void addDecorationsTag(ItemStack itemStack, BlockPos blockPos, String string, MapIcon.Type type) {
+		ListTag listTag;
+		if (itemStack.hasTag() && itemStack.getTag().containsKey("Decorations", 9)) {
+			listTag = itemStack.getTag().getList("Decorations", 10);
 		} else {
-			nbtList = new NbtList();
-			itemStack.addNbt("Decorations", nbtList);
+			listTag = new ListTag();
+			itemStack.putSubTag("Decorations", listTag);
 		}
 
-		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putByte("type", arg.method_13825());
-		nbtCompound.putString("id", string);
-		nbtCompound.putDouble("x", (double)blockPos.getX());
-		nbtCompound.putDouble("z", (double)blockPos.getZ());
-		nbtCompound.putDouble("rot", 180.0);
-		nbtList.add((NbtElement)nbtCompound);
-		if (arg.method_13828()) {
-			NbtCompound nbtCompound2 = itemStack.getOrCreateNbtCompound("display");
-			nbtCompound2.putInt("MapColor", arg.method_13829());
+		CompoundTag compoundTag = new CompoundTag();
+		compoundTag.putByte("type", type.getId());
+		compoundTag.putString("id", string);
+		compoundTag.putDouble("x", (double)blockPos.getX());
+		compoundTag.putDouble("z", (double)blockPos.getZ());
+		compoundTag.putDouble("rot", 180.0);
+		listTag.add(compoundTag);
+		if (type.hasTintColor()) {
+			CompoundTag compoundTag2 = itemStack.getOrCreateSubTag("display");
+			compoundTag2.putInt("MapColor", type.getTintColor());
 		}
 	}
 
-	private void method_4126(class_3082.class_3083 arg, @Nullable IWorld iWorld, String string, double d, double e, double f, @Nullable Text text) {
+	private void addIcon(MapIcon.Type type, @Nullable IWorld iWorld, String string, double d, double e, double f, @Nullable Text text) {
 		int i = 1 << this.scale;
 		float g = (float)(d - (double)this.xCenter) / (float)i;
 		float h = (float)(e - (double)this.zCenter) / (float)i;
@@ -233,26 +256,26 @@ public class MapState extends PersistentState {
 		if (g >= -63.0F && h >= -63.0F && g <= 63.0F && h <= 63.0F) {
 			f += f < 0.0 ? -8.0 : 8.0;
 			k = (byte)((int)(f * 16.0 / 360.0));
-			if (this.field_19747 == DimensionType.THE_NETHER && iWorld != null) {
-				int l = (int)(iWorld.method_3588().getTimeOfDay() / 10L);
+			if (this.dimension == DimensionType.field_13076 && iWorld != null) {
+				int l = (int)(iWorld.getLevelProperties().getTimeOfDay() / 10L);
 				k = (byte)(l * l * 34187121 + l * 121 >> 15 & 15);
 			}
 		} else {
-			if (arg != class_3082.class_3083.PLAYER) {
+			if (type != MapIcon.Type.field_91) {
 				this.icons.remove(string);
 				return;
 			}
 
 			int m = 320;
 			if (Math.abs(g) < 320.0F && Math.abs(h) < 320.0F) {
-				arg = class_3082.class_3083.PLAYER_OFF_MAP;
+				type = MapIcon.Type.field_86;
 			} else {
-				if (!this.field_15238) {
+				if (!this.unlimitedTracking) {
 					this.icons.remove(string);
 					return;
 				}
 
-				arg = class_3082.class_3083.PLAYER_OFF_LIMITS;
+				type = MapIcon.Type.field_87;
 			}
 
 			k = 0;
@@ -273,35 +296,35 @@ public class MapState extends PersistentState {
 			}
 		}
 
-		this.icons.put(string, new class_3082(arg, b, c, k, text));
+		this.icons.put(string, new MapIcon(type, b, c, k, text));
 	}
 
 	@Nullable
-	public Packet<?> method_17932(ItemStack itemStack, BlockView blockView, PlayerEntity playerEntity) {
+	public Packet<?> getPlayerMarkerPacket(ItemStack itemStack, BlockView blockView, PlayerEntity playerEntity) {
 		MapState.PlayerUpdateTracker playerUpdateTracker = (MapState.PlayerUpdateTracker)this.updateTrackersByPlayer.get(playerEntity);
 		return playerUpdateTracker == null ? null : playerUpdateTracker.getPacket(itemStack);
 	}
 
-	public void markDirty(int x, int z) {
+	public void markDirty(int i, int j) {
 		this.markDirty();
 
 		for (MapState.PlayerUpdateTracker playerUpdateTracker : this.updateTrackers) {
-			playerUpdateTracker.markDirty(x, z);
+			playerUpdateTracker.markDirty(i, j);
 		}
 	}
 
-	public MapState.PlayerUpdateTracker getPlayerSyncData(PlayerEntity player) {
-		MapState.PlayerUpdateTracker playerUpdateTracker = (MapState.PlayerUpdateTracker)this.updateTrackersByPlayer.get(player);
+	public MapState.PlayerUpdateTracker getPlayerSyncData(PlayerEntity playerEntity) {
+		MapState.PlayerUpdateTracker playerUpdateTracker = (MapState.PlayerUpdateTracker)this.updateTrackersByPlayer.get(playerEntity);
 		if (playerUpdateTracker == null) {
-			playerUpdateTracker = new MapState.PlayerUpdateTracker(player);
-			this.updateTrackersByPlayer.put(player, playerUpdateTracker);
+			playerUpdateTracker = new MapState.PlayerUpdateTracker(playerEntity);
+			this.updateTrackersByPlayer.put(playerEntity, playerUpdateTracker);
 			this.updateTrackers.add(playerUpdateTracker);
 		}
 
 		return playerUpdateTracker;
 	}
 
-	public void method_17934(IWorld iWorld, BlockPos blockPos) {
+	public void addBanner(IWorld iWorld, BlockPos blockPos) {
 		float f = (float)blockPos.getX() + 0.5F;
 		float g = (float)blockPos.getZ() + 0.5F;
 		int i = 1 << this.scale;
@@ -310,22 +333,22 @@ public class MapState extends PersistentState {
 		int k = 63;
 		boolean bl = false;
 		if (h >= -63.0F && j >= -63.0F && h <= 63.0F && j <= 63.0F) {
-			class_4066 lv = class_4066.method_17916(iWorld, blockPos);
-			if (lv == null) {
+			MapBannerMarker mapBannerMarker = MapBannerMarker.fromWorldBlock(iWorld, blockPos);
+			if (mapBannerMarker == null) {
 				return;
 			}
 
 			boolean bl2 = true;
-			if (this.field_19748.containsKey(lv.method_17922()) && ((class_4066)this.field_19748.get(lv.method_17922())).equals(lv)) {
-				this.field_19748.remove(lv.method_17922());
-				this.icons.remove(lv.method_17922());
+			if (this.banners.containsKey(mapBannerMarker.getKey()) && ((MapBannerMarker)this.banners.get(mapBannerMarker.getKey())).equals(mapBannerMarker)) {
+				this.banners.remove(mapBannerMarker.getKey());
+				this.icons.remove(mapBannerMarker.getKey());
 				bl2 = false;
 				bl = true;
 			}
 
 			if (bl2) {
-				this.field_19748.put(lv.method_17922(), lv);
-				this.method_4126(lv.method_17919(), iWorld, lv.method_17922(), (double)f, (double)g, 180.0, lv.method_17920());
+				this.banners.put(mapBannerMarker.getKey(), mapBannerMarker);
+				this.addIcon(mapBannerMarker.getIconType(), iWorld, mapBannerMarker.getKey(), (double)f, (double)g, 180.0, mapBannerMarker.getName());
 				bl = true;
 			}
 
@@ -335,24 +358,24 @@ public class MapState extends PersistentState {
 		}
 	}
 
-	public void method_17933(BlockView blockView, int i, int j) {
-		Iterator<class_4066> iterator = this.field_19748.values().iterator();
+	public void removeBanner(BlockView blockView, int i, int j) {
+		Iterator<MapBannerMarker> iterator = this.banners.values().iterator();
 
 		while (iterator.hasNext()) {
-			class_4066 lv = (class_4066)iterator.next();
-			if (lv.method_17915().getX() == i && lv.method_17915().getZ() == j) {
-				class_4066 lv2 = class_4066.method_17916(blockView, lv.method_17915());
-				if (!lv.equals(lv2)) {
+			MapBannerMarker mapBannerMarker = (MapBannerMarker)iterator.next();
+			if (mapBannerMarker.getPos().getX() == i && mapBannerMarker.getPos().getZ() == j) {
+				MapBannerMarker mapBannerMarker2 = MapBannerMarker.fromWorldBlock(blockView, mapBannerMarker.getPos());
+				if (!mapBannerMarker.equals(mapBannerMarker2)) {
 					iterator.remove();
-					this.icons.remove(lv.method_17922());
+					this.icons.remove(mapBannerMarker.getKey());
 				}
 			}
 		}
 	}
 
-	public void method_17935(BlockPos blockPos, int i) {
+	public void removeFrame(BlockPos blockPos, int i) {
 		this.icons.remove("frame-" + i);
-		this.field_19749.remove(class_4067.method_17925(blockPos));
+		this.frames.remove(MapFrameMarker.getKey(blockPos));
 	}
 
 	public class PlayerUpdateTracker {
@@ -363,20 +386,21 @@ public class MapState extends PersistentState {
 		private int endX = 127;
 		private int endZ = 127;
 		private int emptyPacketsRequested;
-		public int field_4983;
+		public int field_131;
 
 		public PlayerUpdateTracker(PlayerEntity playerEntity) {
 			this.player = playerEntity;
 		}
 
 		@Nullable
-		public Packet<?> getPacket(ItemStack stack) {
+		public Packet<?> getPacket(ItemStack itemStack) {
 			if (this.dirty) {
 				this.dirty = false;
 				return new MapUpdateS2CPacket(
-					FilledMapItem.method_16117(stack),
+					FilledMapItem.getMapId(itemStack),
 					MapState.this.scale,
-					MapState.this.trackingPosition,
+					MapState.this.showIcons,
+					MapState.this.locked,
 					MapState.this.icons.values(),
 					MapState.this.colors,
 					this.startX,
@@ -387,24 +411,33 @@ public class MapState extends PersistentState {
 			} else {
 				return this.emptyPacketsRequested++ % 5 == 0
 					? new MapUpdateS2CPacket(
-						FilledMapItem.method_16117(stack), MapState.this.scale, MapState.this.trackingPosition, MapState.this.icons.values(), MapState.this.colors, 0, 0, 0, 0
+						FilledMapItem.getMapId(itemStack),
+						MapState.this.scale,
+						MapState.this.showIcons,
+						MapState.this.locked,
+						MapState.this.icons.values(),
+						MapState.this.colors,
+						0,
+						0,
+						0,
+						0
 					)
 					: null;
 			}
 		}
 
-		public void markDirty(int x, int z) {
+		public void markDirty(int i, int j) {
 			if (this.dirty) {
-				this.startX = Math.min(this.startX, x);
-				this.startZ = Math.min(this.startZ, z);
-				this.endX = Math.max(this.endX, x);
-				this.endZ = Math.max(this.endZ, z);
+				this.startX = Math.min(this.startX, i);
+				this.startZ = Math.min(this.startZ, j);
+				this.endX = Math.max(this.endX, i);
+				this.endZ = Math.max(this.endZ, j);
 			} else {
 				this.dirty = true;
-				this.startX = x;
-				this.startZ = z;
-				this.endX = x;
-				this.endZ = z;
+				this.startX = i;
+				this.startZ = j;
+				this.endX = i;
+				this.endZ = j;
 			}
 		}
 	}

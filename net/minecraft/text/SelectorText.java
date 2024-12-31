@@ -3,46 +3,50 @@ package net.minecraft.text;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import javax.annotation.Nullable;
-import net.minecraft.class_3915;
-import net.minecraft.class_4317;
-import net.minecraft.class_4318;
+import net.minecraft.command.EntitySelector;
+import net.minecraft.command.EntitySelectorReader;
+import net.minecraft.entity.Entity;
+import net.minecraft.server.command.ServerCommandSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SelectorText extends BaseText {
-	private static final Logger field_21516 = LogManager.getLogger();
+public class SelectorText extends BaseText implements ParsableText {
+	private static final Logger LOGGER = LogManager.getLogger();
 	private final String pattern;
 	@Nullable
-	private final class_4317 field_21517;
+	private final EntitySelector selector;
 
 	public SelectorText(String string) {
 		this.pattern = string;
-		class_4317 lv = null;
+		EntitySelector entitySelector = null;
 
 		try {
-			class_4318 lv2 = new class_4318(new StringReader(string));
-			lv = lv2.method_19818();
+			EntitySelectorReader entitySelectorReader = new EntitySelectorReader(new StringReader(string));
+			entitySelector = entitySelectorReader.read();
 		} catch (CommandSyntaxException var4) {
-			field_21516.warn("Invalid selector component: {}", string, var4.getMessage());
+			LOGGER.warn("Invalid selector component: {}", string, var4.getMessage());
 		}
 
-		this.field_21517 = lv;
+		this.selector = entitySelector;
 	}
 
 	public String getPattern() {
 		return this.pattern;
 	}
 
-	public Text method_20196(class_3915 arg) throws CommandSyntaxException {
-		return (Text)(this.field_21517 == null ? new LiteralText("") : class_4317.method_19732(this.field_21517.method_19735(arg)));
+	@Override
+	public Text parse(@Nullable ServerCommandSource serverCommandSource, @Nullable Entity entity, int i) throws CommandSyntaxException {
+		return (Text)(serverCommandSource != null && this.selector != null
+			? EntitySelector.getNames(this.selector.getEntities(serverCommandSource))
+			: new LiteralText(""));
 	}
 
 	@Override
-	public String computeValue() {
+	public String asString() {
 		return this.pattern;
 	}
 
-	public SelectorText copy() {
+	public SelectorText method_10931() {
 		return new SelectorText(this.pattern);
 	}
 

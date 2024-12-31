@@ -2,25 +2,35 @@ package net.minecraft.util.math;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.types.DynamicOps;
 import java.util.List;
+import java.util.Spliterator.OfInt;
+import java.util.Spliterators.AbstractSpliterator;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.annotation.concurrent.Immutable;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.CuboidBlockIterator;
+import net.minecraft.util.DynamicSerializable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Immutable
-public class BlockPos extends Vec3i {
+public class BlockPos extends Vec3i implements DynamicSerializable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final BlockPos ORIGIN = new BlockPos(0, 0, 0);
 	private static final int SIZE_BITS_X = 1 + MathHelper.log2(MathHelper.smallestEncompassingPowerOfTwo(30000000));
 	private static final int SIZE_BITS_Z = SIZE_BITS_X;
 	private static final int SIZE_BITS_Y = 64 - SIZE_BITS_X - SIZE_BITS_Z;
-	private static final int BIT_SHIFT_Z = 0 + SIZE_BITS_Z;
-	private static final int BIT_SHIFT_X = BIT_SHIFT_Z + SIZE_BITS_Y;
 	private static final long BITS_X = (1L << SIZE_BITS_X) - 1L;
 	private static final long BITS_Y = (1L << SIZE_BITS_Y) - 1L;
 	private static final long BITS_Z = (1L << SIZE_BITS_Z) - 1L;
+	private static final int BIT_SHIFT_Z = SIZE_BITS_Y;
+	private static final int BIT_SHIFT_X = SIZE_BITS_Y + SIZE_BITS_Z;
 
 	public BlockPos(int i, int j, int k) {
 		super(i, j, k);
@@ -38,94 +48,152 @@ public class BlockPos extends Vec3i {
 		this(vec3d.x, vec3d.y, vec3d.z);
 	}
 
+	public BlockPos(Position position) {
+		this(position.getX(), position.getY(), position.getZ());
+	}
+
 	public BlockPos(Vec3i vec3i) {
 		this(vec3i.getX(), vec3i.getY(), vec3i.getZ());
 	}
 
-	public BlockPos add(double x, double y, double z) {
-		return x == 0.0 && y == 0.0 && z == 0.0 ? this : new BlockPos((double)this.getX() + x, (double)this.getY() + y, (double)this.getZ() + z);
+	public static <T> BlockPos deserialize(Dynamic<T> dynamic) {
+		OfInt ofInt = dynamic.asIntStream().spliterator();
+		int[] is = new int[3];
+		if (ofInt.tryAdvance(i -> is[0] = i) && ofInt.tryAdvance(i -> is[1] = i)) {
+			ofInt.tryAdvance(i -> is[2] = i);
+		}
+
+		return new BlockPos(is[0], is[1], is[2]);
 	}
 
-	public BlockPos add(int x, int y, int z) {
-		return x == 0 && y == 0 && z == 0 ? this : new BlockPos(this.getX() + x, this.getY() + y, this.getZ() + z);
+	@Override
+	public <T> T serialize(DynamicOps<T> dynamicOps) {
+		return (T)dynamicOps.createIntList(IntStream.of(new int[]{this.getX(), this.getY(), this.getZ()}));
 	}
 
-	public BlockPos add(Vec3i pos) {
-		return this.add(pos.getX(), pos.getY(), pos.getZ());
+	public static long offset(long l, Direction direction) {
+		return add(l, direction.getOffsetX(), direction.getOffsetY(), direction.getOffsetZ());
 	}
 
-	public BlockPos subtract(Vec3i pos) {
-		return this.add(-pos.getX(), -pos.getY(), -pos.getZ());
+	public static long add(long l, int i, int j, int k) {
+		return asLong(unpackLongX(l) + i, unpackLongY(l) + j, unpackLongZ(l) + k);
+	}
+
+	public static int unpackLongX(long l) {
+		return (int)(l << 64 - BIT_SHIFT_X - SIZE_BITS_X >> 64 - SIZE_BITS_X);
+	}
+
+	public static int unpackLongY(long l) {
+		return (int)(l << 64 - SIZE_BITS_Y >> 64 - SIZE_BITS_Y);
+	}
+
+	public static int unpackLongZ(long l) {
+		return (int)(l << 64 - BIT_SHIFT_Z - SIZE_BITS_Z >> 64 - SIZE_BITS_Z);
+	}
+
+	public static BlockPos fromLong(long l) {
+		return new BlockPos(unpackLongX(l), unpackLongY(l), unpackLongZ(l));
+	}
+
+	public static long asLong(int i, int j, int k) {
+		long l = 0L;
+		l |= ((long)i & BITS_X) << BIT_SHIFT_X;
+		l |= ((long)j & BITS_Y) << 0;
+		return l | ((long)k & BITS_Z) << BIT_SHIFT_Z;
+	}
+
+	public static long removeChunkSectionLocalY(long l) {
+		return l & -16L;
+	}
+
+	public long asLong() {
+		return asLong(this.getX(), this.getY(), this.getZ());
+	}
+
+	public BlockPos add(double d, double e, double f) {
+		return d == 0.0 && e == 0.0 && f == 0.0 ? this : new BlockPos((double)this.getX() + d, (double)this.getY() + e, (double)this.getZ() + f);
+	}
+
+	public BlockPos add(int i, int j, int k) {
+		return i == 0 && j == 0 && k == 0 ? this : new BlockPos(this.getX() + i, this.getY() + j, this.getZ() + k);
+	}
+
+	public BlockPos add(Vec3i vec3i) {
+		return this.add(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+	}
+
+	public BlockPos subtract(Vec3i vec3i) {
+		return this.add(-vec3i.getX(), -vec3i.getY(), -vec3i.getZ());
 	}
 
 	public BlockPos up() {
 		return this.up(1);
 	}
 
-	public BlockPos up(int distance) {
-		return this.offset(Direction.UP, distance);
+	public BlockPos up(int i) {
+		return this.offset(Direction.field_11036, i);
 	}
 
 	public BlockPos down() {
 		return this.down(1);
 	}
 
-	public BlockPos down(int distance) {
-		return this.offset(Direction.DOWN, distance);
+	public BlockPos down(int i) {
+		return this.offset(Direction.field_11033, i);
 	}
 
 	public BlockPos north() {
 		return this.north(1);
 	}
 
-	public BlockPos north(int distance) {
-		return this.offset(Direction.NORTH, distance);
+	public BlockPos north(int i) {
+		return this.offset(Direction.field_11043, i);
 	}
 
 	public BlockPos south() {
 		return this.south(1);
 	}
 
-	public BlockPos south(int distance) {
-		return this.offset(Direction.SOUTH, distance);
+	public BlockPos south(int i) {
+		return this.offset(Direction.field_11035, i);
 	}
 
 	public BlockPos west() {
 		return this.west(1);
 	}
 
-	public BlockPos west(int distance) {
-		return this.offset(Direction.WEST, distance);
+	public BlockPos west(int i) {
+		return this.offset(Direction.field_11039, i);
 	}
 
 	public BlockPos east() {
 		return this.east(1);
 	}
 
-	public BlockPos east(int distance) {
-		return this.offset(Direction.EAST, distance);
+	public BlockPos east(int i) {
+		return this.offset(Direction.field_11034, i);
 	}
 
-	public BlockPos offset(Direction facing) {
-		return this.offset(facing, 1);
+	public BlockPos offset(Direction direction) {
+		return this.offset(direction, 1);
 	}
 
-	public BlockPos offset(Direction facing, int distance) {
-		return distance == 0
+	public BlockPos offset(Direction direction, int i) {
+		return i == 0
 			? this
-			: new BlockPos(this.getX() + facing.getOffsetX() * distance, this.getY() + facing.getOffsetY() * distance, this.getZ() + facing.getOffsetZ() * distance);
+			: new BlockPos(this.getX() + direction.getOffsetX() * i, this.getY() + direction.getOffsetY() * i, this.getZ() + direction.getOffsetZ() * i);
 	}
 
-	public BlockPos rotate(BlockRotation rotation) {
-		switch (rotation) {
-			case NONE:
+	public BlockPos rotate(BlockRotation blockRotation) {
+		switch (blockRotation) {
+			case field_11467:
 			default:
 				return this;
-			case CLOCKWISE_90:
+			case field_11463:
 				return new BlockPos(-this.getZ(), this.getY(), this.getX());
-			case CLOCKWISE_180:
+			case field_11464:
 				return new BlockPos(-this.getX(), this.getY(), -this.getZ());
-			case COUNTERCLOCKWISE_90:
+			case field_11465:
 				return new BlockPos(this.getZ(), this.getY(), -this.getX());
 		}
 	}
@@ -138,109 +206,63 @@ public class BlockPos extends Vec3i {
 		);
 	}
 
-	public long asLong() {
-		return ((long)this.getX() & BITS_X) << BIT_SHIFT_X | ((long)this.getY() & BITS_Y) << BIT_SHIFT_Z | ((long)this.getZ() & BITS_Z) << 0;
-	}
-
-	public static BlockPos fromLong(long value) {
-		int i = (int)(value << 64 - BIT_SHIFT_X - SIZE_BITS_X >> 64 - SIZE_BITS_X);
-		int j = (int)(value << 64 - BIT_SHIFT_Z - SIZE_BITS_Y >> 64 - SIZE_BITS_Y);
-		int k = (int)(value << 64 - SIZE_BITS_Z >> 64 - SIZE_BITS_Z);
-		return new BlockPos(i, j, k);
-	}
-
-	public static Iterable<BlockPos> iterate(BlockPos pos1, BlockPos pos2) {
-		return iterate(
-			Math.min(pos1.getX(), pos2.getX()),
-			Math.min(pos1.getY(), pos2.getY()),
-			Math.min(pos1.getZ(), pos2.getZ()),
-			Math.max(pos1.getX(), pos2.getX()),
-			Math.max(pos1.getY(), pos2.getY()),
-			Math.max(pos1.getZ(), pos2.getZ())
-		);
-	}
-
-	public static Iterable<BlockPos> iterate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		return () -> new AbstractIterator<BlockPos>() {
-				private boolean field_21275 = true;
-				private int field_21276;
-				private int field_21277;
-				private int field_21278;
-
-				protected BlockPos computeNext() {
-					if (this.field_21275) {
-						this.field_21275 = false;
-						this.field_21276 = minX;
-						this.field_21277 = minY;
-						this.field_21278 = minZ;
-						return new BlockPos(minX, minY, minZ);
-					} else if (this.field_21276 == maxX && this.field_21277 == maxY && this.field_21278 == maxZ) {
-						return (BlockPos)this.endOfData();
-					} else {
-						if (this.field_21276 < maxX) {
-							this.field_21276++;
-						} else if (this.field_21277 < maxY) {
-							this.field_21276 = minX;
-							this.field_21277++;
-						} else if (this.field_21278 < maxZ) {
-							this.field_21276 = minX;
-							this.field_21277 = minY;
-							this.field_21278++;
-						}
-
-						return new BlockPos(this.field_21276, this.field_21277, this.field_21278);
-					}
-				}
-			};
-	}
-
 	public BlockPos toImmutable() {
 		return this;
 	}
 
-	public static Iterable<BlockPos.Mutable> mutableIterate(BlockPos pos1, BlockPos pos2) {
-		return mutableIterate(
-			Math.min(pos1.getX(), pos2.getX()),
-			Math.min(pos1.getY(), pos2.getY()),
-			Math.min(pos1.getZ(), pos2.getZ()),
-			Math.max(pos1.getX(), pos2.getX()),
-			Math.max(pos1.getY(), pos2.getY()),
-			Math.max(pos1.getZ(), pos2.getZ())
+	public static Iterable<BlockPos> iterate(BlockPos blockPos, BlockPos blockPos2) {
+		return iterate(
+			Math.min(blockPos.getX(), blockPos2.getX()),
+			Math.min(blockPos.getY(), blockPos2.getY()),
+			Math.min(blockPos.getZ(), blockPos2.getZ()),
+			Math.max(blockPos.getX(), blockPos2.getX()),
+			Math.max(blockPos.getY(), blockPos2.getY()),
+			Math.max(blockPos.getZ(), blockPos2.getZ())
 		);
 	}
 
-	public static Iterable<BlockPos.Mutable> mutableIterate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		return () -> new AbstractIterator<BlockPos.Mutable>() {
-				private BlockPos.Mutable field_21285;
+	public static Stream<BlockPos> stream(BlockPos blockPos, BlockPos blockPos2) {
+		return stream(
+			Math.min(blockPos.getX(), blockPos2.getX()),
+			Math.min(blockPos.getY(), blockPos2.getY()),
+			Math.min(blockPos.getZ(), blockPos2.getZ()),
+			Math.max(blockPos.getX(), blockPos2.getX()),
+			Math.max(blockPos.getY(), blockPos2.getY()),
+			Math.max(blockPos.getZ(), blockPos2.getZ())
+		);
+	}
 
-				protected BlockPos.Mutable computeNext() {
-					if (this.field_21285 == null) {
-						this.field_21285 = new BlockPos.Mutable(minX, minY, minZ);
-						return this.field_21285;
-					} else if (this.field_21285.posX == maxX && this.field_21285.posY == maxY && this.field_21285.posZ == maxZ) {
-						return (BlockPos.Mutable)this.endOfData();
-					} else {
-						if (this.field_21285.posX < maxX) {
-							this.field_21285.posX++;
-						} else if (this.field_21285.posY < maxY) {
-							this.field_21285.posX = minX;
-							this.field_21285.posY++;
-						} else if (this.field_21285.posZ < maxZ) {
-							this.field_21285.posX = minX;
-							this.field_21285.posY = minY;
-							this.field_21285.posZ++;
-						}
+	public static Stream<BlockPos> stream(int i, int j, int k, int l, int m, int n) {
+		return StreamSupport.stream(new AbstractSpliterator<BlockPos>((long)((l - i + 1) * (m - j + 1) * (n - k + 1)), 64) {
+			final CuboidBlockIterator connector = new CuboidBlockIterator(i, j, k, l, m, n);
+			final BlockPos.Mutable position = new BlockPos.Mutable();
 
-						return this.field_21285;
-					}
+			public boolean tryAdvance(Consumer<? super BlockPos> consumer) {
+				if (this.connector.step()) {
+					consumer.accept(this.position.set(this.connector.getX(), this.connector.getY(), this.connector.getZ()));
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}, false);
+	}
+
+	public static Iterable<BlockPos> iterate(int i, int j, int k, int l, int m, int n) {
+		return () -> new AbstractIterator<BlockPos>() {
+				final CuboidBlockIterator iterator = new CuboidBlockIterator(i, j, k, l, m, n);
+				final BlockPos.Mutable pos = new BlockPos.Mutable();
+
+				protected BlockPos method_10106() {
+					return (BlockPos)(this.iterator.step() ? this.pos.set(this.iterator.getX(), this.iterator.getY(), this.iterator.getZ()) : (BlockPos)this.endOfData());
 				}
 			};
 	}
 
 	public static class Mutable extends BlockPos {
-		protected int posX;
-		protected int posY;
-		protected int posZ;
+		protected int x;
+		protected int y;
+		protected int z;
 
 		public Mutable() {
 			this(0, 0, 0);
@@ -252,50 +274,54 @@ public class BlockPos extends Vec3i {
 
 		public Mutable(int i, int j, int k) {
 			super(0, 0, 0);
-			this.posX = i;
-			this.posY = j;
-			this.posZ = k;
+			this.x = i;
+			this.y = j;
+			this.z = k;
+		}
+
+		public Mutable(double d, double e, double f) {
+			this(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
 		}
 
 		@Override
-		public BlockPos add(double x, double y, double z) {
-			return super.add(x, y, z).toImmutable();
+		public BlockPos add(double d, double e, double f) {
+			return super.add(d, e, f).toImmutable();
 		}
 
 		@Override
-		public BlockPos add(int x, int y, int z) {
-			return super.add(x, y, z).toImmutable();
+		public BlockPos add(int i, int j, int k) {
+			return super.add(i, j, k).toImmutable();
 		}
 
 		@Override
-		public BlockPos offset(Direction facing, int distance) {
-			return super.offset(facing, distance).toImmutable();
+		public BlockPos offset(Direction direction, int i) {
+			return super.offset(direction, i).toImmutable();
 		}
 
 		@Override
-		public BlockPos rotate(BlockRotation rotation) {
-			return super.rotate(rotation).toImmutable();
+		public BlockPos rotate(BlockRotation blockRotation) {
+			return super.rotate(blockRotation).toImmutable();
 		}
 
 		@Override
 		public int getX() {
-			return this.posX;
+			return this.x;
 		}
 
 		@Override
 		public int getY() {
-			return this.posY;
+			return this.y;
 		}
 
 		@Override
 		public int getZ() {
-			return this.posZ;
+			return this.z;
 		}
 
-		public BlockPos.Mutable setPosition(int x, int y, int z) {
-			this.posX = x;
-			this.posY = y;
-			this.posZ = z;
+		public BlockPos.Mutable set(int i, int j, int k) {
+			this.x = i;
+			this.y = j;
+			this.z = k;
 			return this;
 		}
 
@@ -303,30 +329,48 @@ public class BlockPos extends Vec3i {
 			return this.set(entity.x, entity.y, entity.z);
 		}
 
-		public BlockPos.Mutable set(double x, double y, double z) {
-			return this.setPosition(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z));
+		public BlockPos.Mutable set(double d, double e, double f) {
+			return this.set(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
 		}
 
-		public BlockPos.Mutable set(Vec3i pos) {
-			return this.setPosition(pos.getX(), pos.getY(), pos.getZ());
+		public BlockPos.Mutable set(Vec3i vec3i) {
+			return this.set(vec3i.getX(), vec3i.getY(), vec3i.getZ());
 		}
 
-		public BlockPos.Mutable move(Direction direction) {
-			return this.move(direction, 1);
+		public BlockPos.Mutable set(long l) {
+			return this.set(unpackLongX(l), unpackLongY(l), unpackLongZ(l));
 		}
 
-		public BlockPos.Mutable move(Direction direction, int distance) {
-			return this.setPosition(
-				this.posX + direction.getOffsetX() * distance, this.posY + direction.getOffsetY() * distance, this.posZ + direction.getOffsetZ() * distance
+		public BlockPos.Mutable set(AxisCycleDirection axisCycleDirection, int i, int j, int k) {
+			return this.set(
+				axisCycleDirection.choose(i, j, k, Direction.Axis.field_11048),
+				axisCycleDirection.choose(i, j, k, Direction.Axis.field_11052),
+				axisCycleDirection.choose(i, j, k, Direction.Axis.field_11051)
 			);
 		}
 
-		public BlockPos.Mutable method_19934(int i, int j, int k) {
-			return this.setPosition(this.posX + i, this.posY + j, this.posZ + k);
+		public BlockPos.Mutable setOffset(Direction direction) {
+			return this.setOffset(direction, 1);
 		}
 
-		public void setY(int y) {
-			this.posY = y;
+		public BlockPos.Mutable setOffset(Direction direction, int i) {
+			return this.set(this.x + direction.getOffsetX() * i, this.y + direction.getOffsetY() * i, this.z + direction.getOffsetZ() * i);
+		}
+
+		public BlockPos.Mutable setOffset(int i, int j, int k) {
+			return this.set(this.x + i, this.y + j, this.z + k);
+		}
+
+		public void setX(int i) {
+			this.x = i;
+		}
+
+		public void setY(int i) {
+			this.y = i;
+		}
+
+		public void setZ(int i) {
+			this.z = i;
 		}
 
 		@Override
@@ -335,76 +379,76 @@ public class BlockPos extends Vec3i {
 		}
 	}
 
-	public static final class Pooled extends BlockPos.Mutable implements AutoCloseable {
-		private boolean field_13716;
-		private static final List<BlockPos.Pooled> field_13717 = Lists.newArrayList();
+	public static final class PooledMutable extends BlockPos.Mutable implements AutoCloseable {
+		private boolean free;
+		private static final List<BlockPos.PooledMutable> POOL = Lists.newArrayList();
 
-		private Pooled(int i, int j, int k) {
+		private PooledMutable(int i, int j, int k) {
 			super(i, j, k);
 		}
 
-		public static BlockPos.Pooled get() {
-			return method_12571(0, 0, 0);
+		public static BlockPos.PooledMutable get() {
+			return get(0, 0, 0);
 		}
 
-		public static BlockPos.Pooled method_19935(Entity entity) {
-			return method_12567(entity.x, entity.y, entity.z);
+		public static BlockPos.PooledMutable getEntityPos(Entity entity) {
+			return get(entity.x, entity.y, entity.z);
 		}
 
-		public static BlockPos.Pooled method_12567(double d, double e, double f) {
-			return method_12571(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
+		public static BlockPos.PooledMutable get(double d, double e, double f) {
+			return get(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
 		}
 
-		public static BlockPos.Pooled method_12571(int i, int j, int k) {
-			synchronized (field_13717) {
-				if (!field_13717.isEmpty()) {
-					BlockPos.Pooled pooled = (BlockPos.Pooled)field_13717.remove(field_13717.size() - 1);
-					if (pooled != null && pooled.field_13716) {
-						pooled.field_13716 = false;
-						pooled.setPosition(i, j, k);
-						return pooled;
+		public static BlockPos.PooledMutable get(int i, int j, int k) {
+			synchronized (POOL) {
+				if (!POOL.isEmpty()) {
+					BlockPos.PooledMutable pooledMutable = (BlockPos.PooledMutable)POOL.remove(POOL.size() - 1);
+					if (pooledMutable != null && pooledMutable.free) {
+						pooledMutable.free = false;
+						pooledMutable.method_10113(i, j, k);
+						return pooledMutable;
 					}
 				}
 			}
 
-			return new BlockPos.Pooled(i, j, k);
+			return new BlockPos.PooledMutable(i, j, k);
 		}
 
-		public BlockPos.Pooled setPosition(int i, int j, int k) {
-			return (BlockPos.Pooled)super.setPosition(i, j, k);
+		public BlockPos.PooledMutable method_10113(int i, int j, int k) {
+			return (BlockPos.PooledMutable)super.set(i, j, k);
 		}
 
-		public BlockPos.Pooled set(Entity entity) {
-			return (BlockPos.Pooled)super.set(entity);
+		public BlockPos.PooledMutable method_10110(Entity entity) {
+			return (BlockPos.PooledMutable)super.set(entity);
 		}
 
-		public BlockPos.Pooled set(double d, double e, double f) {
-			return (BlockPos.Pooled)super.set(d, e, f);
+		public BlockPos.PooledMutable method_10112(double d, double e, double f) {
+			return (BlockPos.PooledMutable)super.set(d, e, f);
 		}
 
-		public BlockPos.Pooled set(Vec3i vec3i) {
-			return (BlockPos.Pooled)super.set(vec3i);
+		public BlockPos.PooledMutable method_10114(Vec3i vec3i) {
+			return (BlockPos.PooledMutable)super.set(vec3i);
 		}
 
-		public BlockPos.Pooled move(Direction direction) {
-			return (BlockPos.Pooled)super.move(direction);
+		public BlockPos.PooledMutable method_10118(Direction direction) {
+			return (BlockPos.PooledMutable)super.setOffset(direction);
 		}
 
-		public BlockPos.Pooled move(Direction direction, int i) {
-			return (BlockPos.Pooled)super.move(direction, i);
+		public BlockPos.PooledMutable method_10116(Direction direction, int i) {
+			return (BlockPos.PooledMutable)super.setOffset(direction, i);
 		}
 
-		public BlockPos.Pooled method_19934(int i, int j, int k) {
-			return (BlockPos.Pooled)super.method_19934(i, j, k);
+		public BlockPos.PooledMutable method_10108(int i, int j, int k) {
+			return (BlockPos.PooledMutable)super.setOffset(i, j, k);
 		}
 
 		public void close() {
-			synchronized (field_13717) {
-				if (field_13717.size() < 100) {
-					field_13717.add(this);
+			synchronized (POOL) {
+				if (POOL.size() < 100) {
+					POOL.add(this);
 				}
 
-				this.field_13716 = true;
+				this.free = true;
 			}
 		}
 	}

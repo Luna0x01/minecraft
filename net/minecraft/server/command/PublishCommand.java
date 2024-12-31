@@ -6,35 +6,34 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import net.minecraft.class_3915;
 import net.minecraft.client.util.NetworkUtils;
 import net.minecraft.text.TranslatableText;
 
 public class PublishCommand {
-	private static final SimpleCommandExceptionType field_21767 = new SimpleCommandExceptionType(new TranslatableText("commands.publish.failed"));
-	private static final DynamicCommandExceptionType field_21768 = new DynamicCommandExceptionType(
+	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.publish.failed"));
+	private static final DynamicCommandExceptionType ALREADY_PUBLISHED_EXCEPTION = new DynamicCommandExceptionType(
 		object -> new TranslatableText("commands.publish.alreadyPublished", object)
 	);
 
-	public static void method_20906(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("publish")
-						.requires(arg -> arg.method_17473().isSinglePlayer() && arg.method_17575(4)))
-					.executes(commandContext -> method_20905((class_3915)commandContext.getSource(), NetworkUtils.getFreePort())))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("publish")
+						.requires(serverCommandSource -> serverCommandSource.getMinecraftServer().isSinglePlayer() && serverCommandSource.hasPermissionLevel(4)))
+					.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), NetworkUtils.findLocalPort())))
 				.then(
-					CommandManager.method_17530("port", IntegerArgumentType.integer(0, 65535))
-						.executes(commandContext -> method_20905((class_3915)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "port")))
+					CommandManager.argument("port", IntegerArgumentType.integer(0, 65535))
+						.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), IntegerArgumentType.getInteger(commandContext, "port")))
 				)
 		);
 	}
 
-	private static int method_20905(class_3915 arg, int i) throws CommandSyntaxException {
-		if (arg.method_17473().shouldBroadcastConsoleToIps()) {
-			throw field_21768.create(arg.method_17473().getServerPort());
-		} else if (!arg.method_17473().method_20311(arg.method_17473().method_3026(), false, i)) {
-			throw field_21767.create();
+	private static int execute(ServerCommandSource serverCommandSource, int i) throws CommandSyntaxException {
+		if (serverCommandSource.getMinecraftServer().isRemote()) {
+			throw ALREADY_PUBLISHED_EXCEPTION.create(serverCommandSource.getMinecraftServer().getServerPort());
+		} else if (!serverCommandSource.getMinecraftServer().openToLan(serverCommandSource.getMinecraftServer().getDefaultGameMode(), false, i)) {
+			throw FAILED_EXCEPTION.create();
 		} else {
-			arg.method_17459(new TranslatableText("commands.publish.success", i), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.publish.success", i), true);
 			return i;
 		}
 	}

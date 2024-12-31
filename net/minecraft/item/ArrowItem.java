@@ -1,8 +1,8 @@
 package net.minecraft.item;
 
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.world.World;
 
 public class ArrowItem extends Item {
@@ -10,7 +10,7 @@ public class ArrowItem extends Item {
 		super(settings);
 	}
 
-	public AbstractArrowEntity method_11358(World world, ItemStack itemStack, LivingEntity livingEntity) {
+	public ProjectileEntity createArrow(World world, ItemStack itemStack, LivingEntity livingEntity) {
 		ArrowEntity arrowEntity = new ArrowEntity(world, livingEntity);
 		arrowEntity.initFromStack(itemStack);
 		return arrowEntity;

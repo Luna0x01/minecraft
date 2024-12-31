@@ -1,109 +1,85 @@
 package net.minecraft.village;
 
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityLocations;
-import net.minecraft.entity.MobSpawnerHelper;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.biome.Biome;
 
 public class ZombieSiegeManager {
-	private final World world;
 	private boolean spawned;
-	private int field_3684 = -1;
-	private int field_3685;
-	private int field_3686;
-	private Village village;
-	private int field_3688;
-	private int field_3689;
-	private int field_3690;
+	private ZombieSiegeManager.State state = ZombieSiegeManager.State.field_18482;
+	private int remaining;
+	private int countdown;
+	private int startX;
+	private int startY;
+	private int startZ;
 
-	public ZombieSiegeManager(World world) {
-		this.world = world;
-	}
-
-	public void method_2835() {
-		if (this.world.isDay()) {
-			this.field_3684 = 0;
-		} else if (this.field_3684 != 2) {
-			if (this.field_3684 == 0) {
-				float f = this.world.method_16349(0.0F);
-				if ((double)f < 0.5 || (double)f > 0.501) {
-					return;
-				}
-
-				this.field_3684 = this.world.random.nextInt(10) == 0 ? 1 : 2;
-				this.spawned = false;
-				if (this.field_3684 == 2) {
-					return;
-				}
+	public int tick(ServerWorld serverWorld, boolean bl, boolean bl2) {
+		if (!serverWorld.isDaylight() && bl) {
+			float f = serverWorld.getSkyAngle(0.0F);
+			if ((double)f == 0.5) {
+				this.state = serverWorld.random.nextInt(10) == 0 ? ZombieSiegeManager.State.field_18481 : ZombieSiegeManager.State.field_18482;
 			}
 
-			if (this.field_3684 != -1) {
+			if (this.state == ZombieSiegeManager.State.field_18482) {
+				return 0;
+			} else {
 				if (!this.spawned) {
-					if (!this.method_2837()) {
-						return;
+					if (!this.spawn(serverWorld)) {
+						return 0;
 					}
 
 					this.spawned = true;
 				}
 
-				if (this.field_3686 > 0) {
-					this.field_3686--;
+				if (this.countdown > 0) {
+					this.countdown--;
+					return 0;
 				} else {
-					this.field_3686 = 2;
-					if (this.field_3685 > 0) {
-						this.method_2838();
-						this.field_3685--;
+					this.countdown = 2;
+					if (this.remaining > 0) {
+						this.trySpawnZombie(serverWorld);
+						this.remaining--;
 					} else {
-						this.field_3684 = 2;
+						this.state = ZombieSiegeManager.State.field_18482;
 					}
+
+					return 1;
 				}
 			}
+		} else {
+			this.state = ZombieSiegeManager.State.field_18482;
+			this.spawned = false;
+			return 0;
 		}
 	}
 
-	private boolean method_2837() {
-		for (PlayerEntity playerEntity : this.world.playerEntities) {
+	private boolean spawn(ServerWorld serverWorld) {
+		for (PlayerEntity playerEntity : serverWorld.getPlayers()) {
 			if (!playerEntity.isSpectator()) {
-				this.village = this.world.getVillageState().method_11062(new BlockPos(playerEntity), 1);
-				if (this.village != null && this.village.getDoorsAmount() >= 10 && this.village.method_2824() >= 20 && this.village.getPopulationSize() >= 20) {
-					BlockPos blockPos = this.village.getMinPos();
-					float f = (float)this.village.getRadius();
-					boolean bl = false;
-
+				BlockPos blockPos = playerEntity.getBlockPos();
+				if (serverWorld.isNearOccupiedPointOfInterest(blockPos) && serverWorld.getBiome(blockPos).getCategory() != Biome.Category.field_9365) {
 					for (int i = 0; i < 10; i++) {
-						float g = this.world.random.nextFloat() * (float) (Math.PI * 2);
-						this.field_3688 = blockPos.getX() + (int)((double)(MathHelper.cos(g) * f) * 0.9);
-						this.field_3689 = blockPos.getY();
-						this.field_3690 = blockPos.getZ() + (int)((double)(MathHelper.sin(g) * f) * 0.9);
-						bl = false;
-
-						for (Village village : this.world.getVillageState().method_2843()) {
-							if (village != this.village && village.method_11052(new BlockPos(this.field_3688, this.field_3689, this.field_3690))) {
-								bl = true;
-								break;
-							}
-						}
-
-						if (!bl) {
+						float f = serverWorld.random.nextFloat() * (float) (Math.PI * 2);
+						this.startX = blockPos.getX() + MathHelper.floor(MathHelper.cos(f) * 32.0F);
+						this.startY = blockPos.getY();
+						this.startZ = blockPos.getZ() + MathHelper.floor(MathHelper.sin(f) * 32.0F);
+						if (this.getSpawnVector(serverWorld, new BlockPos(this.startX, this.startY, this.startZ)) != null) {
+							this.countdown = 0;
+							this.remaining = 20;
 							break;
 						}
 					}
 
-					if (bl) {
-						return false;
-					}
-
-					Vec3d vec3d = this.method_11059(new BlockPos(this.field_3688, this.field_3689, this.field_3690));
-					if (vec3d != null) {
-						this.field_3686 = 0;
-						this.field_3685 = 20;
-						return true;
-					}
+					return true;
 				}
 			}
 		}
@@ -111,37 +87,42 @@ public class ZombieSiegeManager {
 		return false;
 	}
 
-	private boolean method_2838() {
-		Vec3d vec3d = this.method_11059(new BlockPos(this.field_3688, this.field_3689, this.field_3690));
-		if (vec3d == null) {
-			return false;
-		} else {
+	private void trySpawnZombie(ServerWorld serverWorld) {
+		Vec3d vec3d = this.getSpawnVector(serverWorld, new BlockPos(this.startX, this.startY, this.startZ));
+		if (vec3d != null) {
 			ZombieEntity zombieEntity;
 			try {
-				zombieEntity = new ZombieEntity(this.world);
-				zombieEntity.initialize(this.world.method_8482(new BlockPos(zombieEntity)), null, null);
-			} catch (Exception var4) {
-				var4.printStackTrace();
-				return false;
+				zombieEntity = new ZombieEntity(serverWorld);
+				zombieEntity.initialize(serverWorld, serverWorld.getLocalDifficulty(new BlockPos(zombieEntity)), SpawnType.field_16467, null, null);
+			} catch (Exception var5) {
+				var5.printStackTrace();
+				return;
 			}
 
-			zombieEntity.refreshPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, this.world.random.nextFloat() * 360.0F, 0.0F);
-			this.world.method_3686(zombieEntity);
-			BlockPos blockPos = this.village.getMinPos();
-			zombieEntity.setPositionTarget(blockPos, this.village.getRadius());
-			return true;
+			zombieEntity.setPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, serverWorld.random.nextFloat() * 360.0F, 0.0F);
+			serverWorld.spawnEntity(zombieEntity);
 		}
 	}
 
 	@Nullable
-	private Vec3d method_11059(BlockPos pos) {
+	private Vec3d getSpawnVector(ServerWorld serverWorld, BlockPos blockPos) {
 		for (int i = 0; i < 10; i++) {
-			BlockPos blockPos = pos.add(this.world.random.nextInt(16) - 8, this.world.random.nextInt(6) - 3, this.world.random.nextInt(16) - 8);
-			if (this.village.method_11052(blockPos) && MobSpawnerHelper.method_16404(EntityLocations.class_3464.ON_GROUND, this.world, blockPos, null)) {
-				return new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+			int j = blockPos.getX() + serverWorld.random.nextInt(16) - 8;
+			int k = blockPos.getZ() + serverWorld.random.nextInt(16) - 8;
+			int l = serverWorld.getTop(Heightmap.Type.field_13202, j, k);
+			BlockPos blockPos2 = new BlockPos(j, l, k);
+			if (serverWorld.isNearOccupiedPointOfInterest(blockPos2)
+				&& HostileEntity.method_20680(EntityType.field_6051, serverWorld, SpawnType.field_16467, blockPos2, serverWorld.random)) {
+				return new Vec3d((double)blockPos2.getX() + 0.5, (double)blockPos2.getY(), (double)blockPos2.getZ() + 0.5);
 			}
 		}
 
 		return null;
+	}
+
+	static enum State {
+		field_18480,
+		field_18481,
+		field_18482;
 	}
 }

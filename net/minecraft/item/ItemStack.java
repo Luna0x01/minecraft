@@ -14,42 +14,43 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import net.minecraft.class_3462;
-import net.minecraft.class_4220;
-import net.minecraft.class_4238;
-import net.minecraft.class_4488;
-import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.client.TooltipContext;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.command.arguments.BlockArgumentParser;
+import net.minecraft.command.arguments.BlockPredicateArgumentType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.enchantment.UnbreakingEnchantment;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.AttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
 import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.RegistryTagManager;
 import net.minecraft.tag.Tag;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -67,15 +68,15 @@ public final class ItemStack {
 	public static final ItemStack EMPTY = new ItemStack((Item)null);
 	public static final DecimalFormat MODIFIER_FORMAT = createModifierFormat();
 	private int count;
-	private int pickupTick;
+	private int cooldown;
 	@Deprecated
 	private final Item item;
-	private NbtCompound nbt;
+	private CompoundTag tag;
 	private boolean empty;
-	private ItemFrameEntity itemFrame;
-	private CachedBlockPosition field_17202;
+	private ItemFrameEntity frame;
+	private CachedBlockPosition lastDestroyPos;
 	private boolean lastDestroyResult;
-	private CachedBlockPosition field_17203;
+	private CachedBlockPosition lastPlaceOnPos;
 	private boolean lastPlaceOnResult;
 
 	private static DecimalFormat createModifierFormat() {
@@ -84,42 +85,41 @@ public final class ItemStack {
 		return decimalFormat;
 	}
 
-	public ItemStack(Itemable itemable) {
-		this(itemable, 1);
+	public ItemStack(ItemConvertible itemConvertible) {
+		this(itemConvertible, 1);
 	}
 
-	public ItemStack(Itemable itemable, int i) {
-		this.item = itemable == null ? null : itemable.getItem();
+	public ItemStack(ItemConvertible itemConvertible, int i) {
+		this.item = itemConvertible == null ? null : itemConvertible.asItem();
 		this.count = i;
-		this.updateStackStatus();
+		this.updateEmptyState();
 	}
 
-	private void updateStackStatus() {
+	private void updateEmptyState() {
 		this.empty = false;
 		this.empty = this.isEmpty();
 	}
 
-	private ItemStack(NbtCompound nbtCompound) {
-		Item item = Registry.ITEM.getByIdentifier(new Identifier(nbtCompound.getString("id")));
-		this.item = item == null ? Items.AIR : item;
-		this.count = nbtCompound.getByte("Count");
-		if (nbtCompound.contains("tag", 10)) {
-			this.nbt = nbtCompound.getCompound("tag");
-			this.getItem().postProcessNbt(nbtCompound);
+	private ItemStack(CompoundTag compoundTag) {
+		this.item = Registry.ITEM.get(new Identifier(compoundTag.getString("id")));
+		this.count = compoundTag.getByte("Count");
+		if (compoundTag.containsKey("tag", 10)) {
+			this.tag = compoundTag.getCompound("tag");
+			this.getItem().postProcessTag(compoundTag);
 		}
 
 		if (this.getItem().isDamageable()) {
 			this.setDamage(this.getDamage());
 		}
 
-		this.updateStackStatus();
+		this.updateEmptyState();
 	}
 
-	public static ItemStack from(NbtCompound nbt) {
+	public static ItemStack fromTag(CompoundTag compoundTag) {
 		try {
-			return new ItemStack(nbt);
+			return new ItemStack(compoundTag);
 		} catch (RuntimeException var2) {
-			LOGGER.debug("Tried to load invalid item: {}", nbt, var2);
+			LOGGER.debug("Tried to load invalid item: {}", compoundTag, var2);
 			return EMPTY;
 		}
 	}
@@ -132,11 +132,11 @@ public final class ItemStack {
 		}
 	}
 
-	public ItemStack split(int amount) {
-		int i = Math.min(amount, this.count);
+	public ItemStack split(int i) {
+		int j = Math.min(i, this.count);
 		ItemStack itemStack = this.copy();
-		itemStack.setCount(i);
-		this.decrement(i);
+		itemStack.setCount(j);
+		this.decrement(j);
 		return itemStack;
 	}
 
@@ -144,44 +144,44 @@ public final class ItemStack {
 		return this.empty ? Items.AIR : this.item;
 	}
 
-	public ActionResult method_16097(ItemUsageContext itemUsageContext) {
+	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
 		PlayerEntity playerEntity = itemUsageContext.getPlayer();
 		BlockPos blockPos = itemUsageContext.getBlockPos();
 		CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(itemUsageContext.getWorld(), blockPos, false);
-		if (playerEntity != null && !playerEntity.abilities.allowModifyWorld && !this.method_16106(itemUsageContext.getWorld().method_16314(), cachedBlockPosition)) {
-			return ActionResult.PASS;
+		if (playerEntity != null && !playerEntity.abilities.allowModifyWorld && !this.canPlaceOn(itemUsageContext.getWorld().getTagManager(), cachedBlockPosition)) {
+			return ActionResult.field_5811;
 		} else {
 			Item item = this.getItem();
 			ActionResult actionResult = item.useOnBlock(itemUsageContext);
-			if (playerEntity != null && actionResult == ActionResult.SUCCESS) {
-				playerEntity.method_15932(Stats.USED.method_21429(item));
+			if (playerEntity != null && actionResult == ActionResult.field_5812) {
+				playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(item));
 			}
 
 			return actionResult;
 		}
 	}
 
-	public float getBlockBreakingSpeed(BlockState state) {
-		return this.getItem().getBlockBreakingSpeed(this, state);
+	public float getMiningSpeed(BlockState blockState) {
+		return this.getItem().getMiningSpeed(this, blockState);
 	}
 
-	public TypedActionResult<ItemStack> method_11390(World world, PlayerEntity player, Hand hand) {
-		return this.getItem().method_13649(world, player, hand);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		return this.getItem().use(world, playerEntity, hand);
 	}
 
-	public ItemStack method_11388(World world, LivingEntity entity) {
-		return this.getItem().method_3367(this, world, entity);
+	public ItemStack finishUsing(World world, LivingEntity livingEntity) {
+		return this.getItem().finishUsing(this, world, livingEntity);
 	}
 
-	public NbtCompound toNbt(NbtCompound nbt) {
+	public CompoundTag toTag(CompoundTag compoundTag) {
 		Identifier identifier = Registry.ITEM.getId(this.getItem());
-		nbt.putString("id", identifier == null ? "minecraft:air" : identifier.toString());
-		nbt.putByte("Count", (byte)this.count);
-		if (this.nbt != null) {
-			nbt.put("tag", this.nbt);
+		compoundTag.putString("id", identifier == null ? "minecraft:air" : identifier.toString());
+		compoundTag.putByte("Count", (byte)this.count);
+		if (this.tag != null) {
+			compoundTag.put("tag", this.tag);
 		}
 
-		return nbt;
+		return compoundTag;
 	}
 
 	public int getMaxCount() {
@@ -194,8 +194,8 @@ public final class ItemStack {
 
 	public boolean isDamageable() {
 		if (!this.empty && this.getItem().getMaxDamage() > 0) {
-			NbtCompound nbtCompound = this.getNbt();
-			return nbtCompound == null || !nbtCompound.getBoolean("Unbreakable");
+			CompoundTag compoundTag = this.getTag();
+			return compoundTag == null || !compoundTag.getBoolean("Unbreakable");
 		} else {
 			return false;
 		}
@@ -206,56 +206,56 @@ public final class ItemStack {
 	}
 
 	public int getDamage() {
-		return this.nbt == null ? 0 : this.nbt.getInt("Damage");
+		return this.tag == null ? 0 : this.tag.getInt("Damage");
 	}
 
-	public void setDamage(int damage) {
-		this.getOrCreateNbt().putInt("Damage", Math.max(0, damage));
+	public void setDamage(int i) {
+		this.getOrCreateTag().putInt("Damage", Math.max(0, i));
 	}
 
 	public int getMaxDamage() {
 		return this.getItem().getMaxDamage();
 	}
 
-	public boolean damage(int amount, Random rand, @Nullable ServerPlayerEntity player) {
+	public boolean damage(int i, Random random, @Nullable ServerPlayerEntity serverPlayerEntity) {
 		if (!this.isDamageable()) {
 			return false;
 		} else {
-			if (amount > 0) {
-				int i = EnchantmentHelper.getLevel(Enchantments.UNBREAKING, this);
-				int j = 0;
+			if (i > 0) {
+				int j = EnchantmentHelper.getLevel(Enchantments.field_9119, this);
+				int k = 0;
 
-				for (int k = 0; i > 0 && k < amount; k++) {
-					if (UnbreakingEnchantment.shouldPreventDamage(this, i, rand)) {
-						j++;
+				for (int l = 0; j > 0 && l < i; l++) {
+					if (UnbreakingEnchantment.shouldPreventDamage(this, j, random)) {
+						k++;
 					}
 				}
 
-				amount -= j;
-				if (amount <= 0) {
+				i -= k;
+				if (i <= 0) {
 					return false;
 				}
 			}
 
-			if (player != null && amount != 0) {
-				AchievementsAndCriterions.field_16347.method_14284(player, this, this.getDamage() + amount);
+			if (serverPlayerEntity != null && i != 0) {
+				Criterions.ITEM_DURABILITY_CHANGED.handle(serverPlayerEntity, this, this.getDamage() + i);
 			}
 
-			int l = this.getDamage() + amount;
-			this.setDamage(l);
-			return l >= this.getMaxDamage();
+			int m = this.getDamage() + i;
+			this.setDamage(m);
+			return m >= this.getMaxDamage();
 		}
 	}
 
-	public void damage(int amount, LivingEntity entity) {
-		if (!(entity instanceof PlayerEntity) || !((PlayerEntity)entity).abilities.creativeMode) {
+	public <T extends LivingEntity> void damage(int i, T livingEntity, Consumer<T> consumer) {
+		if (!livingEntity.world.isClient && (!(livingEntity instanceof PlayerEntity) || !((PlayerEntity)livingEntity).abilities.creativeMode)) {
 			if (this.isDamageable()) {
-				if (this.damage(amount, entity.getRandom(), entity instanceof ServerPlayerEntity ? (ServerPlayerEntity)entity : null)) {
-					entity.method_6111(this);
+				if (this.damage(i, livingEntity.getRand(), livingEntity instanceof ServerPlayerEntity ? (ServerPlayerEntity)livingEntity : null)) {
+					consumer.accept(livingEntity);
 					Item item = this.getItem();
 					this.decrement(1);
-					if (entity instanceof PlayerEntity) {
-						((PlayerEntity)entity).method_15932(Stats.BROKEN.method_21429(item));
+					if (livingEntity instanceof PlayerEntity) {
+						((PlayerEntity)livingEntity).incrementStat(Stats.field_15383.getOrCreateStat(item));
 					}
 
 					this.setDamage(0);
@@ -264,88 +264,88 @@ public final class ItemStack {
 		}
 	}
 
-	public void onEntityHit(LivingEntity entity, PlayerEntity attacker) {
+	public void postHit(LivingEntity livingEntity, PlayerEntity playerEntity) {
 		Item item = this.getItem();
-		if (item.onEntityHit(this, entity, attacker)) {
-			attacker.method_15932(Stats.USED.method_21429(item));
+		if (item.postHit(this, livingEntity, playerEntity)) {
+			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(item));
 		}
 	}
 
-	public void method_11306(World world, BlockState blockState, BlockPos blockPos, PlayerEntity playerEntity) {
+	public void postMine(World world, BlockState blockState, BlockPos blockPos, PlayerEntity playerEntity) {
 		Item item = this.getItem();
-		if (item.method_3356(this, world, blockState, blockPos, playerEntity)) {
-			playerEntity.method_15932(Stats.USED.method_21429(item));
+		if (item.postMine(this, world, blockState, blockPos, playerEntity)) {
+			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(item));
 		}
 	}
 
-	public boolean method_11396(BlockState state) {
-		return this.getItem().method_3346(state);
+	public boolean isEffectiveOn(BlockState blockState) {
+		return this.getItem().isEffectiveOn(blockState);
 	}
 
-	public boolean method_6329(PlayerEntity player, LivingEntity entity, Hand hand) {
-		return this.getItem().method_3353(this, player, entity, hand);
+	public boolean useOnEntity(PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
+		return this.getItem().useOnEntity(this, playerEntity, livingEntity, hand);
 	}
 
 	public ItemStack copy() {
 		ItemStack itemStack = new ItemStack(this.getItem(), this.count);
-		itemStack.setPickupTick(this.getPickupTick());
-		if (this.nbt != null) {
-			itemStack.nbt = this.nbt.copy();
+		itemStack.setCooldown(this.getCooldown());
+		if (this.tag != null) {
+			itemStack.tag = this.tag.method_10553();
 		}
 
 		return itemStack;
 	}
 
-	public static boolean equalsIgnoreDamage(ItemStack left, ItemStack right) {
-		if (left.isEmpty() && right.isEmpty()) {
+	public static boolean areTagsEqual(ItemStack itemStack, ItemStack itemStack2) {
+		if (itemStack.isEmpty() && itemStack2.isEmpty()) {
 			return true;
-		} else if (left.isEmpty() || right.isEmpty()) {
+		} else if (itemStack.isEmpty() || itemStack2.isEmpty()) {
 			return false;
 		} else {
-			return left.nbt == null && right.nbt != null ? false : left.nbt == null || left.nbt.equals(right.nbt);
+			return itemStack.tag == null && itemStack2.tag != null ? false : itemStack.tag == null || itemStack.tag.equals(itemStack2.tag);
 		}
 	}
 
-	public static boolean equalsAll(ItemStack left, ItemStack right) {
-		if (left.isEmpty() && right.isEmpty()) {
+	public static boolean areEqualIgnoreDamage(ItemStack itemStack, ItemStack itemStack2) {
+		if (itemStack.isEmpty() && itemStack2.isEmpty()) {
 			return true;
 		} else {
-			return !left.isEmpty() && !right.isEmpty() ? left.equalsAll(right) : false;
+			return !itemStack.isEmpty() && !itemStack2.isEmpty() ? itemStack.isEqualIgnoreDamage(itemStack2) : false;
 		}
 	}
 
-	private boolean equalsAll(ItemStack stack) {
-		if (this.count != stack.count) {
+	private boolean isEqualIgnoreDamage(ItemStack itemStack) {
+		if (this.count != itemStack.count) {
 			return false;
-		} else if (this.getItem() != stack.getItem()) {
+		} else if (this.getItem() != itemStack.getItem()) {
 			return false;
 		} else {
-			return this.nbt == null && stack.nbt != null ? false : this.nbt == null || this.nbt.equals(stack.nbt);
+			return this.tag == null && itemStack.tag != null ? false : this.tag == null || this.tag.equals(itemStack.tag);
 		}
 	}
 
-	public static boolean equalsIgnoreNbt(ItemStack left, ItemStack right) {
-		if (left == right) {
+	public static boolean areItemsEqualIgnoreDamage(ItemStack itemStack, ItemStack itemStack2) {
+		if (itemStack == itemStack2) {
 			return true;
 		} else {
-			return !left.isEmpty() && !right.isEmpty() ? left.equalsIgnoreNbt(right) : false;
+			return !itemStack.isEmpty() && !itemStack2.isEmpty() ? itemStack.isItemEqualIgnoreDamage(itemStack2) : false;
 		}
 	}
 
-	public static boolean equals(ItemStack stack0, ItemStack stack1) {
-		if (stack0 == stack1) {
+	public static boolean areItemsEqual(ItemStack itemStack, ItemStack itemStack2) {
+		if (itemStack == itemStack2) {
 			return true;
 		} else {
-			return !stack0.isEmpty() && !stack1.isEmpty() ? stack0.equals(stack1) : false;
+			return !itemStack.isEmpty() && !itemStack2.isEmpty() ? itemStack.isItemEqual(itemStack2) : false;
 		}
 	}
 
-	public boolean equalsIgnoreNbt(ItemStack stack) {
-		return !stack.isEmpty() && this.getItem() == stack.getItem();
+	public boolean isItemEqualIgnoreDamage(ItemStack itemStack) {
+		return !itemStack.isEmpty() && this.getItem() == itemStack.getItem();
 	}
 
-	public boolean equals(ItemStack other) {
-		return !this.isDamageable() ? this.equalsIgnoreNbt(other) : !other.isEmpty() && this.getItem() == other.getItem();
+	public boolean isItemEqual(ItemStack itemStack) {
+		return !this.isDamageable() ? this.isItemEqualIgnoreDamage(itemStack) : !itemStack.isEmpty() && this.getItem() == itemStack.getItem();
 	}
 
 	public String getTranslationKey() {
@@ -353,22 +353,22 @@ public final class ItemStack {
 	}
 
 	public String toString() {
-		return this.count + "x" + this.getItem().getTranslationKey();
+		return this.count + " " + this.getItem();
 	}
 
-	public void inventoryTick(World world, Entity entity, int slot, boolean selected) {
-		if (this.pickupTick > 0) {
-			this.pickupTick--;
+	public void inventoryTick(World world, Entity entity, int i, boolean bl) {
+		if (this.cooldown > 0) {
+			this.cooldown--;
 		}
 
 		if (this.getItem() != null) {
-			this.getItem().inventoryTick(this, world, entity, slot, selected);
+			this.getItem().inventoryTick(this, world, entity, i, bl);
 		}
 	}
 
-	public void onCraft(World world, PlayerEntity player, int amount) {
-		player.method_15930(Stats.CRAFTED.method_21429(this.getItem()), amount);
-		this.getItem().onCraft(this, world, player);
+	public void onCraft(World world, PlayerEntity playerEntity, int i) {
+		playerEntity.increaseStat(Stats.field_15370.getOrCreateStat(this.getItem()), i);
+		this.getItem().onCraft(this, world, playerEntity);
 	}
 
 	public int getMaxUseTime() {
@@ -379,184 +379,190 @@ public final class ItemStack {
 		return this.getItem().getUseAction(this);
 	}
 
-	public void method_11389(World world, LivingEntity livingEntity, int i) {
-		this.getItem().method_3359(this, world, livingEntity, i);
+	public void onStoppedUsing(World world, LivingEntity livingEntity, int i) {
+		this.getItem().onStoppedUsing(this, world, livingEntity, i);
 	}
 
-	public boolean hasNbt() {
-		return !this.empty && this.nbt != null && !this.nbt.isEmpty();
+	public boolean isUsedOnRelease() {
+		return this.getItem().isUsedOnRelease(this);
+	}
+
+	public boolean hasTag() {
+		return !this.empty && this.tag != null && !this.tag.isEmpty();
 	}
 
 	@Nullable
-	public NbtCompound getNbt() {
-		return this.nbt;
+	public CompoundTag getTag() {
+		return this.tag;
 	}
 
-	public NbtCompound getOrCreateNbt() {
-		if (this.nbt == null) {
-			this.setNbt(new NbtCompound());
+	public CompoundTag getOrCreateTag() {
+		if (this.tag == null) {
+			this.setTag(new CompoundTag());
 		}
 
-		return this.nbt;
+		return this.tag;
 	}
 
-	public NbtCompound getOrCreateNbtCompound(String key) {
-		if (this.nbt != null && this.nbt.contains(key, 10)) {
-			return this.nbt.getCompound(key);
+	public CompoundTag getOrCreateSubTag(String string) {
+		if (this.tag != null && this.tag.containsKey(string, 10)) {
+			return this.tag.getCompound(string);
 		} else {
-			NbtCompound nbtCompound = new NbtCompound();
-			this.addNbt(key, nbtCompound);
-			return nbtCompound;
+			CompoundTag compoundTag = new CompoundTag();
+			this.putSubTag(string, compoundTag);
+			return compoundTag;
 		}
 	}
 
 	@Nullable
-	public NbtCompound getNbtCompound(String key) {
-		return this.nbt != null && this.nbt.contains(key, 10) ? this.nbt.getCompound(key) : null;
+	public CompoundTag getSubTag(String string) {
+		return this.tag != null && this.tag.containsKey(string, 10) ? this.tag.getCompound(string) : null;
 	}
 
-	public void removeNbt(String key) {
-		if (this.nbt != null && this.nbt.contains(key)) {
-			this.nbt.remove(key);
-			if (this.nbt.isEmpty()) {
-				this.nbt = null;
+	public void removeSubTag(String string) {
+		if (this.tag != null && this.tag.containsKey(string)) {
+			this.tag.remove(string);
+			if (this.tag.isEmpty()) {
+				this.tag = null;
 			}
 		}
 	}
 
-	public NbtList getEnchantments() {
-		return this.nbt != null ? this.nbt.getList("Enchantments", 10) : new NbtList();
+	public ListTag getEnchantments() {
+		return this.tag != null ? this.tag.getList("Enchantments", 10) : new ListTag();
 	}
 
-	public void setNbt(@Nullable NbtCompound nbt) {
-		this.nbt = nbt;
+	public void setTag(@Nullable CompoundTag compoundTag) {
+		this.tag = compoundTag;
 	}
 
 	public Text getName() {
-		NbtCompound nbtCompound = this.getNbtCompound("display");
-		if (nbtCompound != null && nbtCompound.contains("Name", 8)) {
+		CompoundTag compoundTag = this.getSubTag("display");
+		if (compoundTag != null && compoundTag.containsKey("Name", 8)) {
 			try {
-				Text text = Text.Serializer.deserializeText(nbtCompound.getString("Name"));
+				Text text = Text.Serializer.fromJson(compoundTag.getString("Name"));
 				if (text != null) {
 					return text;
 				}
 
-				nbtCompound.remove("Name");
+				compoundTag.remove("Name");
 			} catch (JsonParseException var3) {
-				nbtCompound.remove("Name");
+				compoundTag.remove("Name");
 			}
 		}
 
-		return this.getItem().getDisplayName(this);
+		return this.getItem().getName(this);
 	}
 
-	public ItemStack setCustomName(@Nullable Text name) {
-		NbtCompound nbtCompound = this.getOrCreateNbtCompound("display");
-		if (name != null) {
-			nbtCompound.putString("Name", Text.Serializer.serialize(name));
+	public ItemStack setCustomName(@Nullable Text text) {
+		CompoundTag compoundTag = this.getOrCreateSubTag("display");
+		if (text != null) {
+			compoundTag.putString("Name", Text.Serializer.toJson(text));
 		} else {
-			nbtCompound.remove("Name");
+			compoundTag.remove("Name");
 		}
 
 		return this;
 	}
 
 	public void removeCustomName() {
-		NbtCompound nbtCompound = this.getNbtCompound("display");
-		if (nbtCompound != null) {
-			nbtCompound.remove("Name");
-			if (nbtCompound.isEmpty()) {
-				this.removeNbt("display");
+		CompoundTag compoundTag = this.getSubTag("display");
+		if (compoundTag != null) {
+			compoundTag.remove("Name");
+			if (compoundTag.isEmpty()) {
+				this.removeSubTag("display");
 			}
 		}
 
-		if (this.nbt != null && this.nbt.isEmpty()) {
-			this.nbt = null;
+		if (this.tag != null && this.tag.isEmpty()) {
+			this.tag = null;
 		}
 	}
 
 	public boolean hasCustomName() {
-		NbtCompound nbtCompound = this.getNbtCompound("display");
-		return nbtCompound != null && nbtCompound.contains("Name", 8);
+		CompoundTag compoundTag = this.getSubTag("display");
+		return compoundTag != null && compoundTag.containsKey("Name", 8);
 	}
 
-	public List<Text> getTooltip(@Nullable PlayerEntity player, TooltipContext context) {
+	public List<Text> getTooltip(@Nullable PlayerEntity playerEntity, TooltipContext tooltipContext) {
 		List<Text> list = Lists.newArrayList();
 		Text text = new LiteralText("").append(this.getName()).formatted(this.getRarity().formatting);
 		if (this.hasCustomName()) {
-			text.formatted(Formatting.ITALIC);
+			text.formatted(Formatting.field_1056);
 		}
 
 		list.add(text);
-		if (!context.isAdvanced() && !this.hasCustomName() && this.getItem() == Items.FILLED_MAP) {
-			list.add(new LiteralText("#" + FilledMapItem.method_16117(this)).formatted(Formatting.GRAY));
+		if (!tooltipContext.isAdvanced() && !this.hasCustomName() && this.getItem() == Items.field_8204) {
+			list.add(new LiteralText("#" + FilledMapItem.getMapId(this)).formatted(Formatting.field_1080));
 		}
 
 		int i = 0;
-		if (this.hasNbt() && this.nbt.contains("HideFlags", 99)) {
-			i = this.nbt.getInt("HideFlags");
+		if (this.hasTag() && this.tag.containsKey("HideFlags", 99)) {
+			i = this.tag.getInt("HideFlags");
 		}
 
 		if ((i & 32) == 0) {
-			this.getItem().appendTooltips(this, player == null ? null : player.world, list, context);
+			this.getItem().appendTooltip(this, playerEntity == null ? null : playerEntity.world, list, tooltipContext);
 		}
 
-		if (this.hasNbt()) {
+		if (this.hasTag()) {
 			if ((i & 1) == 0) {
-				NbtList nbtList = this.getEnchantments();
-
-				for (int j = 0; j < nbtList.size(); j++) {
-					NbtCompound nbtCompound = nbtList.getCompound(j);
-					Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(Identifier.fromString(nbtCompound.getString("id")));
-					if (enchantment != null) {
-						list.add(enchantment.method_16257(nbtCompound.getInt("lvl")));
-					}
-				}
+				appendEnchantments(list, this.getEnchantments());
 			}
 
-			if (this.nbt.contains("display", 10)) {
-				NbtCompound nbtCompound2 = this.nbt.getCompound("display");
-				if (nbtCompound2.contains("color", 3)) {
-					if (context.isAdvanced()) {
-						list.add(new TranslatableText("item.color", String.format("#%06X", nbtCompound2.getInt("color"))).formatted(Formatting.GRAY));
+			if (this.tag.containsKey("display", 10)) {
+				CompoundTag compoundTag = this.tag.getCompound("display");
+				if (compoundTag.containsKey("color", 3)) {
+					if (tooltipContext.isAdvanced()) {
+						list.add(new TranslatableText("item.color", String.format("#%06X", compoundTag.getInt("color"))).formatted(Formatting.field_1080));
 					} else {
-						list.add(new TranslatableText("item.dyed").formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}));
+						list.add(new TranslatableText("item.dyed").formatted(new Formatting[]{Formatting.field_1080, Formatting.field_1056}));
 					}
 				}
 
-				if (nbtCompound2.getType("Lore") == 9) {
-					NbtList nbtList2 = nbtCompound2.getList("Lore", 8);
+				if (compoundTag.getType("Lore") == 9) {
+					ListTag listTag = compoundTag.getList("Lore", 8);
 
-					for (int k = 0; k < nbtList2.size(); k++) {
-						list.add(new LiteralText(nbtList2.getString(k)).formatted(new Formatting[]{Formatting.DARK_PURPLE, Formatting.ITALIC}));
+					for (int j = 0; j < listTag.size(); j++) {
+						String string = listTag.getString(j);
+
+						try {
+							Text text2 = Text.Serializer.fromJson(string);
+							if (text2 != null) {
+								list.add(Texts.setStyleIfAbsent(text2, new Style().setColor(Formatting.field_1064).setItalic(true)));
+							}
+						} catch (JsonParseException var19) {
+							compoundTag.remove("Lore");
+						}
 					}
 				}
 			}
 		}
 
 		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
-			Multimap<String, AttributeModifier> multimap = this.getAttributes(equipmentSlot);
+			Multimap<String, EntityAttributeModifier> multimap = this.getAttributeModifiers(equipmentSlot);
 			if (!multimap.isEmpty() && (i & 2) == 0) {
 				list.add(new LiteralText(""));
-				list.add(new TranslatableText("item.modifiers." + equipmentSlot.getName()).formatted(Formatting.GRAY));
+				list.add(new TranslatableText("item.modifiers." + equipmentSlot.getName()).formatted(Formatting.field_1080));
 
-				for (Entry<String, AttributeModifier> entry : multimap.entries()) {
-					AttributeModifier attributeModifier = (AttributeModifier)entry.getValue();
-					double d = attributeModifier.getAmount();
+				for (Entry<String, EntityAttributeModifier> entry : multimap.entries()) {
+					EntityAttributeModifier entityAttributeModifier = (EntityAttributeModifier)entry.getValue();
+					double d = entityAttributeModifier.getAmount();
 					boolean bl = false;
-					if (player != null) {
-						if (attributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
-							d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getBaseValue();
-							d += (double)EnchantmentHelper.method_16260(this, class_3462.field_16818);
+					if (playerEntity != null) {
+						if (entityAttributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
+							d += playerEntity.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).getBaseValue();
+							d += (double)EnchantmentHelper.getAttackDamage(this, EntityGroup.DEFAULT);
 							bl = true;
-						} else if (attributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER) {
-							d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_SPEED).getBaseValue();
+						} else if (entityAttributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER_UUID) {
+							d += playerEntity.getAttributeInstance(EntityAttributes.ATTACK_SPEED).getBaseValue();
 							bl = true;
 						}
 					}
 
 					double f;
-					if (attributeModifier.getOperation() != 1 && attributeModifier.getOperation() != 2) {
+					if (entityAttributeModifier.getOperation() != EntityAttributeModifier.Operation.field_6330
+						&& entityAttributeModifier.getOperation() != EntityAttributeModifier.Operation.field_6331) {
 						f = d;
 					} else {
 						f = d * 100.0;
@@ -567,103 +573,112 @@ public final class ItemStack {
 							new LiteralText(" ")
 								.append(
 									new TranslatableText(
-										"attribute.modifier.equals." + attributeModifier.getOperation(),
+										"attribute.modifier.equals." + entityAttributeModifier.getOperation().getId(),
 										MODIFIER_FORMAT.format(f),
 										new TranslatableText("attribute.name." + (String)entry.getKey())
 									)
 								)
-								.formatted(Formatting.DARK_GREEN)
+								.formatted(Formatting.field_1077)
 						);
 					} else if (d > 0.0) {
 						list.add(
 							new TranslatableText(
-									"attribute.modifier.plus." + attributeModifier.getOperation(),
+									"attribute.modifier.plus." + entityAttributeModifier.getOperation().getId(),
 									MODIFIER_FORMAT.format(f),
 									new TranslatableText("attribute.name." + (String)entry.getKey())
 								)
-								.formatted(Formatting.BLUE)
+								.formatted(Formatting.field_1078)
 						);
 					} else if (d < 0.0) {
 						f *= -1.0;
 						list.add(
 							new TranslatableText(
-									"attribute.modifier.take." + attributeModifier.getOperation(),
+									"attribute.modifier.take." + entityAttributeModifier.getOperation().getId(),
 									MODIFIER_FORMAT.format(f),
 									new TranslatableText("attribute.name." + (String)entry.getKey())
 								)
-								.formatted(Formatting.RED)
+								.formatted(Formatting.field_1061)
 						);
 					}
 				}
 			}
 		}
 
-		if (this.hasNbt() && this.getNbt().getBoolean("Unbreakable") && (i & 4) == 0) {
-			list.add(new TranslatableText("item.unbreakable").formatted(Formatting.BLUE));
+		if (this.hasTag() && this.getTag().getBoolean("Unbreakable") && (i & 4) == 0) {
+			list.add(new TranslatableText("item.unbreakable").formatted(Formatting.field_1078));
 		}
 
-		if (this.hasNbt() && this.nbt.contains("CanDestroy", 9) && (i & 8) == 0) {
-			NbtList nbtList3 = this.nbt.getList("CanDestroy", 8);
-			if (!nbtList3.isEmpty()) {
+		if (this.hasTag() && this.tag.containsKey("CanDestroy", 9) && (i & 8) == 0) {
+			ListTag listTag2 = this.tag.getList("CanDestroy", 8);
+			if (!listTag2.isEmpty()) {
 				list.add(new LiteralText(""));
-				list.add(new TranslatableText("item.canBreak").formatted(Formatting.GRAY));
+				list.add(new TranslatableText("item.canBreak").formatted(Formatting.field_1080));
 
-				for (int l = 0; l < nbtList3.size(); l++) {
-					list.addAll(method_16108(nbtList3.getString(l)));
+				for (int k = 0; k < listTag2.size(); k++) {
+					list.addAll(parseBlockTag(listTag2.getString(k)));
 				}
 			}
 		}
 
-		if (this.hasNbt() && this.nbt.contains("CanPlaceOn", 9) && (i & 16) == 0) {
-			NbtList nbtList4 = this.nbt.getList("CanPlaceOn", 8);
-			if (!nbtList4.isEmpty()) {
+		if (this.hasTag() && this.tag.containsKey("CanPlaceOn", 9) && (i & 16) == 0) {
+			ListTag listTag3 = this.tag.getList("CanPlaceOn", 8);
+			if (!listTag3.isEmpty()) {
 				list.add(new LiteralText(""));
-				list.add(new TranslatableText("item.canPlace").formatted(Formatting.GRAY));
+				list.add(new TranslatableText("item.canPlace").formatted(Formatting.field_1080));
 
-				for (int m = 0; m < nbtList4.size(); m++) {
-					list.addAll(method_16108(nbtList4.getString(m)));
+				for (int l = 0; l < listTag3.size(); l++) {
+					list.addAll(parseBlockTag(listTag3.getString(l)));
 				}
 			}
 		}
 
-		if (context.isAdvanced()) {
+		if (tooltipContext.isAdvanced()) {
 			if (this.isDamaged()) {
 				list.add(new TranslatableText("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
 			}
 
-			list.add(new LiteralText(Registry.ITEM.getId(this.getItem()).toString()).formatted(Formatting.DARK_GRAY));
-			if (this.hasNbt()) {
-				list.add(new TranslatableText("item.nbt_tags", this.getNbt().getKeys().size()).formatted(Formatting.DARK_GRAY));
+			list.add(new LiteralText(Registry.ITEM.getId(this.getItem()).toString()).formatted(Formatting.field_1063));
+			if (this.hasTag()) {
+				list.add(new TranslatableText("item.nbt_tags", this.getTag().getKeys().size()).formatted(Formatting.field_1063));
 			}
 		}
 
 		return list;
 	}
 
-	private static Collection<Text> method_16108(String string) {
+	public static void appendEnchantments(List<Text> list, ListTag listTag) {
+		for (int i = 0; i < listTag.size(); i++) {
+			CompoundTag compoundTag = listTag.getCompoundTag(i);
+			Registry.ENCHANTMENT
+				.getOrEmpty(Identifier.tryParse(compoundTag.getString("id")))
+				.ifPresent(enchantment -> list.add(enchantment.getName(compoundTag.getInt("lvl"))));
+		}
+	}
+
+	private static Collection<Text> parseBlockTag(String string) {
 		try {
-			class_4238 lv = new class_4238(new StringReader(string), true).method_19300(true);
-			BlockState blockState = lv.method_19301();
-			Identifier identifier = lv.method_19307();
+			BlockArgumentParser blockArgumentParser = new BlockArgumentParser(new StringReader(string), true).parse(true);
+			BlockState blockState = blockArgumentParser.getBlockState();
+			Identifier identifier = blockArgumentParser.getTagId();
 			boolean bl = blockState != null;
 			boolean bl2 = identifier != null;
 			if (bl || bl2) {
 				if (bl) {
-					return Lists.newArrayList(blockState.getBlock().method_16600().formatted(Formatting.DARK_GRAY));
+					return Lists.newArrayList(blockState.getBlock().getName().formatted(Formatting.field_1063));
 				}
 
-				Tag<Block> tag = BlockTags.getContainer().method_21486(identifier);
+				Tag<Block> tag = BlockTags.getContainer().get(identifier);
 				if (tag != null) {
 					Collection<Block> collection = tag.values();
 					if (!collection.isEmpty()) {
-						return (Collection<Text>)collection.stream().map(Block::method_16600).map(text -> text.formatted(Formatting.DARK_GRAY)).collect(Collectors.toList());
+						return (Collection<Text>)collection.stream().map(Block::getName).map(text -> text.formatted(Formatting.field_1063)).collect(Collectors.toList());
 					}
 				}
 			}
 		} catch (CommandSyntaxException var8) {
 		}
 
-		return Lists.newArrayList(new LiteralText("missingno").formatted(Formatting.DARK_GRAY));
+		return Lists.newArrayList(new LiteralText("missingno").formatted(Formatting.field_1063));
 	}
 
 	public boolean hasEnchantmentGlint() {
@@ -678,128 +693,128 @@ public final class ItemStack {
 		return !this.getItem().isEnchantable(this) ? false : !this.hasEnchantments();
 	}
 
-	public void addEnchantment(Enchantment enchantment, int level) {
-		this.getOrCreateNbt();
-		if (!this.nbt.contains("Enchantments", 9)) {
-			this.nbt.put("Enchantments", new NbtList());
+	public void addEnchantment(Enchantment enchantment, int i) {
+		this.getOrCreateTag();
+		if (!this.tag.containsKey("Enchantments", 9)) {
+			this.tag.put("Enchantments", new ListTag());
 		}
 
-		NbtList nbtList = this.nbt.getList("Enchantments", 10);
-		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putString("id", String.valueOf(Registry.ENCHANTMENT.getId(enchantment)));
-		nbtCompound.putShort("lvl", (short)((byte)level));
-		nbtList.add((NbtElement)nbtCompound);
+		ListTag listTag = this.tag.getList("Enchantments", 10);
+		CompoundTag compoundTag = new CompoundTag();
+		compoundTag.putString("id", String.valueOf(Registry.ENCHANTMENT.getId(enchantment)));
+		compoundTag.putShort("lvl", (short)((byte)i));
+		listTag.add(compoundTag);
 	}
 
 	public boolean hasEnchantments() {
-		return this.nbt != null && this.nbt.contains("Enchantments", 9) ? !this.nbt.getList("Enchantments", 10).isEmpty() : false;
+		return this.tag != null && this.tag.containsKey("Enchantments", 9) ? !this.tag.getList("Enchantments", 10).isEmpty() : false;
 	}
 
-	public void addNbt(String key, NbtElement value) {
-		this.getOrCreateNbt().put(key, value);
+	public void putSubTag(String string, net.minecraft.nbt.Tag tag) {
+		this.getOrCreateTag().put(string, tag);
 	}
 
-	public boolean isInItemFrame() {
-		return this.itemFrame != null;
+	public boolean isInFrame() {
+		return this.frame != null;
 	}
 
-	public void setInItemFrame(@Nullable ItemFrameEntity itemFrame) {
-		this.itemFrame = itemFrame;
+	public void setFrame(@Nullable ItemFrameEntity itemFrameEntity) {
+		this.frame = itemFrameEntity;
 	}
 
 	@Nullable
-	public ItemFrameEntity getItemFrame() {
-		return this.empty ? null : this.itemFrame;
+	public ItemFrameEntity getFrame() {
+		return this.empty ? null : this.frame;
 	}
 
 	public int getRepairCost() {
-		return this.hasNbt() && this.nbt.contains("RepairCost", 3) ? this.nbt.getInt("RepairCost") : 0;
+		return this.hasTag() && this.tag.containsKey("RepairCost", 3) ? this.tag.getInt("RepairCost") : 0;
 	}
 
-	public void setRepairCost(int cost) {
-		this.getOrCreateNbt().putInt("RepairCost", cost);
+	public void setRepairCost(int i) {
+		this.getOrCreateTag().putInt("RepairCost", i);
 	}
 
-	public Multimap<String, AttributeModifier> getAttributes(EquipmentSlot slot) {
-		Multimap<String, AttributeModifier> multimap;
-		if (this.hasNbt() && this.nbt.contains("AttributeModifiers", 9)) {
+	public Multimap<String, EntityAttributeModifier> getAttributeModifiers(EquipmentSlot equipmentSlot) {
+		Multimap<String, EntityAttributeModifier> multimap;
+		if (this.hasTag() && this.tag.containsKey("AttributeModifiers", 9)) {
 			multimap = HashMultimap.create();
-			NbtList nbtList = this.nbt.getList("AttributeModifiers", 10);
+			ListTag listTag = this.tag.getList("AttributeModifiers", 10);
 
-			for (int i = 0; i < nbtList.size(); i++) {
-				NbtCompound nbtCompound = nbtList.getCompound(i);
-				AttributeModifier attributeModifier = EntityAttributes.fromNbt(nbtCompound);
-				if (attributeModifier != null
-					&& (!nbtCompound.contains("Slot", 8) || nbtCompound.getString("Slot").equals(slot.getName()))
-					&& attributeModifier.getId().getLeastSignificantBits() != 0L
-					&& attributeModifier.getId().getMostSignificantBits() != 0L) {
-					multimap.put(nbtCompound.getString("AttributeName"), attributeModifier);
+			for (int i = 0; i < listTag.size(); i++) {
+				CompoundTag compoundTag = listTag.getCompoundTag(i);
+				EntityAttributeModifier entityAttributeModifier = EntityAttributes.createFromTag(compoundTag);
+				if (entityAttributeModifier != null
+					&& (!compoundTag.containsKey("Slot", 8) || compoundTag.getString("Slot").equals(equipmentSlot.getName()))
+					&& entityAttributeModifier.getId().getLeastSignificantBits() != 0L
+					&& entityAttributeModifier.getId().getMostSignificantBits() != 0L) {
+					multimap.put(compoundTag.getString("AttributeName"), entityAttributeModifier);
 				}
 			}
 		} else {
-			multimap = this.getItem().method_6326(slot);
+			multimap = this.getItem().getModifiers(equipmentSlot);
 		}
 
 		return multimap;
 	}
 
-	public void setAttribute(String attributeName, AttributeModifier modifier, @Nullable EquipmentSlot slot) {
-		this.getOrCreateNbt();
-		if (!this.nbt.contains("AttributeModifiers", 9)) {
-			this.nbt.put("AttributeModifiers", new NbtList());
+	public void addAttributeModifier(String string, EntityAttributeModifier entityAttributeModifier, @Nullable EquipmentSlot equipmentSlot) {
+		this.getOrCreateTag();
+		if (!this.tag.containsKey("AttributeModifiers", 9)) {
+			this.tag.put("AttributeModifiers", new ListTag());
 		}
 
-		NbtList nbtList = this.nbt.getList("AttributeModifiers", 10);
-		NbtCompound nbtCompound = EntityAttributes.toNbt(modifier);
-		nbtCompound.putString("AttributeName", attributeName);
-		if (slot != null) {
-			nbtCompound.putString("Slot", slot.getName());
+		ListTag listTag = this.tag.getList("AttributeModifiers", 10);
+		CompoundTag compoundTag = EntityAttributes.toTag(entityAttributeModifier);
+		compoundTag.putString("AttributeName", string);
+		if (equipmentSlot != null) {
+			compoundTag.putString("Slot", equipmentSlot.getName());
 		}
 
-		nbtList.add((NbtElement)nbtCompound);
+		listTag.add(compoundTag);
 	}
 
 	public Text toHoverableText() {
 		Text text = new LiteralText("").append(this.getName());
 		if (this.hasCustomName()) {
-			text.formatted(Formatting.ITALIC);
+			text.formatted(Formatting.field_1056);
 		}
 
-		Text text2 = ChatSerializer.method_20188(text);
+		Text text2 = Texts.bracketed(text);
 		if (!this.empty) {
-			NbtCompound nbtCompound = this.toNbt(new NbtCompound());
+			CompoundTag compoundTag = this.toTag(new CompoundTag());
 			text2.formatted(this.getRarity().formatting)
-				.styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new LiteralText(nbtCompound.toString()))));
+				.styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.field_11757, new LiteralText(compoundTag.toString()))));
 		}
 
 		return text2;
 	}
 
-	private static boolean method_16098(CachedBlockPosition cachedBlockPosition, @Nullable CachedBlockPosition cachedBlockPosition2) {
+	private static boolean areBlocksEqual(CachedBlockPosition cachedBlockPosition, @Nullable CachedBlockPosition cachedBlockPosition2) {
 		if (cachedBlockPosition2 == null || cachedBlockPosition.getBlockState() != cachedBlockPosition2.getBlockState()) {
 			return false;
 		} else if (cachedBlockPosition.getBlockEntity() == null && cachedBlockPosition2.getBlockEntity() == null) {
 			return true;
 		} else {
 			return cachedBlockPosition.getBlockEntity() != null && cachedBlockPosition2.getBlockEntity() != null
-				? Objects.equals(cachedBlockPosition.getBlockEntity().toNbt(new NbtCompound()), cachedBlockPosition2.getBlockEntity().toNbt(new NbtCompound()))
+				? Objects.equals(cachedBlockPosition.getBlockEntity().toTag(new CompoundTag()), cachedBlockPosition2.getBlockEntity().toTag(new CompoundTag()))
 				: false;
 		}
 	}
 
-	public boolean method_16103(class_4488 arg, CachedBlockPosition cachedBlockPosition) {
-		if (method_16098(cachedBlockPosition, this.field_17202)) {
+	public boolean canDestroy(RegistryTagManager registryTagManager, CachedBlockPosition cachedBlockPosition) {
+		if (areBlocksEqual(cachedBlockPosition, this.lastDestroyPos)) {
 			return this.lastDestroyResult;
 		} else {
-			this.field_17202 = cachedBlockPosition;
-			if (this.hasNbt() && this.nbt.contains("CanDestroy", 9)) {
-				NbtList nbtList = this.nbt.getList("CanDestroy", 8);
+			this.lastDestroyPos = cachedBlockPosition;
+			if (this.hasTag() && this.tag.containsKey("CanDestroy", 9)) {
+				ListTag listTag = this.tag.getList("CanDestroy", 8);
 
-				for (int i = 0; i < nbtList.size(); i++) {
-					String string = nbtList.getString(i);
+				for (int i = 0; i < listTag.size(); i++) {
+					String string = listTag.getString(i);
 
 					try {
-						Predicate<CachedBlockPosition> predicate = class_4220.method_19107().parse(new StringReader(string)).create(arg);
+						Predicate<CachedBlockPosition> predicate = BlockPredicateArgumentType.blockPredicate().method_9642(new StringReader(string)).create(registryTagManager);
 						if (predicate.test(cachedBlockPosition)) {
 							this.lastDestroyResult = true;
 							return true;
@@ -814,19 +829,19 @@ public final class ItemStack {
 		}
 	}
 
-	public boolean method_16106(class_4488 arg, CachedBlockPosition cachedBlockPosition) {
-		if (method_16098(cachedBlockPosition, this.field_17203)) {
+	public boolean canPlaceOn(RegistryTagManager registryTagManager, CachedBlockPosition cachedBlockPosition) {
+		if (areBlocksEqual(cachedBlockPosition, this.lastPlaceOnPos)) {
 			return this.lastPlaceOnResult;
 		} else {
-			this.field_17203 = cachedBlockPosition;
-			if (this.hasNbt() && this.nbt.contains("CanPlaceOn", 9)) {
-				NbtList nbtList = this.nbt.getList("CanPlaceOn", 8);
+			this.lastPlaceOnPos = cachedBlockPosition;
+			if (this.hasTag() && this.tag.containsKey("CanPlaceOn", 9)) {
+				ListTag listTag = this.tag.getList("CanPlaceOn", 8);
 
-				for (int i = 0; i < nbtList.size(); i++) {
-					String string = nbtList.getString(i);
+				for (int i = 0; i < listTag.size(); i++) {
+					String string = listTag.getString(i);
 
 					try {
-						Predicate<CachedBlockPosition> predicate = class_4220.method_19107().parse(new StringReader(string)).create(arg);
+						Predicate<CachedBlockPosition> predicate = BlockPredicateArgumentType.blockPredicate().method_9642(new StringReader(string)).create(registryTagManager);
 						if (predicate.test(cachedBlockPosition)) {
 							this.lastPlaceOnResult = true;
 							return true;
@@ -841,28 +856,36 @@ public final class ItemStack {
 		}
 	}
 
-	public int getPickupTick() {
-		return this.pickupTick;
+	public int getCooldown() {
+		return this.cooldown;
 	}
 
-	public void setPickupTick(int tick) {
-		this.pickupTick = tick;
+	public void setCooldown(int i) {
+		this.cooldown = i;
 	}
 
 	public int getCount() {
 		return this.empty ? 0 : this.count;
 	}
 
-	public void setCount(int count) {
-		this.count = count;
-		this.updateStackStatus();
+	public void setCount(int i) {
+		this.count = i;
+		this.updateEmptyState();
 	}
 
-	public void increment(int amount) {
-		this.setCount(this.count + amount);
+	public void increment(int i) {
+		this.setCount(this.count + i);
 	}
 
-	public void decrement(int amount) {
-		this.increment(-amount);
+	public void decrement(int i) {
+		this.increment(-i);
+	}
+
+	public void usageTick(World world, LivingEntity livingEntity, int i) {
+		this.getItem().usageTick(world, livingEntity, this, i);
+	}
+
+	public boolean isFood() {
+		return this.getItem().isFood();
 	}
 }

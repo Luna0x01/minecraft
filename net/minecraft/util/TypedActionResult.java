@@ -2,18 +2,18 @@ package net.minecraft.util;
 
 public class TypedActionResult<T> {
 	private final ActionResult result;
-	private final T object;
+	private final T value;
 
 	public TypedActionResult(ActionResult actionResult, T object) {
 		this.result = actionResult;
-		this.object = object;
+		this.value = object;
 	}
 
-	public ActionResult getActionResult() {
+	public ActionResult getResult() {
 		return this.result;
 	}
 
-	public T getObject() {
-		return this.object;
+	public T getValue() {
+		return this.value;
 	}
 }

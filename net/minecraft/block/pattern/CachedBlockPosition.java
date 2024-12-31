@@ -5,25 +5,25 @@ import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 
 public class CachedBlockPosition {
-	private final RenderBlockView field_18695;
+	private final ViewableWorld world;
 	private final BlockPos pos;
 	private final boolean forceLoad;
 	private BlockState state;
 	private BlockEntity blockEntity;
 	private boolean cachedEntity;
 
-	public CachedBlockPosition(RenderBlockView renderBlockView, BlockPos blockPos, boolean bl) {
-		this.field_18695 = renderBlockView;
-		this.pos = blockPos;
+	public CachedBlockPosition(ViewableWorld viewableWorld, BlockPos blockPos, boolean bl) {
+		this.world = viewableWorld;
+		this.pos = blockPos.toImmutable();
 		this.forceLoad = bl;
 	}
 
 	public BlockState getBlockState() {
-		if (this.state == null && (this.forceLoad || this.field_18695.method_16359(this.pos))) {
-			this.state = this.field_18695.getBlockState(this.pos);
+		if (this.state == null && (this.forceLoad || this.world.isBlockLoaded(this.pos))) {
+			this.state = this.world.getBlockState(this.pos);
 		}
 
 		return this.state;
@@ -32,22 +32,22 @@ public class CachedBlockPosition {
 	@Nullable
 	public BlockEntity getBlockEntity() {
 		if (this.blockEntity == null && !this.cachedEntity) {
-			this.blockEntity = this.field_18695.getBlockEntity(this.pos);
+			this.blockEntity = this.world.getBlockEntity(this.pos);
 			this.cachedEntity = true;
 		}
 
 		return this.blockEntity;
 	}
 
-	public RenderBlockView method_16937() {
-		return this.field_18695;
+	public ViewableWorld getWorld() {
+		return this.world;
 	}
 
-	public BlockPos getPos() {
+	public BlockPos getBlockPos() {
 		return this.pos;
 	}
 
-	public static Predicate<CachedBlockPosition> method_16935(Predicate<BlockState> predicate) {
+	public static Predicate<CachedBlockPosition> matchesBlockState(Predicate<BlockState> predicate) {
 		return cachedBlockPosition -> cachedBlockPosition != null && predicate.test(cachedBlockPosition.getBlockState());
 	}
 }

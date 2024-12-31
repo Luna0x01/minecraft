@@ -1,17 +1,16 @@
 package net.minecraft.realms;
 
-import net.minecraft.class_4122;
-import net.minecraft.client.gui.widget.DelegatingRealmsScrolledSelectionListWidget;
+import net.minecraft.client.gui.Element;
 
 public abstract class RealmsScrolledSelectionList extends RealmsGuiEventListener {
-	private final DelegatingRealmsScrolledSelectionListWidget proxy;
+	private final RealmsScrolledSelectionListProxy proxy;
 
 	public RealmsScrolledSelectionList(int i, int j, int k, int l, int m) {
-		this.proxy = new DelegatingRealmsScrolledSelectionListWidget(this, i, j, k, l, m);
+		this.proxy = new RealmsScrolledSelectionListProxy(this, i, j, k, l, m);
 	}
 
-	public void render(int mouseX, int mouseY, float delta) {
-		this.proxy.render(mouseX, mouseY, delta);
+	public void render(int i, int j, float f) {
+		this.proxy.render(i, j, f);
 	}
 
 	public int width() {
@@ -48,19 +47,19 @@ public abstract class RealmsScrolledSelectionList extends RealmsGuiEventListener
 		return this.proxy.getWidth() / 2 + 124;
 	}
 
-	public void scroll(int amount) {
-		this.proxy.scroll(amount);
+	public void scroll(int i) {
+		this.proxy.scroll(i);
 	}
 
 	public int getScroll() {
-		return this.proxy.getScrollAmount();
+		return this.proxy.getScroll();
 	}
 
 	protected void renderList(int i, int j, int k, int l) {
 	}
 
 	@Override
-	public class_4122 getProxy() {
+	public Element getProxy() {
 		return this.proxy;
 	}
 }

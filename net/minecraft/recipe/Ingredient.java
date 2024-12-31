@@ -17,10 +17,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
-import net.minecraft.class_3175;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Itemable;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
@@ -29,36 +28,36 @@ import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public final class Ingredient implements Predicate<ItemStack> {
-	private static final Predicate<? super Ingredient.class_3577> field_17439 = arg -> !arg.method_16198().stream().allMatch(ItemStack::isEmpty);
-	public static final Ingredient field_15680 = new Ingredient(Stream.empty());
-	private final Ingredient.class_3577[] field_17440;
-	private ItemStack[] field_15681;
-	private IntList field_15682;
+	private static final Predicate<? super Ingredient.Entry> NON_EMPTY = entry -> !entry.getStacks().stream().allMatch(ItemStack::isEmpty);
+	public static final Ingredient EMPTY = new Ingredient(Stream.empty());
+	private final Ingredient.Entry[] entries;
+	private ItemStack[] stackArray;
+	private IntList ids;
 
-	private Ingredient(Stream<? extends Ingredient.class_3577> stream) {
-		this.field_17440 = (Ingredient.class_3577[])stream.filter(field_17439).toArray(Ingredient.class_3577[]::new);
+	private Ingredient(Stream<? extends Ingredient.Entry> stream) {
+		this.entries = (Ingredient.Entry[])stream.filter(NON_EMPTY).toArray(Ingredient.Entry[]::new);
 	}
 
-	public ItemStack[] method_14244() {
-		this.method_16197();
-		return this.field_15681;
+	public ItemStack[] getStackArray() {
+		this.createStackArray();
+		return this.stackArray;
 	}
 
-	private void method_16197() {
-		if (this.field_15681 == null) {
-			this.field_15681 = (ItemStack[])Arrays.stream(this.field_17440).flatMap(arg -> arg.method_16198().stream()).distinct().toArray(ItemStack[]::new);
+	private void createStackArray() {
+		if (this.stackArray == null) {
+			this.stackArray = (ItemStack[])Arrays.stream(this.entries).flatMap(entry -> entry.getStacks().stream()).distinct().toArray(ItemStack[]::new);
 		}
 	}
 
-	public boolean test(@Nullable ItemStack itemStack) {
+	public boolean method_8093(@Nullable ItemStack itemStack) {
 		if (itemStack == null) {
 			return false;
-		} else if (this.field_17440.length == 0) {
+		} else if (this.entries.length == 0) {
 			return itemStack.isEmpty();
 		} else {
-			this.method_16197();
+			this.createStackArray();
 
-			for (ItemStack itemStack2 : this.field_15681) {
+			for (ItemStack itemStack2 : this.stackArray) {
 				if (itemStack2.getItem() == itemStack.getItem()) {
 					return true;
 				}
@@ -68,143 +67,145 @@ public final class Ingredient implements Predicate<ItemStack> {
 		}
 	}
 
-	public IntList method_14249() {
-		if (this.field_15682 == null) {
-			this.method_16197();
-			this.field_15682 = new IntArrayList(this.field_15681.length);
+	public IntList getIds() {
+		if (this.ids == null) {
+			this.createStackArray();
+			this.ids = new IntArrayList(this.stackArray.length);
 
-			for (ItemStack itemStack : this.field_15681) {
-				this.field_15682.add(class_3175.method_15944(itemStack));
+			for (ItemStack itemStack : this.stackArray) {
+				this.ids.add(RecipeFinder.getItemId(itemStack));
 			}
 
-			this.field_15682.sort(IntComparators.NATURAL_COMPARATOR);
+			this.ids.sort(IntComparators.NATURAL_COMPARATOR);
 		}
 
-		return this.field_15682;
+		return this.ids;
 	}
 
-	public void method_16185(PacketByteBuf packetByteBuf) {
-		this.method_16197();
-		packetByteBuf.writeVarInt(this.field_15681.length);
+	public void write(PacketByteBuf packetByteBuf) {
+		this.createStackArray();
+		packetByteBuf.writeVarInt(this.stackArray.length);
 
-		for (int i = 0; i < this.field_15681.length; i++) {
-			packetByteBuf.writeItemStack(this.field_15681[i]);
+		for (int i = 0; i < this.stackArray.length; i++) {
+			packetByteBuf.writeItemStack(this.stackArray[i]);
 		}
 	}
 
-	public JsonElement method_16194() {
-		if (this.field_17440.length == 1) {
-			return this.field_17440[0].method_16199();
+	public JsonElement toJson() {
+		if (this.entries.length == 1) {
+			return this.entries[0].toJson();
 		} else {
 			JsonArray jsonArray = new JsonArray();
 
-			for (Ingredient.class_3577 lv : this.field_17440) {
-				jsonArray.add(lv.method_16199());
+			for (Ingredient.Entry entry : this.entries) {
+				jsonArray.add(entry.toJson());
 			}
 
 			return jsonArray;
 		}
 	}
 
-	public boolean method_16196() {
-		return this.field_17440.length == 0 && (this.field_15681 == null || this.field_15681.length == 0) && (this.field_15682 == null || this.field_15682.isEmpty());
+	public boolean isEmpty() {
+		return this.entries.length == 0 && (this.stackArray == null || this.stackArray.length == 0) && (this.ids == null || this.ids.isEmpty());
 	}
 
-	private static Ingredient method_16186(Stream<? extends Ingredient.class_3577> stream) {
+	private static Ingredient ofEntries(Stream<? extends Ingredient.Entry> stream) {
 		Ingredient ingredient = new Ingredient(stream);
-		return ingredient.field_17440.length == 0 ? field_15680 : ingredient;
+		return ingredient.entries.length == 0 ? EMPTY : ingredient;
 	}
 
-	public static Ingredient ofItems(Itemable... itemables) {
-		return method_16186(Arrays.stream(itemables).map(itemable -> new Ingredient.class_3575(new ItemStack(itemable))));
+	public static Ingredient ofItems(ItemConvertible... itemConvertibles) {
+		return ofEntries(Arrays.stream(itemConvertibles).map(itemConvertible -> new Ingredient.StackEntry(new ItemStack(itemConvertible))));
 	}
 
-	public static Ingredient method_14248(ItemStack... stacks) {
-		return method_16186(Arrays.stream(stacks).map(itemStack -> new Ingredient.class_3575(itemStack)));
+	public static Ingredient ofStacks(ItemStack... itemStacks) {
+		return ofEntries(Arrays.stream(itemStacks).map(itemStack -> new Ingredient.StackEntry(itemStack)));
 	}
 
 	public static Ingredient fromTag(Tag<Item> tag) {
-		return method_16186(Stream.of(new Ingredient.class_3576(tag)));
+		return ofEntries(Stream.of(new Ingredient.TagEntry(tag)));
 	}
 
-	public static Ingredient method_16193(PacketByteBuf packetByteBuf) {
+	public static Ingredient fromPacket(PacketByteBuf packetByteBuf) {
 		int i = packetByteBuf.readVarInt();
-		return method_16186(Stream.generate(() -> new Ingredient.class_3575(packetByteBuf.readItemStack())).limit((long)i));
+		return ofEntries(Stream.generate(() -> new Ingredient.StackEntry(packetByteBuf.readItemStack())).limit((long)i));
 	}
 
-	public static Ingredient method_16183(@Nullable JsonElement jsonElement) {
+	public static Ingredient fromJson(@Nullable JsonElement jsonElement) {
 		if (jsonElement == null || jsonElement.isJsonNull()) {
 			throw new JsonSyntaxException("Item cannot be null");
 		} else if (jsonElement.isJsonObject()) {
-			return method_16186(Stream.of(method_16184(jsonElement.getAsJsonObject())));
+			return ofEntries(Stream.of(entryFromJson(jsonElement.getAsJsonObject())));
 		} else if (jsonElement.isJsonArray()) {
 			JsonArray jsonArray = jsonElement.getAsJsonArray();
 			if (jsonArray.size() == 0) {
 				throw new JsonSyntaxException("Item array cannot be empty, at least one item must be defined");
 			} else {
-				return method_16186(StreamSupport.stream(jsonArray.spliterator(), false).map(jsonElementx -> method_16184(JsonHelper.asObject(jsonElementx, "item"))));
+				return ofEntries(StreamSupport.stream(jsonArray.spliterator(), false).map(jsonElementx -> entryFromJson(JsonHelper.asObject(jsonElementx, "item"))));
 			}
 		} else {
 			throw new JsonSyntaxException("Expected item to be object or array of objects");
 		}
 	}
 
-	public static Ingredient.class_3577 method_16184(JsonObject jsonObject) {
+	public static Ingredient.Entry entryFromJson(JsonObject jsonObject) {
 		if (jsonObject.has("item") && jsonObject.has("tag")) {
 			throw new JsonParseException("An ingredient entry is either a tag or an item, not both");
 		} else if (jsonObject.has("item")) {
 			Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "item"));
-			Item item = Registry.ITEM.getByIdentifier(identifier);
-			if (item == null) {
-				throw new JsonSyntaxException("Unknown item '" + identifier + "'");
-			} else {
-				return new Ingredient.class_3575(new ItemStack(item));
-			}
+			Item item = (Item)Registry.ITEM.getOrEmpty(identifier).orElseThrow(() -> new JsonSyntaxException("Unknown item '" + identifier + "'"));
+			return new Ingredient.StackEntry(new ItemStack(item));
 		} else if (jsonObject.has("tag")) {
 			Identifier identifier2 = new Identifier(JsonHelper.getString(jsonObject, "tag"));
-			Tag<Item> tag = ItemTags.method_21451().method_21486(identifier2);
+			Tag<Item> tag = ItemTags.getContainer().get(identifier2);
 			if (tag == null) {
 				throw new JsonSyntaxException("Unknown item tag '" + identifier2 + "'");
 			} else {
-				return new Ingredient.class_3576(tag);
+				return new Ingredient.TagEntry(tag);
 			}
 		} else {
 			throw new JsonParseException("An ingredient entry needs either a tag or an item");
 		}
 	}
 
-	static class class_3575 implements Ingredient.class_3577 {
-		private final ItemStack field_17441;
+	interface Entry {
+		Collection<ItemStack> getStacks();
 
-		private class_3575(ItemStack itemStack) {
-			this.field_17441 = itemStack;
+		JsonObject toJson();
+	}
+
+	static class StackEntry implements Ingredient.Entry {
+		private final ItemStack stack;
+
+		private StackEntry(ItemStack itemStack) {
+			this.stack = itemStack;
 		}
 
 		@Override
-		public Collection<ItemStack> method_16198() {
-			return Collections.singleton(this.field_17441);
+		public Collection<ItemStack> getStacks() {
+			return Collections.singleton(this.stack);
 		}
 
 		@Override
-		public JsonObject method_16199() {
+		public JsonObject toJson() {
 			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("item", Registry.ITEM.getId(this.field_17441.getItem()).toString());
+			jsonObject.addProperty("item", Registry.ITEM.getId(this.stack.getItem()).toString());
 			return jsonObject;
 		}
 	}
 
-	static class class_3576 implements Ingredient.class_3577 {
-		private final Tag<Item> field_17442;
+	static class TagEntry implements Ingredient.Entry {
+		private final Tag<Item> tag;
 
-		private class_3576(Tag<Item> tag) {
-			this.field_17442 = tag;
+		private TagEntry(Tag<Item> tag) {
+			this.tag = tag;
 		}
 
 		@Override
-		public Collection<ItemStack> method_16198() {
+		public Collection<ItemStack> getStacks() {
 			List<ItemStack> list = Lists.newArrayList();
 
-			for (Item item : this.field_17442.values()) {
+			for (Item item : this.tag.values()) {
 				list.add(new ItemStack(item));
 			}
 
@@ -212,16 +213,10 @@ public final class Ingredient implements Predicate<ItemStack> {
 		}
 
 		@Override
-		public JsonObject method_16199() {
+		public JsonObject toJson() {
 			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("tag", this.field_17442.getId().toString());
+			jsonObject.addProperty("tag", this.tag.getId().toString());
 			return jsonObject;
 		}
-	}
-
-	interface class_3577 {
-		Collection<ItemStack> method_16198();
-
-		JsonObject method_16199();
 	}
 }

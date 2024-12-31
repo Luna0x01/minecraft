@@ -2,13 +2,17 @@ package net.minecraft.client.texture;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import net.minecraft.class_4276;
-import net.minecraft.client.ClientTickable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.Identifier;
@@ -16,51 +20,52 @@ import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.profiler.Profiler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TextureManager implements ClientTickable, ResourceReloadListener {
+public class TextureManager implements TextureTickListener, ResourceReloadListener {
 	private static final Logger LOGGER = LogManager.getLogger();
-	public static final Identifier field_16165 = new Identifier("");
+	public static final Identifier MISSING_IDENTIFIER = new Identifier("");
 	private final Map<Identifier, Texture> textures = Maps.newHashMap();
-	private final List<ClientTickable> tickables = Lists.newArrayList();
-	private final Map<String, Integer> dynamicIdCounter = Maps.newHashMap();
-	private final ResourceManager resourceManager;
+	private final List<TextureTickListener> tickListeners = Lists.newArrayList();
+	private final Map<String, Integer> dynamicIdCounters = Maps.newHashMap();
+	private final ResourceManager resourceContainer;
 
 	public TextureManager(ResourceManager resourceManager) {
-		this.resourceManager = resourceManager;
+		this.resourceContainer = resourceManager;
 	}
 
-	public void bindTexture(Identifier id) {
-		Texture texture = (Texture)this.textures.get(id);
+	public void bindTexture(Identifier identifier) {
+		Texture texture = (Texture)this.textures.get(identifier);
 		if (texture == null) {
-			texture = new ResourceTexture(id);
-			this.loadTexture(id, texture);
+			texture = new ResourceTexture(identifier);
+			this.registerTexture(identifier, texture);
 		}
 
-		texture.method_19530();
+		texture.bindTexture();
 	}
 
-	public boolean loadTickableTexture(Identifier identifier, TickableTexture texture) {
-		if (this.loadTexture(identifier, texture)) {
-			this.tickables.add(texture);
+	public boolean registerTextureUpdateable(Identifier identifier, TickableTexture tickableTexture) {
+		if (this.registerTexture(identifier, tickableTexture)) {
+			this.tickListeners.add(tickableTexture);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public boolean loadTexture(Identifier identifier, Texture texture) {
+	public boolean registerTexture(Identifier identifier, Texture texture) {
 		boolean bl = true;
 
 		try {
-			texture.load(this.resourceManager);
+			texture.load(this.resourceContainer);
 		} catch (IOException var8) {
-			if (identifier != field_16165) {
+			if (identifier != MISSING_IDENTIFIER) {
 				LOGGER.warn("Failed to load texture: {}", identifier, var8);
 			}
 
-			texture = class_4276.method_19456();
+			texture = MissingSprite.getMissingSpriteTexture();
 			this.textures.put(identifier, texture);
 			bl = false;
 		} catch (Throwable var9) {
@@ -75,52 +80,73 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 		return bl;
 	}
 
-	public Texture getTexture(Identifier id) {
-		return (Texture)this.textures.get(id);
+	public Texture getTexture(Identifier identifier) {
+		return (Texture)this.textures.get(identifier);
 	}
 
-	public Identifier registerDynamicTexture(String prefix, NativeImageBackedTexture texture) {
-		Integer integer = (Integer)this.dynamicIdCounter.get(prefix);
+	public Identifier registerDynamicTexture(String string, NativeImageBackedTexture nativeImageBackedTexture) {
+		Integer integer = (Integer)this.dynamicIdCounters.get(string);
 		if (integer == null) {
 			integer = 1;
 		} else {
 			integer = integer + 1;
 		}
 
-		this.dynamicIdCounter.put(prefix, integer);
-		Identifier identifier = new Identifier(String.format("dynamic/%s_%d", prefix, integer));
-		this.loadTexture(identifier, texture);
+		this.dynamicIdCounters.put(string, integer);
+		Identifier identifier = new Identifier(String.format("dynamic/%s_%d", string, integer));
+		this.registerTexture(identifier, nativeImageBackedTexture);
 		return identifier;
+	}
+
+	public CompletableFuture<Void> loadTextureAsync(Identifier identifier, Executor executor) {
+		if (!this.textures.containsKey(identifier)) {
+			AsyncTexture asyncTexture = new AsyncTexture(this.resourceContainer, identifier, executor);
+			this.textures.put(identifier, asyncTexture);
+			return asyncTexture.getLoadCompleteFuture().thenRunAsync(() -> this.registerTexture(identifier, asyncTexture), MinecraftClient.getInstance());
+		} else {
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 
 	@Override
 	public void tick() {
-		for (ClientTickable clientTickable : this.tickables) {
-			clientTickable.tick();
+		for (TextureTickListener textureTickListener : this.tickListeners) {
+			textureTickListener.tick();
 		}
 	}
 
-	public void close(Identifier id) {
-		Texture texture = this.getTexture(id);
+	public void destroyTexture(Identifier identifier) {
+		Texture texture = this.getTexture(identifier);
 		if (texture != null) {
-			TextureUtil.deleteTexture(texture.getGlId());
+			TextureUtil.releaseTextureId(texture.getGlId());
 		}
 	}
 
 	@Override
-	public void reload(ResourceManager resourceManager) {
-		class_4276.method_19456();
-		Iterator<Entry<Identifier, Texture>> iterator = this.textures.entrySet().iterator();
+	public CompletableFuture<Void> reload(
+		ResourceReloadListener.Synchronizer synchronizer,
+		ResourceManager resourceManager,
+		Profiler profiler,
+		Profiler profiler2,
+		Executor executor,
+		Executor executor2
+	) {
+		return CompletableFuture.allOf(TitleScreen.loadTexturesAsync(this, executor), this.loadTextureAsync(AbstractButtonWidget.WIDGETS_LOCATION, executor))
+			.thenCompose(synchronizer::whenPrepared)
+			.thenAcceptAsync(void_ -> {
+				MissingSprite.getMissingSpriteTexture();
+				Iterator<Entry<Identifier, Texture>> iterator = this.textures.entrySet().iterator();
 
-		while (iterator.hasNext()) {
-			Entry<Identifier, Texture> entry = (Entry<Identifier, Texture>)iterator.next();
-			Identifier identifier = (Identifier)entry.getKey();
-			Texture texture = (Texture)entry.getValue();
-			if (texture == class_4276.method_19456() && !identifier.equals(class_4276.method_19455())) {
-				iterator.remove();
-			} else {
-				this.loadTexture((Identifier)entry.getKey(), texture);
-			}
-		}
+				while (iterator.hasNext()) {
+					Entry<Identifier, Texture> entry = (Entry<Identifier, Texture>)iterator.next();
+					Identifier identifier = (Identifier)entry.getKey();
+					Texture texture = (Texture)entry.getValue();
+					if (texture == MissingSprite.getMissingSpriteTexture() && !identifier.equals(MissingSprite.getMissingSpriteId())) {
+						iterator.remove();
+					} else {
+						texture.registerTexture(this, resourceManager, identifier, executor2);
+					}
+				}
+			}, executor2);
 	}
 }

@@ -1,13 +1,13 @@
 package net.minecraft.network.listener;
 
-import net.minecraft.class_4396;
-import net.minecraft.network.packet.c2s.login.LoginHelloC2SPacket;
-import net.minecraft.network.packet.c2s.login.LoginKeyC2SPacket;
+import net.minecraft.server.network.packet.LoginHelloC2SPacket;
+import net.minecraft.server.network.packet.LoginKeyC2SPacket;
+import net.minecraft.server.network.packet.LoginQueryResponseC2SPacket;
 
 public interface ServerLoginPacketListener extends PacketListener {
-	void onHello(LoginHelloC2SPacket packet);
+	void onHello(LoginHelloC2SPacket loginHelloC2SPacket);
 
-	void onKey(LoginKeyC2SPacket packet);
+	void onKey(LoginKeyC2SPacket loginKeyC2SPacket);
 
-	void method_20392(class_4396 arg);
+	void onQueryResponse(LoginQueryResponseC2SPacket loginQueryResponseC2SPacket);
 }

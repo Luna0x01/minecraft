@@ -2,39 +2,34 @@ package net.minecraft.client.gl;
 
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GLX;
+import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.InputStream;
 import java.util.Map;
-import net.minecraft.client.texture.TextureUtil;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.lwjgl.system.MemoryUtil;
 
 public class GlShader {
-	private final GlShader.Type type;
+	private final GlShader.Type shaderType;
 	private final String name;
 	private final int shaderRef;
 	private int refCount;
 
 	private GlShader(GlShader.Type type, int i, String string) {
-		this.type = type;
+		this.shaderType = type;
 		this.shaderRef = i;
 		this.name = string;
 	}
 
-	public void attachShader(JsonGlProgram program) {
+	public void attachTo(GlProgram glProgram) {
 		this.refCount++;
-		GLX.gl20GetAttachShader(program.getProgramRef(), this.shaderRef);
+		GLX.glAttachShader(glProgram.getProgramRef(), this.shaderRef);
 	}
 
-	public void method_19444() {
+	public void release() {
 		this.refCount--;
 		if (this.refCount <= 0) {
-			GLX.gl20DeleteShader(this.shaderRef);
-			this.type.getLoadedShaders().remove(this.name);
+			GLX.glDeleteShader(this.shaderRef);
+			this.shaderType.getLoadedShaders().remove(this.name);
 		}
 	}
 
@@ -42,44 +37,28 @@ public class GlShader {
 		return this.name;
 	}
 
-	public static GlShader createShader(ResourceManager manager, GlShader.Type type, String name) throws IOException {
-		GlShader glShader = (GlShader)type.getLoadedShaders().get(name);
-		if (glShader == null) {
-			Identifier identifier = new Identifier("shaders/program/" + name + type.getFileExtension());
-			Resource resource = manager.getResource(identifier);
-			ByteBuffer byteBuffer = null;
-
-			try {
-				byteBuffer = TextureUtil.method_19533(resource.getInputStream());
-				int i = byteBuffer.position();
-				byteBuffer.rewind();
-				int j = GLX.gl20CreateShader(type.getGlType());
-				String string = MemoryUtil.memASCII(byteBuffer, i);
-				GLX.method_19687(j, string);
-				GLX.gl20CompileShader(j);
-				if (GLX.gl20GetShaderi(j, GLX.compileStatus) == 0) {
-					String string2 = StringUtils.trim(GLX.gl20GetShaderInfoLog(j, 32768));
-					ShaderParseException shaderParseException = new ShaderParseException("Couldn't compile " + type.getName() + " program: " + string2);
-					shaderParseException.addFaultyFile(identifier.getPath());
-					throw shaderParseException;
-				}
-
-				glShader = new GlShader(type, j, name);
-				type.getLoadedShaders().put(name, glShader);
-			} finally {
-				IOUtils.closeQuietly(resource);
-				if (byteBuffer != null) {
-					MemoryUtil.memFree(byteBuffer);
-				}
+	public static GlShader createFromResource(GlShader.Type type, String string, InputStream inputStream) throws IOException {
+		String string2 = TextureUtil.readResourceAsString(inputStream);
+		if (string2 == null) {
+			throw new IOException("Could not load program " + type.getName());
+		} else {
+			int i = GLX.glCreateShader(type.getGlType());
+			GLX.glShaderSource(i, string2);
+			GLX.glCompileShader(i);
+			if (GLX.glGetShaderi(i, GLX.GL_COMPILE_STATUS) == 0) {
+				String string3 = StringUtils.trim(GLX.glGetShaderInfoLog(i, 32768));
+				throw new IOException("Couldn't compile " + type.getName() + " program: " + string3);
+			} else {
+				GlShader glShader = new GlShader(type, i, string);
+				type.getLoadedShaders().put(string, glShader);
+				return glShader;
 			}
 		}
-
-		return glShader;
 	}
 
 	public static enum Type {
-		VERTEX("vertex", ".vsh", GLX.vertexShader),
-		FRAGMENT("fragment", ".fsh", GLX.fragmentShader);
+		VERTEX("vertex", ".vsh", GLX.GL_VERTEX_SHADER),
+		FRAGMENT("fragment", ".fsh", GLX.GL_FRAGMENT_SHADER);
 
 		private final String name;
 		private final String fileExtension;
@@ -96,7 +75,7 @@ public class GlShader {
 			return this.name;
 		}
 
-		private String getFileExtension() {
+		public String getFileExtension() {
 			return this.fileExtension;
 		}
 
@@ -104,7 +83,7 @@ public class GlShader {
 			return this.glType;
 		}
 
-		private Map<String, GlShader> getLoadedShaders() {
+		public Map<String, GlShader> getLoadedShaders() {
 			return this.loadedShaders;
 		}
 	}

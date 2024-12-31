@@ -4,14 +4,14 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.text.Text;
 
 public class CommandException extends RuntimeException {
-	private final Text field_19221;
+	private final Text message;
 
 	public CommandException(Text text) {
-		super(text.computeValue(), null, CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES, CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES);
-		this.field_19221 = text;
+		super(text.asString(), null, CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES, CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES);
+		this.message = text;
 	}
 
-	public Text method_17390() {
-		return this.field_19221;
+	public Text getMessageText() {
+		return this.message;
 	}
 }

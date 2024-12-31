@@ -1,78 +1,75 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.class_3809;
-import net.minecraft.class_4040;
-import net.minecraft.class_4046;
-import net.minecraft.class_4055;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.gen.chunk.OverworldChunkGeneratorConfig;
 import net.minecraft.world.level.LevelGeneratorType;
 
-public class SetBaseBiomesLayer implements class_4055 {
-	private static final int field_19582 = Registry.BIOME.getRawId(Biomes.BIRCH_FOREST);
-	private static final int field_19583 = Registry.BIOME.getRawId(Biomes.DESERT);
-	private static final int field_19584 = Registry.BIOME.getRawId(Biomes.EXTREME_HILLS);
-	private static final int field_19585 = Registry.BIOME.getRawId(Biomes.FOREST);
-	private static final int field_19586 = Registry.BIOME.getRawId(Biomes.ICE_FLATS);
-	private static final int field_19587 = Registry.BIOME.getRawId(Biomes.JUNGLE);
-	private static final int field_19588 = Registry.BIOME.getRawId(Biomes.BADLANDS_PLATEAU);
-	private static final int field_19589 = Registry.BIOME.getRawId(Biomes.WOODED_BADLANDS_PLATEAU);
-	private static final int field_19590 = Registry.BIOME.getRawId(Biomes.MUSHROOM_ISLAND);
-	private static final int field_19591 = Registry.BIOME.getRawId(Biomes.PLAINS);
-	private static final int field_19592 = Registry.BIOME.getRawId(Biomes.GIANT_TREE_TAIGA);
-	private static final int field_19593 = Registry.BIOME.getRawId(Biomes.ROOFED_FOREST);
-	private static final int field_19594 = Registry.BIOME.getRawId(Biomes.SAVANNA);
-	private static final int field_19595 = Registry.BIOME.getRawId(Biomes.SWAMP);
-	private static final int field_19596 = Registry.BIOME.getRawId(Biomes.TAIGA);
-	private static final int field_19597 = Registry.BIOME.getRawId(Biomes.TAIGA_COLD);
-	private static final int[] field_19598 = new int[]{field_19583, field_19585, field_19584, field_19595, field_19591, field_19596};
-	private static final int[] field_19599 = new int[]{field_19583, field_19583, field_19583, field_19594, field_19594, field_19591};
-	private static final int[] field_19600 = new int[]{field_19585, field_19593, field_19584, field_19591, field_19582, field_19595};
-	private static final int[] field_19601 = new int[]{field_19585, field_19584, field_19596, field_19591};
-	private static final int[] field_19602 = new int[]{field_19586, field_19586, field_19586, field_19597};
-	private final class_3809 field_10232;
-	private int[] field_19603 = field_19599;
+public class SetBaseBiomesLayer implements IdentitySamplingLayer {
+	private static final int BIRCH_FOREST_ID = Registry.BIOME.getRawId(Biomes.field_9412);
+	private static final int DESERT_ID = Registry.BIOME.getRawId(Biomes.field_9424);
+	private static final int MOUNTAINS_ID = Registry.BIOME.getRawId(Biomes.field_9472);
+	private static final int FOREST_ID = Registry.BIOME.getRawId(Biomes.field_9409);
+	private static final int SNOWY_TUNDRA_ID = Registry.BIOME.getRawId(Biomes.field_9452);
+	private static final int JUNGLE_ID = Registry.BIOME.getRawId(Biomes.field_9417);
+	private static final int BADLANDS_PLATEAU_ID = Registry.BIOME.getRawId(Biomes.field_9433);
+	private static final int WOODED_BADLANDS_PLATEAU_ID = Registry.BIOME.getRawId(Biomes.field_9410);
+	private static final int MUSHROOM_FIELDS_ID = Registry.BIOME.getRawId(Biomes.field_9462);
+	private static final int PLAINS_ID = Registry.BIOME.getRawId(Biomes.field_9451);
+	private static final int GIANT_TREE_TAIGA_ID = Registry.BIOME.getRawId(Biomes.field_9477);
+	private static final int DARK_FOREST_ID = Registry.BIOME.getRawId(Biomes.field_9475);
+	private static final int SAVANNA_ID = Registry.BIOME.getRawId(Biomes.field_9449);
+	private static final int SWAMP_ID = Registry.BIOME.getRawId(Biomes.field_9471);
+	private static final int TAIGA_ID = Registry.BIOME.getRawId(Biomes.field_9420);
+	private static final int SNOWY_TAIGA_ID = Registry.BIOME.getRawId(Biomes.field_9454);
+	private static final int[] OLD_GROUP_1 = new int[]{DESERT_ID, FOREST_ID, MOUNTAINS_ID, SWAMP_ID, PLAINS_ID, TAIGA_ID};
+	private static final int[] DRY_BIOMES = new int[]{DESERT_ID, DESERT_ID, DESERT_ID, SAVANNA_ID, SAVANNA_ID, PLAINS_ID};
+	private static final int[] TEMPERATE_BIOMES = new int[]{FOREST_ID, DARK_FOREST_ID, MOUNTAINS_ID, PLAINS_ID, BIRCH_FOREST_ID, SWAMP_ID};
+	private static final int[] COOL_BIOMES = new int[]{FOREST_ID, MOUNTAINS_ID, TAIGA_ID, PLAINS_ID};
+	private static final int[] SNOWY_BIOMES = new int[]{SNOWY_TUNDRA_ID, SNOWY_TUNDRA_ID, SNOWY_TUNDRA_ID, SNOWY_TAIGA_ID};
+	private final OverworldChunkGeneratorConfig config;
+	private int[] chosenGroup1 = DRY_BIOMES;
 
-	public SetBaseBiomesLayer(LevelGeneratorType levelGeneratorType, class_3809 arg) {
+	public SetBaseBiomesLayer(LevelGeneratorType levelGeneratorType, OverworldChunkGeneratorConfig overworldChunkGeneratorConfig) {
 		if (levelGeneratorType == LevelGeneratorType.DEFAULT_1_1) {
-			this.field_19603 = field_19598;
-			this.field_10232 = null;
+			this.chosenGroup1 = OLD_GROUP_1;
+			this.config = null;
 		} else {
-			this.field_10232 = arg;
+			this.config = overworldChunkGeneratorConfig;
 		}
 	}
 
 	@Override
-	public int method_17890(class_4040 arg, int i) {
-		if (this.field_10232 != null && this.field_10232.method_17270() >= 0) {
-			return this.field_10232.method_17270();
+	public int sample(LayerRandomnessSource layerRandomnessSource, int i) {
+		if (this.config != null && this.config.getForcedBiome() >= 0) {
+			return this.config.getForcedBiome();
 		} else {
 			int j = (i & 3840) >> 8;
 			i &= -3841;
-			if (!class_4046.method_17857(i) && i != field_19590) {
+			if (!BiomeLayers.isOcean(i) && i != MUSHROOM_FIELDS_ID) {
 				switch (i) {
 					case 1:
 						if (j > 0) {
-							return arg.method_17850(3) == 0 ? field_19588 : field_19589;
+							return layerRandomnessSource.nextInt(3) == 0 ? BADLANDS_PLATEAU_ID : WOODED_BADLANDS_PLATEAU_ID;
 						}
 
-						return this.field_19603[arg.method_17850(this.field_19603.length)];
+						return this.chosenGroup1[layerRandomnessSource.nextInt(this.chosenGroup1.length)];
 					case 2:
 						if (j > 0) {
-							return field_19587;
+							return JUNGLE_ID;
 						}
 
-						return field_19600[arg.method_17850(field_19600.length)];
+						return TEMPERATE_BIOMES[layerRandomnessSource.nextInt(TEMPERATE_BIOMES.length)];
 					case 3:
 						if (j > 0) {
-							return field_19592;
+							return GIANT_TREE_TAIGA_ID;
 						}
 
-						return field_19601[arg.method_17850(field_19601.length)];
+						return COOL_BIOMES[layerRandomnessSource.nextInt(COOL_BIOMES.length)];
 					case 4:
-						return field_19602[arg.method_17850(field_19602.length)];
+						return SNOWY_BIOMES[layerRandomnessSource.nextInt(SNOWY_BIOMES.length)];
 					default:
-						return field_19590;
+						return MUSHROOM_FIELDS_ID;
 				}
 			} else {
 				return i;

@@ -1,10 +1,10 @@
 package net.minecraft.item;
 
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.sound.Sounds;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -15,7 +15,7 @@ import net.minecraft.world.World;
 public class FishingRodItem extends Item {
 	public FishingRodItem(Item.Settings settings) {
 		super(settings);
-		this.addProperty(new Identifier("cast"), (itemStack, world, livingEntity) -> {
+		this.addPropertyGetter(new Identifier("cast"), (itemStack, world, livingEntity) -> {
 			if (livingEntity == null) {
 				return 0.0F;
 			} else {
@@ -31,39 +31,33 @@ public class FishingRodItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		if (player.fishHook != null) {
-			int i = player.fishHook.method_15844(itemStack);
-			itemStack.damage(i, player);
-			player.swingHand(hand);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (playerEntity.fishHook != null) {
+			if (!world.isClient) {
+				int i = playerEntity.fishHook.method_6957(itemStack);
+				itemStack.damage(i, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
+			}
+
+			playerEntity.swingHand(hand);
 			world.playSound(
-				null, player.x, player.y, player.z, Sounds.ENTITY_FISHING_BOBBER_RETRIEVE, SoundCategory.NEUTRAL, 1.0F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+				null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_15093, SoundCategory.field_15254, 1.0F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 			);
 		} else {
 			world.playSound(
-				null, player.x, player.y, player.z, Sounds.ENTITY_FISHING_BOBBER_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+				null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_14596, SoundCategory.field_15254, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 			);
 			if (!world.isClient) {
-				FishingBobberEntity fishingBobberEntity = new FishingBobberEntity(world, player);
 				int j = EnchantmentHelper.getLure(itemStack);
-				if (j > 0) {
-					fishingBobberEntity.setLure(j);
-				}
-
 				int k = EnchantmentHelper.getLuckOfTheSea(itemStack);
-				if (k > 0) {
-					fishingBobberEntity.setLuckOfTheSea(k);
-				}
-
-				world.method_3686(fishingBobberEntity);
+				world.spawnEntity(new FishingBobberEntity(playerEntity, world, k, j));
 			}
 
-			player.swingHand(hand);
-			player.method_15932(Stats.USED.method_21429(this));
+			playerEntity.swingHand(hand);
+			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
 		}
 
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 	}
 
 	@Override

@@ -1,9 +1,29 @@
 package net.minecraft.client.render.entity.feature;
 
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.Identifier;
 
-public interface FeatureRenderer<E extends LivingEntity> {
-	void render(E entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale);
+public abstract class FeatureRenderer<T extends Entity, M extends EntityModel<T>> {
+	private final FeatureRendererContext<T, M> context;
 
-	boolean combineTextures();
+	public FeatureRenderer(FeatureRendererContext<T, M> featureRendererContext) {
+		this.context = featureRendererContext;
+	}
+
+	public M getModel() {
+		return this.context.getModel();
+	}
+
+	public void bindTexture(Identifier identifier) {
+		this.context.bindTexture(identifier);
+	}
+
+	public void applyLightmapCoordinates(T entity) {
+		this.context.applyLightmapCoordinates(entity);
+	}
+
+	public abstract void render(T entity, float f, float g, float h, float i, float j, float k, float l);
+
+	public abstract boolean hasHurtOverlay();
 }

@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.mob.MobEntity;
 
 public class LookAroundGoal extends Goal {
@@ -10,12 +11,12 @@ public class LookAroundGoal extends Goal {
 
 	public LookAroundGoal(MobEntity mobEntity) {
 		this.mob = mobEntity;
-		this.setCategoryBits(3);
+		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
 	}
 
 	@Override
 	public boolean canStart() {
-		return this.mob.getRandom().nextFloat() < 0.02F;
+		return this.mob.getRand().nextFloat() < 0.02F;
 	}
 
 	@Override
@@ -25,23 +26,15 @@ public class LookAroundGoal extends Goal {
 
 	@Override
 	public void start() {
-		double d = (Math.PI * 2) * this.mob.getRandom().nextDouble();
+		double d = (Math.PI * 2) * this.mob.getRand().nextDouble();
 		this.deltaX = Math.cos(d);
 		this.deltaZ = Math.sin(d);
-		this.lookTime = 20 + this.mob.getRandom().nextInt(20);
+		this.lookTime = 20 + this.mob.getRand().nextInt(20);
 	}
 
 	@Override
 	public void tick() {
 		this.lookTime--;
-		this.mob
-			.getLookControl()
-			.lookAt(
-				this.mob.x + this.deltaX,
-				this.mob.y + (double)this.mob.getEyeHeight(),
-				this.mob.z + this.deltaZ,
-				(float)this.mob.method_13081(),
-				(float)this.mob.getLookPitchSpeed()
-			);
+		this.mob.getLookControl().lookAt(this.mob.x + this.deltaX, this.mob.y + (double)this.mob.getStandingEyeHeight(), this.mob.z + this.deltaZ);
 	}
 }

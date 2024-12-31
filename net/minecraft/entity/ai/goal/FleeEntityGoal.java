@@ -1,76 +1,76 @@
 package net.minecraft.entity.ai.goal;
 
-import java.util.List;
+import java.util.EnumSet;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.ai.pathing.PathMinHeap;
-import net.minecraft.entity.predicate.EntityPredicate;
-import net.minecraft.util.RandomVectorGenerator;
+import net.minecraft.entity.ai.pathing.Path;
+import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.util.math.Vec3d;
 
-public class FleeEntityGoal<T extends Entity> extends Goal {
-	private final Predicate<Entity> field_16838 = new Predicate<Entity>() {
-		public boolean test(@Nullable Entity entity) {
-			return entity.isAlive() && FleeEntityGoal.this.mob.getVisibilityCache().canSee(entity) && !FleeEntityGoal.this.mob.isTeammate(entity);
-		}
-	};
-	protected PathAwareEntity mob;
+public class FleeEntityGoal<T extends LivingEntity> extends Goal {
+	protected final MobEntityWithAi mob;
 	private final double slowSpeed;
 	private final double fastSpeed;
 	protected T targetEntity;
-	private final float fleeDistance;
-	private PathMinHeap field_14575;
-	private final EntityNavigation fleeingEntityNavigation;
-	private final Class<T> classToFleeFrom;
-	private final Predicate<? super Entity> field_16839;
-	private final Predicate<? super Entity> field_16840;
+	protected final float fleeDistance;
+	protected Path fleePath;
+	protected final EntityNavigation fleeingEntityNavigation;
+	protected final Class<T> classToFleeFrom;
+	protected final Predicate<LivingEntity> field_6393;
+	protected final Predicate<LivingEntity> field_6388;
+	private final TargetPredicate withinRangePredicate;
 
-	public FleeEntityGoal(PathAwareEntity pathAwareEntity, Class<T> class_, float f, double d, double e) {
-		this(pathAwareEntity, class_, entity -> true, f, d, e, EntityPredicate.field_16704);
+	public FleeEntityGoal(MobEntityWithAi mobEntityWithAi, Class<T> class_, float f, double d, double e) {
+		this(mobEntityWithAi, class_, livingEntity -> true, f, d, e, EntityPredicates.EXCEPT_CREATIVE_OR_SPECTATOR::test);
 	}
 
 	public FleeEntityGoal(
-		PathAwareEntity pathAwareEntity, Class<T> class_, Predicate<? super Entity> predicate, float f, double d, double e, Predicate<Entity> predicate2
+		MobEntityWithAi mobEntityWithAi, Class<T> class_, Predicate<LivingEntity> predicate, float f, double d, double e, Predicate<LivingEntity> predicate2
 	) {
-		this.mob = pathAwareEntity;
+		this.mob = mobEntityWithAi;
 		this.classToFleeFrom = class_;
-		this.field_16839 = predicate;
+		this.field_6393 = predicate;
 		this.fleeDistance = f;
 		this.slowSpeed = d;
 		this.fastSpeed = e;
-		this.field_16840 = predicate2;
-		this.fleeingEntityNavigation = pathAwareEntity.getNavigation();
-		this.setCategoryBits(1);
+		this.field_6388 = predicate2;
+		this.fleeingEntityNavigation = mobEntityWithAi.getNavigation();
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
+		this.withinRangePredicate = new TargetPredicate().setBaseMaxDistance((double)f).setPredicate(predicate2.and(predicate));
 	}
 
-	public FleeEntityGoal(PathAwareEntity pathAwareEntity, Class<T> class_, float f, double d, double e, Predicate<Entity> predicate) {
-		this(pathAwareEntity, class_, entity -> true, f, d, e, predicate);
+	public FleeEntityGoal(MobEntityWithAi mobEntityWithAi, Class<T> class_, float f, double d, double e, Predicate<LivingEntity> predicate) {
+		this(mobEntityWithAi, class_, livingEntity -> true, f, d, e, predicate);
 	}
 
 	@Override
 	public boolean canStart() {
-		List<T> list = this.mob
+		this.targetEntity = this.mob
 			.world
-			.method_16325(
+			.method_21727(
 				this.classToFleeFrom,
-				this.mob.getBoundingBox().expand((double)this.fleeDistance, 3.0, (double)this.fleeDistance),
-				entity -> this.field_16840.test(entity) && this.field_16838.test(entity) && this.field_16839.test(entity)
+				this.withinRangePredicate,
+				this.mob,
+				this.mob.x,
+				this.mob.y,
+				this.mob.z,
+				this.mob.getBoundingBox().expand((double)this.fleeDistance, 3.0, (double)this.fleeDistance)
 			);
-		if (list.isEmpty()) {
+		if (this.targetEntity == null) {
 			return false;
 		} else {
-			this.targetEntity = (T)list.get(0);
-			Vec3d vec3d = RandomVectorGenerator.method_2801(this.mob, 16, 7, new Vec3d(this.targetEntity.x, this.targetEntity.y, this.targetEntity.z));
+			Vec3d vec3d = PathfindingUtil.method_6379(this.mob, 16, 7, new Vec3d(this.targetEntity.x, this.targetEntity.y, this.targetEntity.z));
 			if (vec3d == null) {
 				return false;
 			} else if (this.targetEntity.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z) < this.targetEntity.squaredDistanceTo(this.mob)) {
 				return false;
 			} else {
-				this.field_14575 = this.fleeingEntityNavigation.method_2772(vec3d.x, vec3d.y, vec3d.z);
-				return this.field_14575 != null;
+				this.fleePath = this.fleeingEntityNavigation.findPathTo(vec3d.x, vec3d.y, vec3d.z, 0);
+				return this.fleePath != null;
 			}
 		}
 	}
@@ -82,7 +82,7 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 
 	@Override
 	public void start() {
-		this.fleeingEntityNavigation.method_13107(this.field_14575, this.slowSpeed);
+		this.fleeingEntityNavigation.startMovingAlong(this.fleePath, this.slowSpeed);
 	}
 
 	@Override

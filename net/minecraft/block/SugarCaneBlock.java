@@ -1,80 +1,86 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.state.StateManager;
+import net.minecraft.state.StateFactory;
 import net.minecraft.state.property.IntProperty;
-import net.minecraft.states.property.Properties;
+import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
 public class SugarCaneBlock extends Block {
-	public static final IntProperty field_18524 = Properties.AGE_15;
-	protected static final VoxelShape field_18525 = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 16.0, 14.0);
+	public static final IntProperty AGE = Properties.AGE_15;
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 16.0, 14.0);
 
-	protected SugarCaneBlock(Block.Builder builder) {
-		super(builder);
-		this.setDefaultState(this.stateManager.method_16923().withProperty(field_18524, Integer.valueOf(0)));
+	protected SugarCaneBlock(Block.Settings settings) {
+		super(settings);
+		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18525;
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return SHAPE;
 	}
 
 	@Override
-	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
-		if (state.canPlaceAt(world, pos) && world.method_8579(pos.up())) {
+	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(world, blockPos)) {
+			world.breakBlock(blockPos, true);
+		} else if (world.isAir(blockPos.up())) {
 			int i = 1;
 
-			while (world.getBlockState(pos.down(i)).getBlock() == this) {
+			while (world.getBlockState(blockPos.down(i)).getBlock() == this) {
 				i++;
 			}
 
 			if (i < 3) {
-				int j = (Integer)state.getProperty(field_18524);
+				int j = (Integer)blockState.get(AGE);
 				if (j == 15) {
-					world.setBlockState(pos.up(), this.getDefaultState());
-					world.setBlockState(pos, state.withProperty(field_18524, Integer.valueOf(0)), 4);
+					world.setBlockState(blockPos.up(), this.getDefaultState());
+					world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(0)), 4);
 				} else {
-					world.setBlockState(pos, state.withProperty(field_18524, Integer.valueOf(j + 1)), 4);
+					world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(j + 1)), 4);
 				}
 			}
 		}
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		return !state.canPlaceAt(world, pos)
-			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		if (!blockState.canPlaceAt(iWorld, blockPos)) {
+			iWorld.getBlockTickScheduler().schedule(blockPos, this, 1);
+		}
+
+		return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
-		Block block = world.getBlockState(pos.down()).getBlock();
+	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+		Block block = viewableWorld.getBlockState(blockPos.down()).getBlock();
 		if (block == this) {
 			return true;
 		} else {
-			if (block == Blocks.GRASS_BLOCK
-				|| block == Blocks.DIRT
-				|| block == Blocks.COARSE_DIRT
-				|| block == Blocks.PODZOL
-				|| block == Blocks.SAND
-				|| block == Blocks.RED_SAND) {
-				BlockPos blockPos = pos.down();
+			if (block == Blocks.field_10219
+				|| block == Blocks.field_10566
+				|| block == Blocks.field_10253
+				|| block == Blocks.field_10520
+				|| block == Blocks.field_10102
+				|| block == Blocks.field_10534) {
+				BlockPos blockPos2 = blockPos.down();
 
-				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-					BlockState blockState = world.getBlockState(blockPos.offset(direction));
-					FluidState fluidState = world.getFluidState(blockPos.offset(direction));
-					if (fluidState.matches(FluidTags.WATER) || blockState.getBlock() == Blocks.FROSTED_ICE) {
+				for (Direction direction : Direction.Type.field_11062) {
+					BlockState blockState2 = viewableWorld.getBlockState(blockPos2.offset(direction));
+					FluidState fluidState = viewableWorld.getFluidState(blockPos2.offset(direction));
+					if (fluidState.matches(FluidTags.field_15517) || blockState2.getBlock() == Blocks.field_10110) {
 						return true;
 					}
 				}
@@ -85,22 +91,12 @@ public class SugarCaneBlock extends Block {
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
-	}
-
-	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.method_16928(field_18524);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(AGE);
 	}
 }

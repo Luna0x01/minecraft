@@ -5,59 +5,59 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import net.minecraft.class_3915;
-import net.minecraft.class_4069;
-import net.minecraft.class_4119;
-import net.minecraft.class_4287;
-import net.minecraft.class_4327;
+import net.minecraft.command.arguments.EntitySummonArgumentType;
+import net.minecraft.command.arguments.NbtCompoundTagArgumentType;
+import net.minecraft.command.arguments.Vec3ArgumentType;
+import net.minecraft.command.suggestion.SuggestionProviders;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LightningBoltEntity;
+import net.minecraft.entity.LightningEntity;
+import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
 
 public class SummonCommand {
-	private static final SimpleCommandExceptionType field_21791 = new SimpleCommandExceptionType(new TranslatableText("commands.summon.failed"));
+	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.summon.failed"));
 
-	public static void method_21042(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("summon").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("summon").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
-					((RequiredArgumentBuilder)CommandManager.method_17530("entity", class_4069.method_17944())
-							.suggests(class_4327.field_21257)
+					((RequiredArgumentBuilder)CommandManager.argument("entity", EntitySummonArgumentType.entitySummon())
+							.suggests(SuggestionProviders.SUMMONABLE_ENTITIES)
 							.executes(
-								commandContext -> method_21041(
-										(class_3915)commandContext.getSource(),
-										class_4069.method_17946(commandContext, "entity"),
-										((class_3915)commandContext.getSource()).method_17467(),
-										new NbtCompound(),
+								commandContext -> execute(
+										(ServerCommandSource)commandContext.getSource(),
+										EntitySummonArgumentType.getEntitySummon(commandContext, "entity"),
+										((ServerCommandSource)commandContext.getSource()).getPosition(),
+										new CompoundTag(),
 										true
 									)
 							))
 						.then(
-							((RequiredArgumentBuilder)CommandManager.method_17530("pos", class_4287.method_19562())
+							((RequiredArgumentBuilder)CommandManager.argument("pos", Vec3ArgumentType.vec3())
 									.executes(
-										commandContext -> method_21041(
-												(class_3915)commandContext.getSource(),
-												class_4069.method_17946(commandContext, "entity"),
-												class_4287.method_19564(commandContext, "pos"),
-												new NbtCompound(),
+										commandContext -> execute(
+												(ServerCommandSource)commandContext.getSource(),
+												EntitySummonArgumentType.getEntitySummon(commandContext, "entity"),
+												Vec3ArgumentType.getVec3(commandContext, "pos"),
+												new CompoundTag(),
 												true
 											)
 									))
 								.then(
-									CommandManager.method_17530("nbt", class_4119.method_18393())
+									CommandManager.argument("nbt", NbtCompoundTagArgumentType.nbtCompound())
 										.executes(
-											commandContext -> method_21041(
-													(class_3915)commandContext.getSource(),
-													class_4069.method_17946(commandContext, "entity"),
-													class_4287.method_19564(commandContext, "pos"),
-													class_4119.method_18395(commandContext, "nbt"),
+											commandContext -> execute(
+													(ServerCommandSource)commandContext.getSource(),
+													EntitySummonArgumentType.getEntitySummon(commandContext, "entity"),
+													Vec3ArgumentType.getVec3(commandContext, "pos"),
+													NbtCompoundTagArgumentType.getCompoundTag(commandContext, "nbt"),
 													false
 												)
 										)
@@ -67,25 +67,29 @@ public class SummonCommand {
 		);
 	}
 
-	private static int method_21041(class_3915 arg, Identifier identifier, Vec3d vec3d, NbtCompound nbtCompound, boolean bl) throws CommandSyntaxException {
-		NbtCompound nbtCompound2 = nbtCompound.copy();
-		nbtCompound2.putString("id", identifier.toString());
-		if (EntityType.getId(EntityType.LIGHTNING_BOLT).equals(identifier)) {
-			Entity entity = new LightningBoltEntity(arg.method_17468(), vec3d.x, vec3d.y, vec3d.z, false);
-			arg.method_17468().addEntity(entity);
-			arg.method_17459(new TranslatableText("commands.summon.success", entity.getName()), true);
+	private static int execute(ServerCommandSource serverCommandSource, Identifier identifier, Vec3d vec3d, CompoundTag compoundTag, boolean bl) throws CommandSyntaxException {
+		CompoundTag compoundTag2 = compoundTag.method_10553();
+		compoundTag2.putString("id", identifier.toString());
+		if (EntityType.getId(EntityType.field_6112).equals(identifier)) {
+			LightningEntity lightningEntity = new LightningEntity(serverCommandSource.getWorld(), vec3d.x, vec3d.y, vec3d.z, false);
+			serverCommandSource.getWorld().addLightning(lightningEntity);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.summon.success", lightningEntity.getDisplayName()), true);
 			return 1;
 		} else {
-			Entity entity2 = ThreadedAnvilChunkStorage.method_11782(nbtCompound2, arg.method_17468(), vec3d.x, vec3d.y, vec3d.z, true);
-			if (entity2 == null) {
-				throw field_21791.create();
+			ServerWorld serverWorld = serverCommandSource.getWorld();
+			Entity entity = EntityType.loadEntityWithPassengers(compoundTag2, serverWorld, entityx -> {
+				entityx.setPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, entityx.yaw, entityx.pitch);
+				return !serverWorld.method_18768(entityx) ? null : entityx;
+			});
+			if (entity == null) {
+				throw FAILED_EXCEPTION.create();
 			} else {
-				entity2.refreshPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, entity2.yaw, entity2.pitch);
-				if (bl && entity2 instanceof MobEntity) {
-					((MobEntity)entity2).initialize(arg.method_17468().method_8482(new BlockPos(entity2)), null, null);
+				if (bl && entity instanceof MobEntity) {
+					((MobEntity)entity)
+						.initialize(serverCommandSource.getWorld(), serverCommandSource.getWorld().getLocalDifficulty(new BlockPos(entity)), SpawnType.field_16462, null, null);
 				}
 
-				arg.method_17459(new TranslatableText("commands.summon.success", entity2.getName()), true);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.summon.success", entity.getDisplayName()), true);
 				return 1;
 			}
 		}

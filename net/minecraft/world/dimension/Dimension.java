@@ -1,28 +1,27 @@
 package net.minecraft.world.dimension;
 
 import javax.annotation.Nullable;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.level.LevelGeneratorType;
 
 public abstract class Dimension {
-	public static final float[] field_18952 = new float[]{1.0F, 0.75F, 0.5F, 0.25F, 0.0F, 0.25F, 0.5F, 0.75F};
-	protected World world;
+	public static final float[] MOON_PHASE_TO_SIZE = new float[]{1.0F, 0.75F, 0.5F, 0.25F, 0.0F, 0.25F, 0.5F, 0.75F};
+	protected final World world;
+	private final DimensionType type;
 	protected boolean waterVaporizes;
-	protected boolean hasNoSkylight;
-	protected boolean field_18953;
+	protected boolean isNether;
 	protected final float[] lightLevelToBrightness = new float[16];
 	private final float[] backgroundColor = new float[4];
 
-	public final void copyFromWorld(World world) {
+	public Dimension(World world, DimensionType dimensionType) {
 		this.world = world;
-		this.init();
+		this.type = dimensionType;
 		this.initializeLightLevelToBrightness();
 	}
 
@@ -35,23 +34,23 @@ public abstract class Dimension {
 		}
 	}
 
-	public int getMoonPhase(long time) {
-		return (int)(time / 24000L % 8L + 8L) % 8;
+	public int getMoonPhase(long l) {
+		return (int)(l / 24000L % 8L + 8L) % 8;
 	}
 
 	@Nullable
-	public float[] getBackgroundColor(float skyAngle, float tickDelta) {
-		float f = 0.4F;
-		float g = MathHelper.cos(skyAngle * (float) (Math.PI * 2)) - 0.0F;
-		float h = -0.0F;
-		if (g >= -0.4F && g <= 0.4F) {
-			float i = (g - -0.0F) / 0.4F * 0.5F + 0.5F;
-			float j = 1.0F - (1.0F - MathHelper.sin(i * (float) Math.PI)) * 0.99F;
-			j *= j;
-			this.backgroundColor[0] = i * 0.3F + 0.7F;
-			this.backgroundColor[1] = i * i * 0.7F + 0.2F;
-			this.backgroundColor[2] = i * i * 0.0F + 0.2F;
-			this.backgroundColor[3] = j;
+	public float[] getBackgroundColor(float f, float g) {
+		float h = 0.4F;
+		float i = MathHelper.cos(f * (float) (Math.PI * 2)) - 0.0F;
+		float j = -0.0F;
+		if (i >= -0.4F && i <= 0.4F) {
+			float k = (i - -0.0F) / 0.4F * 0.5F + 0.5F;
+			float l = 1.0F - (1.0F - MathHelper.sin(k * (float) Math.PI)) * 0.99F;
+			l *= l;
+			this.backgroundColor[0] = k * 0.3F + 0.7F;
+			this.backgroundColor[1] = k * k * 0.7F + 0.2F;
+			this.backgroundColor[2] = k * k * 0.0F + 0.2F;
+			this.backgroundColor[3] = l;
 			return this.backgroundColor;
 		} else {
 			return null;
@@ -62,7 +61,7 @@ public abstract class Dimension {
 		return 128.0F;
 	}
 
-	public boolean hasGround() {
+	public boolean method_12449() {
 		return true;
 	}
 
@@ -71,20 +70,20 @@ public abstract class Dimension {
 		return null;
 	}
 
-	public double method_17192() {
-		return this.world.method_3588().getGeneratorType() == LevelGeneratorType.FLAT ? 1.0 : 0.03125;
+	public double getHorizonShadingRatio() {
+		return this.world.getLevelProperties().getGeneratorType() == LevelGeneratorType.FLAT ? 1.0 : 0.03125;
 	}
 
 	public boolean doesWaterVaporize() {
 		return this.waterVaporizes;
 	}
 
-	public boolean isOverworld() {
-		return this.field_18953;
+	public boolean hasSkyLight() {
+		return this.type.hasSkyLight();
 	}
 
-	public boolean hasNoSkylight() {
-		return this.hasNoSkylight;
+	public boolean isNether() {
+		return this.isNether;
 	}
 
 	public float[] getLightLevelToBrightness() {
@@ -95,41 +94,29 @@ public abstract class Dimension {
 		return new WorldBorder();
 	}
 
-	public void method_11786(ServerPlayerEntity player) {
+	public void saveWorldData() {
 	}
 
-	public void method_11787(ServerPlayerEntity player) {
+	public void update() {
 	}
 
-	public void method_11790() {
-	}
-
-	public void method_11791() {
-	}
-
-	public boolean method_17189(int i, int j) {
-		return !this.world.method_16335(i, j);
-	}
-
-	protected abstract void init();
-
-	public abstract ChunkGenerator<?> method_17193();
+	public abstract ChunkGenerator<?> createChunkGenerator();
 
 	@Nullable
-	public abstract BlockPos method_17191(ChunkPos chunkPos, boolean bl);
+	public abstract BlockPos getSpawningBlockInChunk(ChunkPos chunkPos, boolean bl);
 
 	@Nullable
-	public abstract BlockPos method_17190(int i, int j, boolean bl);
+	public abstract BlockPos getTopSpawningBlockPosition(int i, int j, boolean bl);
 
-	public abstract float getSkyAngle(long timeOfDay, float tickDelta);
+	public abstract float getSkyAngle(long l, float f);
+
+	public abstract boolean hasVisibleSky();
+
+	public abstract Vec3d getFogColor(float f, float g);
 
 	public abstract boolean canPlayersSleep();
 
-	public abstract Vec3d getFogColor(float skyAngle, float tickDelta);
+	public abstract boolean shouldRenderFog(int i, int j);
 
-	public abstract boolean containsWorldSpawn();
-
-	public abstract boolean isFogThick(int x, int z);
-
-	public abstract DimensionType method_11789();
+	public abstract DimensionType getType();
 }

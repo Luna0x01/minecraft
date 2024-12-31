@@ -1,63 +1,94 @@
 package net.minecraft.server.dedicated;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
-import net.minecraft.util.SharedConstants;
-import org.apache.commons.io.IOUtils;
+import net.minecraft.SharedConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class EulaReader {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final File eulaFile;
+	private final Path eulaFile;
 	private final boolean eulaAgreedTo;
 
-	public EulaReader(File file) {
-		this.eulaFile = file;
-		this.eulaAgreedTo = SharedConstants.isDevelopment || this.checkEulaAgreement(file);
+	public EulaReader(Path path) {
+		this.eulaFile = path;
+		this.eulaAgreedTo = SharedConstants.isDevelopment || this.checkEulaAgreement();
 	}
 
-	private boolean checkEulaAgreement(File eulaFile) {
-		FileInputStream fileInputStream = null;
-		boolean bl = false;
-
+	private boolean checkEulaAgreement() {
 		try {
-			Properties properties = new Properties();
-			fileInputStream = new FileInputStream(eulaFile);
-			properties.load(fileInputStream);
-			bl = Boolean.parseBoolean(properties.getProperty("eula", "false"));
-		} catch (Exception var8) {
-			LOGGER.warn("Failed to load {}", eulaFile);
-			this.createEulaFile();
-		} finally {
-			IOUtils.closeQuietly(fileInputStream);
-		}
+			InputStream inputStream = Files.newInputStream(this.eulaFile);
+			Throwable var2 = null;
 
-		return bl;
+			boolean var4;
+			try {
+				Properties properties = new Properties();
+				properties.load(inputStream);
+				var4 = Boolean.parseBoolean(properties.getProperty("eula", "false"));
+			} catch (Throwable var14) {
+				var2 = var14;
+				throw var14;
+			} finally {
+				if (inputStream != null) {
+					if (var2 != null) {
+						try {
+							inputStream.close();
+						} catch (Throwable var13) {
+							var2.addSuppressed(var13);
+						}
+					} else {
+						inputStream.close();
+					}
+				}
+			}
+
+			return var4;
+		} catch (Exception var16) {
+			LOGGER.warn("Failed to load {}", this.eulaFile);
+			this.createEulaFile();
+			return false;
+		}
 	}
 
 	public boolean isEulaAgreedTo() {
 		return this.eulaAgreedTo;
 	}
 
-	public void createEulaFile() {
+	private void createEulaFile() {
 		if (!SharedConstants.isDevelopment) {
-			FileOutputStream fileOutputStream = null;
-
 			try {
-				Properties properties = new Properties();
-				fileOutputStream = new FileOutputStream(this.eulaFile);
-				properties.setProperty("eula", "false");
-				properties.store(
-					fileOutputStream,
-					"By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula)."
-				);
-			} catch (Exception var6) {
-				LOGGER.warn("Failed to save {}", this.eulaFile, var6);
-			} finally {
-				IOUtils.closeQuietly(fileOutputStream);
+				OutputStream outputStream = Files.newOutputStream(this.eulaFile);
+				Throwable var2 = null;
+
+				try {
+					Properties properties = new Properties();
+					properties.setProperty("eula", "false");
+					properties.store(
+						outputStream,
+						"By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula)."
+					);
+				} catch (Throwable var12) {
+					var2 = var12;
+					throw var12;
+				} finally {
+					if (outputStream != null) {
+						if (var2 != null) {
+							try {
+								outputStream.close();
+							} catch (Throwable var11) {
+								var2.addSuppressed(var11);
+							}
+						} else {
+							outputStream.close();
+						}
+					}
+				}
+			} catch (Exception var14) {
+				LOGGER.warn("Failed to save {}", this.eulaFile, var14);
 			}
 		}
 	}

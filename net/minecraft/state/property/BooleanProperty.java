@@ -16,16 +16,16 @@ public class BooleanProperty extends AbstractProperty<Boolean> {
 		return this.values;
 	}
 
-	public static BooleanProperty of(String name) {
-		return new BooleanProperty(name);
+	public static BooleanProperty of(String string) {
+		return new BooleanProperty(string);
 	}
 
 	@Override
-	public Optional<Boolean> getValueAsString(String value) {
-		return !"true".equals(value) && !"false".equals(value) ? Optional.empty() : Optional.of(Boolean.valueOf(value));
+	public Optional<Boolean> getValue(String string) {
+		return !"true".equals(string) && !"false".equals(string) ? Optional.empty() : Optional.of(Boolean.valueOf(string));
 	}
 
-	public String name(Boolean boolean_) {
+	public String method_11826(Boolean boolean_) {
 		return boolean_.toString();
 	}
 

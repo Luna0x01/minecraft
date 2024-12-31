@@ -1,28 +1,29 @@
 package net.minecraft.world.biome;
 
-import net.minecraft.class_3801;
-import net.minecraft.class_3830;
-import net.minecraft.class_3844;
-import net.minecraft.class_3845;
-import net.minecraft.gen.surfacebuilder.SurfaceBuilder;
+import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.decorator.Decorator;
+import net.minecraft.world.gen.decorator.DecoratorConfig;
+import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.feature.FeatureConfig;
+import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 
 public final class VoidBiome extends Biome {
 	public VoidBiome() {
 		super(
-			new Biome.Builder()
-				.setSurfaceBuilder(new SurfaceBuilder<>(field_17562, field_17583))
-				.setPrecipitation(Biome.Precipitation.NONE)
-				.setCategory(Biome.Category.NONE)
-				.setDepth(0.1F)
-				.setScale(0.2F)
-				.setTemperature(0.5F)
-				.setDownfall(0.5F)
-				.setWaterColor(4159204)
-				.setWaterFogColor(329011)
-				.setParent(null)
+			new Biome.Settings()
+				.configureSurfaceBuilder(SurfaceBuilder.field_15683, SurfaceBuilder.STONE_CONFIG)
+				.precipitation(Biome.Precipitation.NONE)
+				.category(Biome.Category.field_9371)
+				.depth(0.1F)
+				.scale(0.2F)
+				.temperature(0.5F)
+				.downfall(0.5F)
+				.waterColor(4159204)
+				.waterFogColor(329011)
+				.parent(null)
 		);
-		this.method_16432(
-			class_3801.class_3803.TOP_LAYER_MODIFICATION, method_16433(class_3844.field_19134, class_3845.field_19203, field_17612, class_3830.field_19084)
+		this.addFeature(
+			GenerationStep.Feature.field_13179, configureFeature(Feature.field_13591, FeatureConfig.DEFAULT, Decorator.field_14250, DecoratorConfig.DEFAULT)
 		);
 	}
 }

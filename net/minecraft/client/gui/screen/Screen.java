@@ -12,29 +12,29 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import net.minecraft.class_4107;
-import net.minecraft.class_4121;
-import net.minecraft.class_4122;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.TooltipContext;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
-import net.minecraft.client.gui.widget.LabelWidget;
+import net.minecraft.client.gui.AbstractParentElement;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.item.HeldItemRenderer;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.nbt.Tag;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -42,61 +42,78 @@ import net.minecraft.util.crash.CrashReportSection;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class Screen extends class_4121 implements IdentifiableBooleanConsumer {
-	private static final Logger logger = LogManager.getLogger();
+public abstract class Screen extends AbstractParentElement implements Drawable {
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Set<String> ALLOWED_PROTOCOLS = Sets.newHashSet(new String[]{"http", "https"});
-	protected final List<class_4122> field_20307 = Lists.newArrayList();
-	protected MinecraftClient client;
-	protected HeldItemRenderer field_20308;
+	protected final Text title;
+	protected final List<Element> children = Lists.newArrayList();
+	@Nullable
+	protected MinecraftClient minecraft;
+	protected ItemRenderer itemRenderer;
 	public int width;
 	public int height;
-	protected final List<ButtonWidget> buttons = Lists.newArrayList();
-	protected final List<LabelWidget> labels = Lists.newArrayList();
+	protected final List<AbstractButtonWidget> buttons = Lists.newArrayList();
 	public boolean passEvents;
-	protected TextRenderer textRenderer;
+	protected TextRenderer font;
 	private URI clickedLink;
 
-	public void render(int mouseX, int mouseY, float tickDelta) {
-		for (int i = 0; i < this.buttons.size(); i++) {
-			((ButtonWidget)this.buttons.get(i)).method_891(mouseX, mouseY, tickDelta);
-		}
+	protected Screen(Text text) {
+		this.title = text;
+	}
 
-		for (int j = 0; j < this.labels.size(); j++) {
-			((LabelWidget)this.labels.get(j)).method_18397(mouseX, mouseY, tickDelta);
+	public Text getTitle() {
+		return this.title;
+	}
+
+	public String getNarrationMessage() {
+		return this.getTitle().getString();
+	}
+
+	@Override
+	public void render(int i, int j, float f) {
+		for (int k = 0; k < this.buttons.size(); k++) {
+			((AbstractButtonWidget)this.buttons.get(k)).render(i, j, f);
 		}
 	}
 
 	@Override
 	public boolean keyPressed(int i, int j, int k) {
-		if (i == 256 && this.method_18607()) {
-			this.method_18608();
+		if (i == 256 && this.shouldCloseOnEsc()) {
+			this.onClose();
+			return true;
+		} else if (i == 258) {
+			boolean bl = !hasShiftDown();
+			if (!this.changeFocus(bl)) {
+				this.changeFocus(bl);
+			}
+
 			return true;
 		} else {
 			return super.keyPressed(i, j, k);
 		}
 	}
 
-	public boolean method_18607() {
+	public boolean shouldCloseOnEsc() {
 		return true;
 	}
 
-	public void method_18608() {
-		this.client.setScreen(null);
+	public void onClose() {
+		this.minecraft.openScreen(null);
 	}
 
-	protected <T extends ButtonWidget> T addButton(T button) {
-		this.buttons.add(button);
-		this.field_20307.add(button);
-		return button;
+	protected <T extends AbstractButtonWidget> T addButton(T abstractButtonWidget) {
+		this.buttons.add(abstractButtonWidget);
+		this.children.add(abstractButtonWidget);
+		return abstractButtonWidget;
 	}
 
-	protected void renderTooltip(ItemStack stack, int x, int y) {
-		this.renderTooltip(this.method_14502(stack), x, y);
+	protected void renderTooltip(ItemStack itemStack, int i, int j) {
+		this.renderTooltip(this.getTooltipFromItem(itemStack), i, j);
 	}
 
-	public List<String> method_14502(ItemStack stack) {
-		List<Text> list = stack.getTooltip(
-			this.client.player, this.client.options.field_19992 ? TooltipContext.TooltipType.ADVANCED : TooltipContext.TooltipType.NORMAL
+	public List<String> getTooltipFromItem(ItemStack itemStack) {
+		List<Text> list = itemStack.getTooltip(
+			this.minecraft.player, this.minecraft.options.advancedItemTooltips ? TooltipContext.Default.field_8935 : TooltipContext.Default.field_8934
 		);
 		List<String> list2 = Lists.newArrayList();
 
@@ -107,126 +124,126 @@ public abstract class Screen extends class_4121 implements IdentifiableBooleanCo
 		return list2;
 	}
 
-	public void renderTooltip(String text, int x, int y) {
-		this.renderTooltip(Arrays.asList(text), x, y);
+	public void renderTooltip(String string, int i, int j) {
+		this.renderTooltip(Arrays.asList(string), i, j);
 	}
 
-	public void renderTooltip(List<String> text, int x, int y) {
-		if (!text.isEmpty()) {
+	public void renderTooltip(List<String> list, int i, int j) {
+		if (!list.isEmpty()) {
 			GlStateManager.disableRescaleNormal();
-			DiffuseLighting.disable();
+			GuiLighting.disable();
 			GlStateManager.disableLighting();
 			GlStateManager.disableDepthTest();
-			int i = 0;
+			int k = 0;
 
-			for (String string : text) {
-				int j = this.textRenderer.getStringWidth(string);
-				if (j > i) {
-					i = j;
+			for (String string : list) {
+				int l = this.font.getStringWidth(string);
+				if (l > k) {
+					k = l;
 				}
 			}
 
-			int k = x + 12;
-			int l = y - 12;
-			int n = 8;
-			if (text.size() > 1) {
-				n += 2 + (text.size() - 1) * 10;
+			int m = i + 12;
+			int n = j - 12;
+			int p = 8;
+			if (list.size() > 1) {
+				p += 2 + (list.size() - 1) * 10;
 			}
 
-			if (k + i > this.width) {
-				k -= 28 + i;
+			if (m + k > this.width) {
+				m -= 28 + k;
 			}
 
-			if (l + n + 6 > this.height) {
-				l = this.height - n - 6;
+			if (n + p + 6 > this.height) {
+				n = this.height - p - 6;
 			}
 
-			this.zOffset = 300.0F;
-			this.field_20308.field_20932 = 300.0F;
-			int o = -267386864;
-			this.fillGradient(k - 3, l - 4, k + i + 3, l - 3, -267386864, -267386864);
-			this.fillGradient(k - 3, l + n + 3, k + i + 3, l + n + 4, -267386864, -267386864);
-			this.fillGradient(k - 3, l - 3, k + i + 3, l + n + 3, -267386864, -267386864);
-			this.fillGradient(k - 4, l - 3, k - 3, l + n + 3, -267386864, -267386864);
-			this.fillGradient(k + i + 3, l - 3, k + i + 4, l + n + 3, -267386864, -267386864);
-			int p = 1347420415;
-			int q = 1344798847;
-			this.fillGradient(k - 3, l - 3 + 1, k - 3 + 1, l + n + 3 - 1, 1347420415, 1344798847);
-			this.fillGradient(k + i + 2, l - 3 + 1, k + i + 3, l + n + 3 - 1, 1347420415, 1344798847);
-			this.fillGradient(k - 3, l - 3, k + i + 3, l - 3 + 1, 1347420415, 1347420415);
-			this.fillGradient(k - 3, l + n + 2, k + i + 3, l + n + 3, 1344798847, 1344798847);
+			this.blitOffset = 300;
+			this.itemRenderer.zOffset = 300.0F;
+			int q = -267386864;
+			this.fillGradient(m - 3, n - 4, m + k + 3, n - 3, -267386864, -267386864);
+			this.fillGradient(m - 3, n + p + 3, m + k + 3, n + p + 4, -267386864, -267386864);
+			this.fillGradient(m - 3, n - 3, m + k + 3, n + p + 3, -267386864, -267386864);
+			this.fillGradient(m - 4, n - 3, m - 3, n + p + 3, -267386864, -267386864);
+			this.fillGradient(m + k + 3, n - 3, m + k + 4, n + p + 3, -267386864, -267386864);
+			int r = 1347420415;
+			int s = 1344798847;
+			this.fillGradient(m - 3, n - 3 + 1, m - 3 + 1, n + p + 3 - 1, 1347420415, 1344798847);
+			this.fillGradient(m + k + 2, n - 3 + 1, m + k + 3, n + p + 3 - 1, 1347420415, 1344798847);
+			this.fillGradient(m - 3, n - 3, m + k + 3, n - 3 + 1, 1347420415, 1347420415);
+			this.fillGradient(m - 3, n + p + 2, m + k + 3, n + p + 3, 1344798847, 1344798847);
 
-			for (int r = 0; r < text.size(); r++) {
-				String string2 = (String)text.get(r);
-				this.textRenderer.drawWithShadow(string2, (float)k, (float)l, -1);
-				if (r == 0) {
-					l += 2;
+			for (int t = 0; t < list.size(); t++) {
+				String string2 = (String)list.get(t);
+				this.font.drawWithShadow(string2, (float)m, (float)n, -1);
+				if (t == 0) {
+					n += 2;
 				}
 
-				l += 10;
+				n += 10;
 			}
 
-			this.zOffset = 0.0F;
-			this.field_20308.field_20932 = 0.0F;
+			this.blitOffset = 0;
+			this.itemRenderer.zOffset = 0.0F;
 			GlStateManager.enableLighting();
 			GlStateManager.enableDepthTest();
-			DiffuseLighting.enableNormally();
+			GuiLighting.enable();
 			GlStateManager.enableRescaleNormal();
 		}
 	}
 
-	protected void renderTextHoverEffect(Text text, int x, int y) {
+	protected void renderComponentHoverEffect(Text text, int i, int j) {
 		if (text != null && text.getStyle().getHoverEvent() != null) {
 			HoverEvent hoverEvent = text.getStyle().getHoverEvent();
-			if (hoverEvent.getAction() == HoverEvent.Action.SHOW_ITEM) {
+			if (hoverEvent.getAction() == HoverEvent.Action.field_11757) {
 				ItemStack itemStack = ItemStack.EMPTY;
 
 				try {
-					NbtElement nbtElement = StringNbtReader.parse(hoverEvent.getValue().getString());
-					if (nbtElement instanceof NbtCompound) {
-						itemStack = ItemStack.from((NbtCompound)nbtElement);
+					Tag tag = StringNbtReader.parse(hoverEvent.getValue().getString());
+					if (tag instanceof CompoundTag) {
+						itemStack = ItemStack.fromTag((CompoundTag)tag);
 					}
 				} catch (CommandSyntaxException var10) {
 				}
 
 				if (itemStack.isEmpty()) {
-					this.renderTooltip(Formatting.RED + "Invalid Item!", x, y);
+					this.renderTooltip(Formatting.field_1061 + "Invalid Item!", i, j);
 				} else {
-					this.renderTooltip(itemStack, x, y);
+					this.renderTooltip(itemStack, i, j);
 				}
-			} else if (hoverEvent.getAction() == HoverEvent.Action.SHOW_ENTITY) {
-				if (this.client.options.field_19992) {
+			} else if (hoverEvent.getAction() == HoverEvent.Action.field_11761) {
+				if (this.minecraft.options.advancedItemTooltips) {
 					try {
-						NbtCompound nbtCompound = StringNbtReader.parse(hoverEvent.getValue().getString());
+						CompoundTag compoundTag = StringNbtReader.parse(hoverEvent.getValue().getString());
 						List<String> list = Lists.newArrayList();
-						Text text2 = Text.Serializer.deserializeText(nbtCompound.getString("name"));
+						Text text2 = Text.Serializer.fromJson(compoundTag.getString("name"));
 						if (text2 != null) {
 							list.add(text2.asFormattedString());
 						}
 
-						if (nbtCompound.contains("type", 8)) {
-							String string = nbtCompound.getString("type");
+						if (compoundTag.containsKey("type", 8)) {
+							String string = compoundTag.getString("type");
 							list.add("Type: " + string);
 						}
 
-						list.add(nbtCompound.getString("id"));
-						this.renderTooltip(list, x, y);
+						list.add(compoundTag.getString("id"));
+						this.renderTooltip(list, i, j);
 					} catch (CommandSyntaxException | JsonSyntaxException var9) {
-						this.renderTooltip(Formatting.RED + "Invalid Entity!", x, y);
+						this.renderTooltip(Formatting.field_1061 + "Invalid Entity!", i, j);
 					}
 				}
-			} else if (hoverEvent.getAction() == HoverEvent.Action.SHOW_TEXT) {
-				this.renderTooltip(this.client.textRenderer.wrapLines(hoverEvent.getValue().asFormattedString(), Math.max(this.width / 2, 200)), x, y);
+			} else if (hoverEvent.getAction() == HoverEvent.Action.field_11762) {
+				this.renderTooltip(this.minecraft.textRenderer.wrapStringToWidthAsList(hoverEvent.getValue().asFormattedString(), Math.max(this.width / 2, 200)), i, j);
 			}
 
 			GlStateManager.disableLighting();
 		}
 	}
 
-	protected void insertText(String text, boolean override) {
+	protected void insertText(String string, boolean bl) {
 	}
 
-	public boolean handleTextClick(Text text) {
+	public boolean handleComponentClicked(Text text) {
 		if (text == null) {
 			return false;
 		} else {
@@ -236,8 +253,8 @@ public abstract class Screen extends class_4121 implements IdentifiableBooleanCo
 					this.insertText(text.getStyle().getInsertion(), false);
 				}
 			} else if (clickEvent != null) {
-				if (clickEvent.getAction() == ClickEvent.Action.OPEN_URL) {
-					if (!this.client.options.chatLink) {
+				if (clickEvent.getAction() == ClickEvent.Action.field_11749) {
+					if (!this.minecraft.options.chatLinks) {
 						return false;
 					}
 
@@ -252,24 +269,24 @@ public abstract class Screen extends class_4121 implements IdentifiableBooleanCo
 							throw new URISyntaxException(clickEvent.getValue(), "Unsupported protocol: " + string.toLowerCase(Locale.ROOT));
 						}
 
-						if (this.client.options.chatLinkPrompt) {
+						if (this.minecraft.options.chatLinksPrompt) {
 							this.clickedLink = uRI;
-							this.client.setScreen(new ConfirmChatLinkScreen(this, clickEvent.getValue(), 31102009, false));
+							this.minecraft.openScreen(new ConfirmChatLinkScreen(this::confirmLink, clickEvent.getValue(), false));
 						} else {
 							this.openLink(uRI);
 						}
 					} catch (URISyntaxException var5) {
-						logger.error("Can't open url for {}", clickEvent, var5);
+						LOGGER.error("Can't open url for {}", clickEvent, var5);
 					}
-				} else if (clickEvent.getAction() == ClickEvent.Action.OPEN_FILE) {
+				} else if (clickEvent.getAction() == ClickEvent.Action.field_11746) {
 					URI uRI2 = new File(clickEvent.getValue()).toURI();
 					this.openLink(uRI2);
-				} else if (clickEvent.getAction() == ClickEvent.Action.SUGGEST_COMMAND) {
+				} else if (clickEvent.getAction() == ClickEvent.Action.field_11745) {
 					this.insertText(clickEvent.getValue(), true);
-				} else if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
+				} else if (clickEvent.getAction() == ClickEvent.Action.field_11750) {
 					this.sendMessage(clickEvent.getValue(), false);
 				} else {
-					logger.error("Don't know how to handle {}", clickEvent);
+					LOGGER.error("Don't know how to handle {}", clickEvent);
 				}
 
 				return true;
@@ -279,36 +296,41 @@ public abstract class Screen extends class_4121 implements IdentifiableBooleanCo
 		}
 	}
 
-	public void sendMessage(String text) {
-		this.sendMessage(text, true);
+	public void sendMessage(String string) {
+		this.sendMessage(string, true);
 	}
 
-	public void sendMessage(String text, boolean toHud) {
-		if (toHud) {
-			this.client.inGameHud.getChatHud().addToMessageHistory(text);
+	public void sendMessage(String string, boolean bl) {
+		if (bl) {
+			this.minecraft.inGameHud.getChatHud().addToMessageHistory(string);
 		}
 
-		this.client.player.sendChatMessage(text);
+		this.minecraft.player.sendChatMessage(string);
 	}
 
-	public void init(MinecraftClient client, int width, int height) {
-		this.client = client;
-		this.field_20308 = client.getHeldItemRenderer();
-		this.textRenderer = client.textRenderer;
-		this.width = width;
-		this.height = height;
+	public void init(MinecraftClient minecraftClient, int i, int j) {
+		this.minecraft = minecraftClient;
+		this.itemRenderer = minecraftClient.getItemRenderer();
+		this.font = minecraftClient.textRenderer;
+		this.width = i;
+		this.height = j;
 		this.buttons.clear();
-		this.field_20307.clear();
+		this.children.clear();
+		this.setFocused(null);
 		this.init();
 	}
 
+	public void setSize(int i, int j) {
+		this.width = i;
+		this.height = j;
+	}
+
 	@Override
-	public List<? extends class_4122> method_18423() {
-		return this.field_20307;
+	public List<? extends Element> children() {
+		return this.children;
 	}
 
 	protected void init() {
-		this.field_20307.addAll(this.labels);
 	}
 
 	public void tick() {
@@ -321,86 +343,89 @@ public abstract class Screen extends class_4121 implements IdentifiableBooleanCo
 		this.renderBackground(0);
 	}
 
-	public void renderBackground(int alpha) {
-		if (this.client.world != null) {
+	public void renderBackground(int i) {
+		if (this.minecraft.world != null) {
 			this.fillGradient(0, 0, this.width, this.height, -1072689136, -804253680);
 		} else {
-			this.renderDirtBackground(alpha);
+			this.renderDirtBackground(i);
 		}
 	}
 
-	public void renderDirtBackground(int alpha) {
+	public void renderDirtBackground(int i) {
 		GlStateManager.disableLighting();
 		GlStateManager.disableFog();
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		this.client.getTextureManager().bindTexture(OPTIONS_BACKGROUND_TEXTURE);
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+		this.minecraft.getTextureManager().bindTexture(BACKGROUND_LOCATION);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		float f = 32.0F;
-		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-		bufferBuilder.vertex(0.0, (double)this.height, 0.0).texture(0.0, (double)((float)this.height / 32.0F + (float)alpha)).color(64, 64, 64, 255).next();
+		bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+		bufferBuilder.vertex(0.0, (double)this.height, 0.0).texture(0.0, (double)((float)this.height / 32.0F + (float)i)).color(64, 64, 64, 255).next();
 		bufferBuilder.vertex((double)this.width, (double)this.height, 0.0)
-			.texture((double)((float)this.width / 32.0F), (double)((float)this.height / 32.0F + (float)alpha))
+			.texture((double)((float)this.width / 32.0F), (double)((float)this.height / 32.0F + (float)i))
 			.color(64, 64, 64, 255)
 			.next();
-		bufferBuilder.vertex((double)this.width, 0.0, 0.0).texture((double)((float)this.width / 32.0F), (double)alpha).color(64, 64, 64, 255).next();
-		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0, (double)alpha).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex((double)this.width, 0.0, 0.0).texture((double)((float)this.width / 32.0F), (double)i).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0, (double)i).color(64, 64, 64, 255).next();
 		tessellator.draw();
 	}
 
-	public boolean shouldPauseGame() {
+	public boolean isPauseScreen() {
 		return true;
 	}
 
-	@Override
-	public void confirmResult(boolean bl, int i) {
-		if (i == 31102009) {
-			if (bl) {
-				this.openLink(this.clickedLink);
-			}
-
-			this.clickedLink = null;
-			this.client.setScreen(this);
+	private void confirmLink(boolean bl) {
+		if (bl) {
+			this.openLink(this.clickedLink);
 		}
+
+		this.clickedLink = null;
+		this.minecraft.openScreen(this);
 	}
 
-	private void openLink(URI link) {
-		Util.getOperatingSystem().method_20237(link);
+	private void openLink(URI uRI) {
+		SystemUtil.getOperatingSystem().open(uRI);
 	}
 
 	public static boolean hasControlDown() {
-		return MinecraftClient.IS_MAC ? class_4107.method_18154(343) || class_4107.method_18154(347) : class_4107.method_18154(341) || class_4107.method_18154(345);
+		return MinecraftClient.IS_SYSTEM_MAC
+			? InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 343)
+				|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 347)
+			: InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 341)
+				|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 345);
 	}
 
 	public static boolean hasShiftDown() {
-		return class_4107.method_18154(340) || class_4107.method_18154(344);
+		return InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 340)
+			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 344);
 	}
 
 	public static boolean hasAltDown() {
-		return class_4107.method_18154(342) || class_4107.method_18154(346);
+		return InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 342)
+			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 346);
 	}
 
-	public static boolean isCut(int code) {
-		return code == 88 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isCut(int i) {
+		return i == 88 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public static boolean isPaste(int code) {
-		return code == 86 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isPaste(int i) {
+		return i == 86 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public static boolean isCopy(int code) {
-		return code == 67 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isCopy(int i) {
+		return i == 67 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public static boolean isSelectAll(int code) {
-		return code == 65 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isSelectAll(int i) {
+		return i == 65 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public void resize(MinecraftClient client, int width, int height) {
-		this.init(client, width, height);
+	public void resize(MinecraftClient minecraftClient, int i, int j) {
+		this.init(minecraftClient, i, j);
 	}
 
-	public static void method_18605(Runnable runnable, String string, String string2) {
+	public static void wrapScreenError(Runnable runnable, String string, String string2) {
 		try {
 			runnable.run();
 		} catch (Throwable var6) {
@@ -409,5 +434,20 @@ public abstract class Screen extends class_4121 implements IdentifiableBooleanCo
 			crashReportSection.add("Screen name", (CrashCallable<String>)(() -> string2));
 			throw new CrashException(crashReport);
 		}
+	}
+
+	protected boolean isValidCharacterForName(String string, char c, int i) {
+		int j = string.indexOf(58);
+		int k = string.indexOf(47);
+		if (c == ':') {
+			return (k == -1 || i <= k) && j == -1;
+		} else {
+			return c == '/' ? i > j : c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '.';
+		}
+	}
+
+	@Override
+	public boolean isMouseOver(double d, double e) {
+		return true;
 	}
 }

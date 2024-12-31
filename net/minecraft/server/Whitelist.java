@@ -14,23 +14,23 @@ public class Whitelist extends ServerConfigList<GameProfile, WhitelistEntry> {
 		return new WhitelistEntry(jsonObject);
 	}
 
-	public boolean isAllowed(GameProfile profile) {
-		return this.contains(profile);
+	public boolean isAllowed(GameProfile gameProfile) {
+		return this.contains(gameProfile);
 	}
 
 	@Override
 	public String[] getNames() {
-		String[] strings = new String[this.method_21390().size()];
+		String[] strings = new String[this.values().size()];
 		int i = 0;
 
-		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.method_21390()) {
+		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.values()) {
 			strings[i++] = serverConfigEntry.getKey().getName();
 		}
 
 		return strings;
 	}
 
-	protected String toString(GameProfile gameProfile) {
+	protected String method_14652(GameProfile gameProfile) {
 		return gameProfile.getId().toString();
 	}
 }

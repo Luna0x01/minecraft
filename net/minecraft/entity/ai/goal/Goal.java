@@ -1,7 +1,9 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
+
 public abstract class Goal {
-	private int categoryBits;
+	private final EnumSet<Goal.Control> controls = EnumSet.noneOf(Goal.Control.class);
 
 	public abstract boolean canStart();
 
@@ -22,11 +24,19 @@ public abstract class Goal {
 	public void tick() {
 	}
 
-	public void setCategoryBits(int newBits) {
-		this.categoryBits = newBits;
+	public void setControls(EnumSet<Goal.Control> enumSet) {
+		this.controls.clear();
+		this.controls.addAll(enumSet);
 	}
 
-	public int getCategoryBits() {
-		return this.categoryBits;
+	public EnumSet<Goal.Control> getControls() {
+		return this.controls;
+	}
+
+	public static enum Control {
+		field_18405,
+		field_18406,
+		field_18407,
+		field_18408;
 	}
 }

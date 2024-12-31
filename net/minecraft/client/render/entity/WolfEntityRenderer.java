@@ -6,34 +6,34 @@ import net.minecraft.client.render.entity.model.WolfEntityModel;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.util.Identifier;
 
-public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity> {
-	private static final Identifier WOLF_TEX = new Identifier("textures/entity/wolf/wolf.png");
-	private static final Identifier WOLF_TAME = new Identifier("textures/entity/wolf/wolf_tame.png");
-	private static final Identifier WOLF_ANGRY = new Identifier("textures/entity/wolf/wolf_angry.png");
+public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity, WolfEntityModel<WolfEntity>> {
+	private static final Identifier WILD_SKIN = new Identifier("textures/entity/wolf/wolf.png");
+	private static final Identifier TAMED_SKIN = new Identifier("textures/entity/wolf/wolf_tame.png");
+	private static final Identifier ANGRY_SKIN = new Identifier("textures/entity/wolf/wolf_angry.png");
 
 	public WolfEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new WolfEntityModel(), 0.5F);
+		super(entityRenderDispatcher, new WolfEntityModel<>(), 0.5F);
 		this.addFeature(new WolfCollarFeatureRenderer(this));
 	}
 
-	protected float method_5783(WolfEntity wolfEntity, float f) {
-		return wolfEntity.method_2882();
+	protected float method_4167(WolfEntity wolfEntity, float f) {
+		return wolfEntity.method_6714();
 	}
 
-	public void render(WolfEntity wolfEntity, double d, double e, double f, float g, float h) {
-		if (wolfEntity.method_2881()) {
-			float i = wolfEntity.getBrightnessAtEyes() * wolfEntity.method_2879(h);
-			GlStateManager.color(i, i, i);
+	public void method_4166(WolfEntity wolfEntity, double d, double e, double f, float g, float h) {
+		if (wolfEntity.isWet()) {
+			float i = wolfEntity.getBrightnessAtEyes() * wolfEntity.getWetBrightnessMultiplier(h);
+			GlStateManager.color3f(i, i, i);
 		}
 
-		super.render(wolfEntity, d, e, f, g, h);
+		super.method_4072(wolfEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(WolfEntity wolfEntity) {
+	protected Identifier method_4165(WolfEntity wolfEntity) {
 		if (wolfEntity.isTamed()) {
-			return WOLF_TAME;
+			return TAMED_SKIN;
 		} else {
-			return wolfEntity.isAngry() ? WOLF_ANGRY : WOLF_TEX;
+			return wolfEntity.isAngry() ? ANGRY_SKIN : WILD_SKIN;
 		}
 	}
 }

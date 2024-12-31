@@ -1,38 +1,39 @@
 package net.minecraft;
 
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import com.google.gson.JsonObject;
+import com.mojang.brigadier.arguments.LongArgumentType;
+import net.minecraft.command.arguments.BrigadierArgumentTypes;
+import net.minecraft.command.arguments.serialize.ArgumentSerializer;
+import net.minecraft.util.PacketByteBuf;
 
-public enum class_4461 {
-	TOO_OLD("old"),
-	TOO_NEW("new"),
-	COMPATIBLE("compatible");
+public class class_4461 implements ArgumentSerializer<LongArgumentType> {
+	public void method_21690(LongArgumentType longArgumentType, PacketByteBuf packetByteBuf) {
+		boolean bl = longArgumentType.getMinimum() != Long.MIN_VALUE;
+		boolean bl2 = longArgumentType.getMaximum() != Long.MAX_VALUE;
+		packetByteBuf.writeByte(BrigadierArgumentTypes.createFlag(bl, bl2));
+		if (bl) {
+			packetByteBuf.writeLong(longArgumentType.getMinimum());
+		}
 
-	private final Text field_21902;
-	private final Text field_21903;
-
-	private class_4461(String string2) {
-		this.field_21902 = new TranslatableText("resourcePack.incompatible." + string2);
-		this.field_21903 = new TranslatableText("resourcePack.incompatible.confirm." + string2);
-	}
-
-	public boolean method_21343() {
-		return this == COMPATIBLE;
-	}
-
-	public static class_4461 method_21344(int i) {
-		if (i < 4) {
-			return TOO_OLD;
-		} else {
-			return i > 4 ? TOO_NEW : COMPATIBLE;
+		if (bl2) {
+			packetByteBuf.writeLong(longArgumentType.getMaximum());
 		}
 	}
 
-	public Text method_21345() {
-		return this.field_21902;
+	public LongArgumentType method_21691(PacketByteBuf packetByteBuf) {
+		byte b = packetByteBuf.readByte();
+		long l = BrigadierArgumentTypes.hasMin(b) ? packetByteBuf.readLong() : Long.MIN_VALUE;
+		long m = BrigadierArgumentTypes.hasMax(b) ? packetByteBuf.readLong() : Long.MAX_VALUE;
+		return LongArgumentType.longArg(l, m);
 	}
 
-	public Text method_21346() {
-		return this.field_21903;
+	public void method_21689(LongArgumentType longArgumentType, JsonObject jsonObject) {
+		if (longArgumentType.getMinimum() != Long.MIN_VALUE) {
+			jsonObject.addProperty("min", longArgumentType.getMinimum());
+		}
+
+		if (longArgumentType.getMaximum() != Long.MAX_VALUE) {
+			jsonObject.addProperty("max", longArgumentType.getMaximum());
+		}
 	}
 }

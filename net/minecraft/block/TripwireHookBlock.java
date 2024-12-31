@@ -3,98 +3,87 @@ package net.minecraft.block;
 import com.google.common.base.MoreObjects;
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.sound.Sounds;
-import net.minecraft.state.StateManager;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.StateFactory;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.states.property.Properties;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
 public class TripwireHookBlock extends Block {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
-	public static final BooleanProperty field_18553 = Properties.POWERED;
-	public static final BooleanProperty field_18554 = Properties.ATTACHED;
-	protected static final VoxelShape field_18555 = Block.createCuboidShape(5.0, 0.0, 10.0, 11.0, 10.0, 16.0);
-	protected static final VoxelShape field_18556 = Block.createCuboidShape(5.0, 0.0, 0.0, 11.0, 10.0, 6.0);
-	protected static final VoxelShape field_18557 = Block.createCuboidShape(10.0, 0.0, 5.0, 16.0, 10.0, 11.0);
-	protected static final VoxelShape field_18558 = Block.createCuboidShape(0.0, 0.0, 5.0, 6.0, 10.0, 11.0);
+	public static final BooleanProperty POWERED = Properties.POWERED;
+	public static final BooleanProperty ATTACHED = Properties.ATTACHED;
+	protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(5.0, 0.0, 10.0, 11.0, 10.0, 16.0);
+	protected static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(5.0, 0.0, 0.0, 11.0, 10.0, 6.0);
+	protected static final VoxelShape EAST_SHAPE = Block.createCuboidShape(10.0, 0.0, 5.0, 16.0, 10.0, 11.0);
+	protected static final VoxelShape WEST_SHAPE = Block.createCuboidShape(0.0, 0.0, 5.0, 6.0, 10.0, 11.0);
 
-	public TripwireHookBlock(Block.Builder builder) {
-		super(builder);
+	public TripwireHookBlock(Block.Settings settings) {
+		super(settings);
 		this.setDefaultState(
-			this.stateManager
-				.method_16923()
-				.withProperty(FACING, Direction.NORTH)
-				.withProperty(field_18553, Boolean.valueOf(false))
-				.withProperty(field_18554, Boolean.valueOf(false))
+			this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(ATTACHED, Boolean.valueOf(false))
 		);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		switch ((Direction)state.getProperty(FACING)) {
-			case EAST:
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		switch ((Direction)blockState.get(FACING)) {
+			case field_11034:
 			default:
-				return field_18558;
-			case WEST:
-				return field_18557;
-			case SOUTH:
-				return field_18556;
-			case NORTH:
-				return field_18555;
+				return WEST_SHAPE;
+			case field_11039:
+				return EAST_SHAPE;
+			case field_11035:
+				return NORTH_SHAPE;
+			case field_11043:
+				return SOUTH_SHAPE;
 		}
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+		Direction direction = blockState.get(FACING);
+		BlockPos blockPos2 = blockPos.offset(direction.getOpposite());
+		BlockState blockState2 = viewableWorld.getBlockState(blockPos2);
+		return direction.getAxis().isHorizontal() && blockState2.isSideSolidFullSquare(viewableWorld, blockPos2, direction) && !blockState2.emitsRedstonePower();
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
-		Direction direction = state.getProperty(FACING);
-		BlockPos blockPos = pos.offset(direction.getOpposite());
-		BlockState blockState = world.getBlockState(blockPos);
-		boolean bl = method_14309(blockState.getBlock());
-		return !bl
-			&& direction.getAxis().isHorizontal()
-			&& blockState.getRenderLayer(world, blockPos, direction) == BlockRenderLayer.SOLID
-			&& !blockState.emitsRedstonePower();
-	}
-
-	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		return direction.getOpposite() == state.getProperty(FACING) && !state.canPlaceAt(world, pos)
-			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		return direction.getOpposite() == blockState.get(FACING) && !blockState.canPlaceAt(iWorld, blockPos)
+			? Blocks.field_10124.getDefaultState()
+			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Nullable
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext context) {
-		BlockState blockState = this.getDefaultState().withProperty(field_18553, Boolean.valueOf(false)).withProperty(field_18554, Boolean.valueOf(false));
-		RenderBlockView renderBlockView = context.getWorld();
-		BlockPos blockPos = context.getBlockPos();
-		Direction[] directions = context.method_16021();
+	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+		BlockState blockState = this.getDefaultState().with(POWERED, Boolean.valueOf(false)).with(ATTACHED, Boolean.valueOf(false));
+		ViewableWorld viewableWorld = itemPlacementContext.getWorld();
+		BlockPos blockPos = itemPlacementContext.getBlockPos();
+		Direction[] directions = itemPlacementContext.getPlacementDirections();
 
 		for (Direction direction : directions) {
 			if (direction.getAxis().isHorizontal()) {
 				Direction direction2 = direction.getOpposite();
-				blockState = blockState.withProperty(FACING, direction2);
-				if (blockState.canPlaceAt(renderBlockView, blockPos)) {
+				blockState = blockState.with(FACING, direction2);
+				if (blockState.canPlaceAt(viewableWorld, blockPos)) {
 					return blockState;
 				}
 			}
@@ -104,76 +93,74 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		this.update(world, pos, state, false, false, -1, null);
+	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity, ItemStack itemStack) {
+		this.update(world, blockPos, blockState, false, false, -1, null);
 	}
 
-	public void update(
-		World world, BlockPos pos, BlockState hookState, boolean beingRemoved, boolean updateNeighbors, int tripwireLength, @Nullable BlockState otherState
-	) {
-		Direction direction = hookState.getProperty(FACING);
-		boolean bl = (Boolean)hookState.getProperty(field_18554);
-		boolean bl2 = (Boolean)hookState.getProperty(field_18553);
-		boolean bl3 = !beingRemoved;
-		boolean bl4 = false;
-		int i = 0;
+	public void update(World world, BlockPos blockPos, BlockState blockState, boolean bl, boolean bl2, int i, @Nullable BlockState blockState2) {
+		Direction direction = blockState.get(FACING);
+		boolean bl3 = (Boolean)blockState.get(ATTACHED);
+		boolean bl4 = (Boolean)blockState.get(POWERED);
+		boolean bl5 = !bl;
+		boolean bl6 = false;
+		int j = 0;
 		BlockState[] blockStates = new BlockState[42];
 
-		for (int j = 1; j < 42; j++) {
-			BlockPos blockPos = pos.offset(direction, j);
-			BlockState blockState = world.getBlockState(blockPos);
-			if (blockState.getBlock() == Blocks.TRIPWIRE_HOOK) {
-				if (blockState.getProperty(FACING) == direction.getOpposite()) {
-					i = j;
+		for (int k = 1; k < 42; k++) {
+			BlockPos blockPos2 = blockPos.offset(direction, k);
+			BlockState blockState3 = world.getBlockState(blockPos2);
+			if (blockState3.getBlock() == Blocks.field_10348) {
+				if (blockState3.get(FACING) == direction.getOpposite()) {
+					j = k;
 				}
 				break;
 			}
 
-			if (blockState.getBlock() != Blocks.TRIPWIRE && j != tripwireLength) {
-				blockStates[j] = null;
-				bl3 = false;
+			if (blockState3.getBlock() != Blocks.field_10589 && k != i) {
+				blockStates[k] = null;
+				bl5 = false;
 			} else {
-				if (j == tripwireLength) {
-					blockState = (BlockState)MoreObjects.firstNonNull(otherState, blockState);
+				if (k == i) {
+					blockState3 = (BlockState)MoreObjects.firstNonNull(blockState2, blockState3);
 				}
 
-				boolean bl5 = !(Boolean)blockState.getProperty(TripwireBlock.field_18544);
-				boolean bl6 = (Boolean)blockState.getProperty(TripwireBlock.field_18542);
-				bl4 |= bl5 && bl6;
-				blockStates[j] = blockState;
-				if (j == tripwireLength) {
-					world.getBlockTickScheduler().schedule(pos, this, this.getTickDelay(world));
-					bl3 &= bl5;
+				boolean bl7 = !(Boolean)blockState3.get(TripwireBlock.DISARMED);
+				boolean bl8 = (Boolean)blockState3.get(TripwireBlock.POWERED);
+				bl6 |= bl7 && bl8;
+				blockStates[k] = blockState3;
+				if (k == i) {
+					world.getBlockTickScheduler().schedule(blockPos, this, this.getTickRate(world));
+					bl5 &= bl7;
 				}
 			}
 		}
 
-		bl3 &= i > 1;
-		bl4 &= bl3;
-		BlockState blockState2 = this.getDefaultState().withProperty(field_18554, Boolean.valueOf(bl3)).withProperty(field_18553, Boolean.valueOf(bl4));
-		if (i > 0) {
-			BlockPos blockPos2 = pos.offset(direction, i);
+		bl5 &= j > 1;
+		bl6 &= bl5;
+		BlockState blockState4 = this.getDefaultState().with(ATTACHED, Boolean.valueOf(bl5)).with(POWERED, Boolean.valueOf(bl6));
+		if (j > 0) {
+			BlockPos blockPos3 = blockPos.offset(direction, j);
 			Direction direction2 = direction.getOpposite();
-			world.setBlockState(blockPos2, blockState2.withProperty(FACING, direction2), 3);
-			this.updateNeighborsOnAxis(world, blockPos2, direction2);
-			this.method_11641(world, blockPos2, bl3, bl4, bl, bl2);
+			world.setBlockState(blockPos3, blockState4.with(FACING, direction2), 3);
+			this.updateNeighborsOnAxis(world, blockPos3, direction2);
+			this.playSound(world, blockPos3, bl5, bl6, bl3, bl4);
 		}
 
-		this.method_11641(world, pos, bl3, bl4, bl, bl2);
-		if (!beingRemoved) {
-			world.setBlockState(pos, blockState2.withProperty(FACING, direction), 3);
-			if (updateNeighbors) {
-				this.updateNeighborsOnAxis(world, pos, direction);
+		this.playSound(world, blockPos, bl5, bl6, bl3, bl4);
+		if (!bl) {
+			world.setBlockState(blockPos, blockState4.with(FACING, direction), 3);
+			if (bl2) {
+				this.updateNeighborsOnAxis(world, blockPos, direction);
 			}
 		}
 
-		if (bl != bl3) {
-			for (int k = 1; k < i; k++) {
-				BlockPos blockPos3 = pos.offset(direction, k);
-				BlockState blockState3 = blockStates[k];
-				if (blockState3 != null) {
-					world.setBlockState(blockPos3, blockState3.withProperty(field_18554, Boolean.valueOf(bl3)), 3);
-					if (!world.getBlockState(blockPos3).isAir()) {
+		if (bl3 != bl5) {
+			for (int l = 1; l < j; l++) {
+				BlockPos blockPos4 = blockPos.offset(direction, l);
+				BlockState blockState5 = blockStates[l];
+				if (blockState5 != null) {
+					world.setBlockState(blockPos4, blockState5.with(ATTACHED, Boolean.valueOf(bl5)), 3);
+					if (!world.getBlockState(blockPos4).isAir()) {
 					}
 				}
 			}
@@ -181,86 +168,81 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
-		this.update(world, pos, state, false, true, -1, null);
+	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		this.update(world, blockPos, blockState, false, true, -1, null);
 	}
 
-	private void method_11641(World world, BlockPos blockPos, boolean bl, boolean bl2, boolean bl3, boolean bl4) {
+	private void playSound(World world, BlockPos blockPos, boolean bl, boolean bl2, boolean bl3, boolean bl4) {
 		if (bl2 && !bl4) {
-			world.playSound(null, blockPos, Sounds.BLOCK_TRIPWIRE_CLICK_ON, SoundCategory.BLOCKS, 0.4F, 0.6F);
+			world.playSound(null, blockPos, SoundEvents.field_14674, SoundCategory.field_15245, 0.4F, 0.6F);
 		} else if (!bl2 && bl4) {
-			world.playSound(null, blockPos, Sounds.BLOCK_TRIPWIRE_CLICK_OFF, SoundCategory.BLOCKS, 0.4F, 0.5F);
+			world.playSound(null, blockPos, SoundEvents.field_14787, SoundCategory.field_15245, 0.4F, 0.5F);
 		} else if (bl && !bl3) {
-			world.playSound(null, blockPos, Sounds.BLOCK_TRIPWIRE_ATTACH, SoundCategory.BLOCKS, 0.4F, 0.7F);
+			world.playSound(null, blockPos, SoundEvents.field_14859, SoundCategory.field_15245, 0.4F, 0.7F);
 		} else if (!bl && bl3) {
-			world.playSound(null, blockPos, Sounds.BLOCK_TRIPWIRE_DETACH, SoundCategory.BLOCKS, 0.4F, 1.2F / (world.random.nextFloat() * 0.2F + 0.9F));
+			world.playSound(null, blockPos, SoundEvents.field_14595, SoundCategory.field_15245, 0.4F, 1.2F / (world.random.nextFloat() * 0.2F + 0.9F));
 		}
 	}
 
-	private void updateNeighborsOnAxis(World world, BlockPos pos, Direction dir) {
-		world.updateNeighborsAlways(pos, this);
-		world.updateNeighborsAlways(pos.offset(dir.getOpposite()), this);
+	private void updateNeighborsOnAxis(World world, BlockPos blockPos, Direction direction) {
+		world.updateNeighborsAlways(blockPos, this);
+		world.updateNeighborsAlways(blockPos.offset(direction.getOpposite()), this);
 	}
 
 	@Override
-	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-		if (!moved && state.getBlock() != newState.getBlock()) {
-			boolean bl = (Boolean)state.getProperty(field_18554);
-			boolean bl2 = (Boolean)state.getProperty(field_18553);
-			if (bl || bl2) {
-				this.update(world, pos, state, true, false, -1, null);
+	public void onBlockRemoved(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
+		if (!bl && blockState.getBlock() != blockState2.getBlock()) {
+			boolean bl2 = (Boolean)blockState.get(ATTACHED);
+			boolean bl3 = (Boolean)blockState.get(POWERED);
+			if (bl2 || bl3) {
+				this.update(world, blockPos, blockState, true, false, -1, null);
 			}
 
-			if (bl2) {
-				world.updateNeighborsAlways(pos, this);
-				world.updateNeighborsAlways(pos.offset(((Direction)state.getProperty(FACING)).getOpposite()), this);
+			if (bl3) {
+				world.updateNeighborsAlways(blockPos, this);
+				world.updateNeighborsAlways(blockPos.offset(((Direction)blockState.get(FACING)).getOpposite()), this);
 			}
 
-			super.onStateReplaced(state, world, pos, newState, moved);
+			super.onBlockRemoved(blockState, world, blockPos, blockState2, bl);
 		}
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		return state.getProperty(field_18553) ? 15 : 0;
+	public int getWeakRedstonePower(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
+		return blockState.get(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-		if (!(Boolean)state.getProperty(field_18553)) {
+	public int getStrongRedstonePower(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
+		if (!(Boolean)blockState.get(POWERED)) {
 			return 0;
 		} else {
-			return state.getProperty(FACING) == direction ? 15 : 0;
+			return blockState.get(FACING) == direction ? 15 : 0;
 		}
 	}
 
 	@Override
-	public boolean emitsRedstonePower(BlockState state) {
+	public boolean emitsRedstonePower(BlockState blockState) {
 		return true;
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT_MIPPED;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.CUTOUT_MIPPED;
 	}
 
 	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
+	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
+		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
 	}
 
 	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
+	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
+		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
 	}
 
 	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.method_16928(FACING, field_18553, field_18554);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(FACING, POWERED, ATTACHED);
 	}
 }

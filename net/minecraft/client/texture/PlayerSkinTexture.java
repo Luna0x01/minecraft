@@ -1,5 +1,6 @@
 package net.minecraft.client.texture;
 
+import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -8,125 +9,122 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
-import net.minecraft.class_4277;
-import net.minecraft.class_4325;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferedImageSkinProvider;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.UncaughtExceptionLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PlayerSkinTexture extends ResourceTexture {
-	private static final Logger field_8079 = LogManager.getLogger();
-	private static final AtomicInteger field_8080 = new AtomicInteger(0);
+	private static final Logger LOGGER = LogManager.getLogger();
+	private static final AtomicInteger DOWNLOAD_THREAD_COUNTER = new AtomicInteger(0);
 	@Nullable
-	private final File field_8081;
-	private final String field_6548;
+	private final File cacheFile;
+	private final String url;
 	@Nullable
-	private final BufferedImageSkinProvider field_6549;
+	private final ImageFilter filter;
 	@Nullable
-	private Thread field_6551;
-	private volatile boolean field_20980;
+	private Thread downloadThread;
+	private volatile boolean field_5215;
 
-	public PlayerSkinTexture(@Nullable File file, String string, Identifier identifier, @Nullable BufferedImageSkinProvider bufferedImageSkinProvider) {
+	public PlayerSkinTexture(@Nullable File file, String string, Identifier identifier, @Nullable ImageFilter imageFilter) {
 		super(identifier);
-		this.field_8081 = file;
-		this.field_6548 = string;
-		this.field_6549 = bufferedImageSkinProvider;
+		this.cacheFile = file;
+		this.url = string;
+		this.filter = imageFilter;
 	}
 
-	private void method_19451(class_4277 arg) {
-		TextureUtil.prepareImage(this.getGlId(), arg.method_19458(), arg.method_19478());
-		arg.method_19466(0, 0, 0, false);
+	private void method_4531(NativeImage nativeImage) {
+		TextureUtil.prepareImage(this.getGlId(), nativeImage.getWidth(), nativeImage.getHeight());
+		nativeImage.upload(0, 0, 0, false);
 	}
 
-	public void method_19450(class_4277 arg) {
-		if (this.field_6549 != null) {
-			this.field_6549.setAvailable();
+	public void method_4534(NativeImage nativeImage) {
+		if (this.filter != null) {
+			this.filter.method_3238();
 		}
 
 		synchronized (this) {
-			this.method_19451(arg);
-			this.field_20980 = true;
+			this.method_4531(nativeImage);
+			this.field_5215 = true;
 		}
 	}
 
 	@Override
-	public void load(ResourceManager manager) throws IOException {
-		if (!this.field_20980) {
+	public void load(ResourceManager resourceManager) throws IOException {
+		if (!this.field_5215) {
 			synchronized (this) {
-				super.load(manager);
-				this.field_20980 = true;
+				super.load(resourceManager);
+				this.field_5215 = true;
 			}
 		}
 
-		if (this.field_6551 == null) {
-			if (this.field_8081 != null && this.field_8081.isFile()) {
-				field_8079.debug("Loading http texture from local cache ({})", this.field_8081);
-				class_4277 lv = null;
+		if (this.downloadThread == null) {
+			if (this.cacheFile != null && this.cacheFile.isFile()) {
+				LOGGER.debug("Loading http texture from local cache ({})", this.cacheFile);
+				NativeImage nativeImage = null;
 
 				try {
 					try {
-						lv = class_4277.method_19472(new FileInputStream(this.field_8081));
-						if (this.field_6549 != null) {
-							lv = this.field_6549.method_19128(lv);
+						nativeImage = NativeImage.read(new FileInputStream(this.cacheFile));
+						if (this.filter != null) {
+							nativeImage = this.filter.filterImage(nativeImage);
 						}
 
-						this.method_19450(lv);
+						this.method_4534(nativeImage);
 					} catch (IOException var8) {
-						field_8079.error("Couldn't load skin {}", this.field_8081, var8);
-						this.method_6993();
+						LOGGER.error("Couldn't load skin {}", this.cacheFile, var8);
+						this.startTextureDownload();
 					}
 				} finally {
-					if (lv != null) {
-						lv.close();
+					if (nativeImage != null) {
+						nativeImage.close();
 					}
 				}
 			} else {
-				this.method_6993();
+				this.startTextureDownload();
 			}
 		}
 	}
 
-	protected void method_6993() {
-		this.field_6551 = new Thread("Texture Downloader #" + field_8080.incrementAndGet()) {
+	protected void startTextureDownload() {
+		this.downloadThread = new Thread("Texture Downloader #" + DOWNLOAD_THREAD_COUNTER.incrementAndGet()) {
 			public void run() {
 				HttpURLConnection httpURLConnection = null;
-				PlayerSkinTexture.field_8079.debug("Downloading http texture from {} to {}", PlayerSkinTexture.this.field_6548, PlayerSkinTexture.this.field_8081);
+				PlayerSkinTexture.LOGGER.debug("Downloading http texture from {} to {}", PlayerSkinTexture.this.url, PlayerSkinTexture.this.cacheFile);
 
 				try {
-					httpURLConnection = (HttpURLConnection)new URL(PlayerSkinTexture.this.field_6548).openConnection(MinecraftClient.getInstance().getNetworkProxy());
+					httpURLConnection = (HttpURLConnection)new URL(PlayerSkinTexture.this.url).openConnection(MinecraftClient.getInstance().getNetworkProxy());
 					httpURLConnection.setDoInput(true);
 					httpURLConnection.setDoOutput(false);
 					httpURLConnection.connect();
 					if (httpURLConnection.getResponseCode() / 100 == 2) {
 						InputStream inputStream;
-						if (PlayerSkinTexture.this.field_8081 != null) {
-							FileUtils.copyInputStreamToFile(httpURLConnection.getInputStream(), PlayerSkinTexture.this.field_8081);
-							inputStream = new FileInputStream(PlayerSkinTexture.this.field_8081);
+						if (PlayerSkinTexture.this.cacheFile != null) {
+							FileUtils.copyInputStreamToFile(httpURLConnection.getInputStream(), PlayerSkinTexture.this.cacheFile);
+							inputStream = new FileInputStream(PlayerSkinTexture.this.cacheFile);
 						} else {
 							inputStream = httpURLConnection.getInputStream();
 						}
 
-						MinecraftClient.getInstance().submit(() -> {
-							class_4277 lv = null;
+						MinecraftClient.getInstance().execute(() -> {
+							NativeImage nativeImage = null;
 
 							try {
-								lv = class_4277.method_19472(inputStream);
-								if (PlayerSkinTexture.this.field_6549 != null) {
-									lv = PlayerSkinTexture.this.field_6549.method_19128(lv);
+								nativeImage = NativeImage.read(inputStream);
+								if (PlayerSkinTexture.this.filter != null) {
+									nativeImage = PlayerSkinTexture.this.filter.filterImage(nativeImage);
 								}
 
-								class_4277 lv2 = lv;
-								MinecraftClient.getInstance().submit(() -> PlayerSkinTexture.this.method_19450(lv2));
+								PlayerSkinTexture.this.method_4534(nativeImage);
 							} catch (IOException var7x) {
-								PlayerSkinTexture.field_8079.warn("Error while loading the skin texture", var7x);
+								PlayerSkinTexture.LOGGER.warn("Error while loading the skin texture", var7x);
 							} finally {
-								if (lv != null) {
-									lv.close();
+								if (nativeImage != null) {
+									nativeImage.close();
 								}
 
 								IOUtils.closeQuietly(inputStream);
@@ -135,7 +133,7 @@ public class PlayerSkinTexture extends ResourceTexture {
 						return;
 					}
 				} catch (Exception var6) {
-					PlayerSkinTexture.field_8079.error("Couldn't download http texture", var6);
+					PlayerSkinTexture.LOGGER.error("Couldn't download http texture", var6);
 					return;
 				} finally {
 					if (httpURLConnection != null) {
@@ -144,8 +142,8 @@ public class PlayerSkinTexture extends ResourceTexture {
 				}
 			}
 		};
-		this.field_6551.setDaemon(true);
-		this.field_6551.setUncaughtExceptionHandler(new class_4325(field_8079));
-		this.field_6551.start();
+		this.downloadThread.setDaemon(true);
+		this.downloadThread.setUncaughtExceptionHandler(new UncaughtExceptionLogger(LOGGER));
+		this.downloadThread.start();
 	}
 }

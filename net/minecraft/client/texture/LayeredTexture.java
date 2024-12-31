@@ -1,10 +1,10 @@
 package net.minecraft.client.texture;
 
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import net.minecraft.class_4277;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
@@ -23,31 +23,31 @@ public class LayeredTexture extends AbstractTexture {
 	}
 
 	@Override
-	public void load(ResourceManager manager) throws IOException {
+	public void load(ResourceManager resourceManager) throws IOException {
 		Iterator<String> iterator = this.locations.iterator();
 		String string = (String)iterator.next();
 
 		try {
-			Resource resource = manager.getResource(new Identifier(string));
+			Resource resource = resourceManager.getResource(new Identifier(string));
 			Throwable var5 = null;
 
-			try (class_4277 lv = class_4277.method_19472(resource.getInputStream())) {
+			try (NativeImage nativeImage = NativeImage.read(resource.getInputStream())) {
 				while (true) {
 					if (!iterator.hasNext()) {
-						TextureUtil.prepareImage(this.getGlId(), lv.method_19458(), lv.method_19478());
-						lv.method_19466(0, 0, 0, false);
+						TextureUtil.prepareImage(this.getGlId(), nativeImage.getWidth(), nativeImage.getHeight());
+						nativeImage.upload(0, 0, 0, false);
 						break;
 					}
 
 					String string2 = (String)iterator.next();
 					if (string2 != null) {
-						Resource resource2 = manager.getResource(new Identifier(string2));
+						Resource resource2 = resourceManager.getResource(new Identifier(string2));
 						Throwable var10 = null;
 
-						try (class_4277 lv2 = class_4277.method_19472(resource2.getInputStream())) {
-							for (int i = 0; i < lv2.method_19478(); i++) {
-								for (int j = 0; j < lv2.method_19458(); j++) {
-									lv.method_19479(j, i, lv2.method_19459(j, i));
+						try (NativeImage nativeImage2 = NativeImage.read(resource2.getInputStream())) {
+							for (int i = 0; i < nativeImage2.getHeight(); i++) {
+								for (int j = 0; j < nativeImage2.getWidth(); j++) {
+									nativeImage.blendPixel(j, i, nativeImage2.getPixelRGBA(j, i));
 								}
 							}
 						} catch (Throwable var91) {

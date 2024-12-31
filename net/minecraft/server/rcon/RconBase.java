@@ -6,21 +6,21 @@ import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.class_4336;
 import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.util.UncaughtExceptionHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class RconBase implements Runnable {
-	private static final Logger field_21948 = LogManager.getLogger();
-	private static final AtomicInteger field_9022 = new AtomicInteger(0);
+	private static final Logger field_14430 = LogManager.getLogger();
+	private static final AtomicInteger field_14428 = new AtomicInteger(0);
 	protected boolean running;
-	protected DedicatedServer server;
+	protected final DedicatedServer server;
 	protected final String description;
-	protected Thread rconThread;
-	protected int field_2932 = 5;
-	protected List<DatagramSocket> sockets = Lists.newArrayList();
-	protected List<ServerSocket> serverSockets = Lists.newArrayList();
+	protected Thread thread;
+	protected final int field_14427 = 5;
+	protected final List<DatagramSocket> sockets = Lists.newArrayList();
+	protected final List<ServerSocket> serverSockets = Lists.newArrayList();
 
 	protected RconBase(DedicatedServer dedicatedServer, String string) {
 		this.server = dedicatedServer;
@@ -31,30 +31,60 @@ public abstract class RconBase implements Runnable {
 	}
 
 	public synchronized void start() {
-		this.rconThread = new Thread(this, this.description + " #" + field_9022.incrementAndGet());
-		this.rconThread.setUncaughtExceptionHandler(new class_4336(field_21948));
-		this.rconThread.start();
+		this.thread = new Thread(this, this.description + " #" + field_14428.incrementAndGet());
+		this.thread.setUncaughtExceptionHandler(new UncaughtExceptionHandler(field_14430));
+		this.thread.start();
 		this.running = true;
+	}
+
+	public synchronized void stop() {
+		this.running = false;
+		if (null != this.thread) {
+			int i = 0;
+
+			while (this.thread.isAlive()) {
+				try {
+					this.thread.join(1000L);
+					if (5 <= ++i) {
+						this.warn("Waited " + i + " seconds attempting force stop!");
+						this.forceClose(true);
+					} else if (this.thread.isAlive()) {
+						this.warn("Thread " + this + " (" + this.thread.getState() + ") failed to exit after " + i + " second(s)");
+						this.warn("Stack:");
+
+						for (StackTraceElement stackTraceElement : this.thread.getStackTrace()) {
+							this.warn(stackTraceElement.toString());
+						}
+
+						this.thread.interrupt();
+					}
+				} catch (InterruptedException var6) {
+				}
+			}
+
+			this.forceClose(true);
+			this.thread = null;
+		}
 	}
 
 	public boolean isRunning() {
 		return this.running;
 	}
 
-	protected void log(String message) {
-		this.server.log(message);
+	protected void log(String string) {
+		this.server.log(string);
 	}
 
-	protected void info(String message) {
-		this.server.logInfo(message);
+	protected void info(String string) {
+		this.server.info(string);
 	}
 
-	protected void warn(String message) {
-		this.server.logWarn(message);
+	protected void warn(String string) {
+		this.server.warn(string);
 	}
 
-	protected void logError(String message) {
-		this.server.logError(message);
+	protected void logError(String string) {
+		this.server.logError(string);
 	}
 
 	protected int getCurrentPlayerCount() {
@@ -66,50 +96,50 @@ public abstract class RconBase implements Runnable {
 		this.sockets.add(datagramSocket);
 	}
 
-	protected boolean closeSocket(DatagramSocket socket, boolean remove) {
-		this.log("closeSocket: " + socket);
-		if (null == socket) {
+	protected boolean closeSocket(DatagramSocket datagramSocket, boolean bl) {
+		this.log("closeSocket: " + datagramSocket);
+		if (null == datagramSocket) {
 			return false;
 		} else {
-			boolean bl = false;
-			if (!socket.isClosed()) {
-				socket.close();
-				bl = true;
+			boolean bl2 = false;
+			if (!datagramSocket.isClosed()) {
+				datagramSocket.close();
+				bl2 = true;
 			}
 
-			if (remove) {
-				this.sockets.remove(socket);
+			if (bl) {
+				this.sockets.remove(datagramSocket);
 			}
 
-			return bl;
+			return bl2;
 		}
 	}
 
-	protected boolean closeSocket(ServerSocket socket) {
-		return this.closeSocket(socket, true);
+	protected boolean closeSocket(ServerSocket serverSocket) {
+		return this.closeSocket(serverSocket, true);
 	}
 
-	protected boolean closeSocket(ServerSocket socket, boolean remove) {
-		this.log("closeSocket: " + socket);
-		if (null == socket) {
+	protected boolean closeSocket(ServerSocket serverSocket, boolean bl) {
+		this.log("closeSocket: " + serverSocket);
+		if (null == serverSocket) {
 			return false;
 		} else {
-			boolean bl = false;
+			boolean bl2 = false;
 
 			try {
-				if (!socket.isClosed()) {
-					socket.close();
-					bl = true;
+				if (!serverSocket.isClosed()) {
+					serverSocket.close();
+					bl2 = true;
 				}
 			} catch (IOException var5) {
 				this.warn("IO: " + var5.getMessage());
 			}
 
-			if (remove) {
-				this.serverSockets.remove(socket);
+			if (bl) {
+				this.serverSockets.remove(serverSocket);
 			}
 
-			return bl;
+			return bl2;
 		}
 	}
 
@@ -117,7 +147,7 @@ public abstract class RconBase implements Runnable {
 		this.forceClose(false);
 	}
 
-	protected void forceClose(boolean warn) {
+	protected void forceClose(boolean bl) {
 		int i = 0;
 
 		for (DatagramSocket datagramSocket : this.sockets) {
@@ -135,7 +165,7 @@ public abstract class RconBase implements Runnable {
 		}
 
 		this.serverSockets.clear();
-		if (warn && 0 < i) {
+		if (bl && 0 < i) {
 			this.warn("Force closed " + i + " sockets");
 		}
 	}

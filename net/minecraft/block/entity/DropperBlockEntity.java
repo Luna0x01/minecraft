@@ -5,17 +5,11 @@ import net.minecraft.text.TranslatableText;
 
 public class DropperBlockEntity extends DispenserBlockEntity {
 	public DropperBlockEntity() {
-		super(BlockEntityType.DROPPER);
+		super(BlockEntityType.field_11899);
 	}
 
 	@Override
-	public Text method_15540() {
-		Text text = this.method_15541();
-		return (Text)(text != null ? text : new TranslatableText("container.dropper"));
-	}
-
-	@Override
-	public String getId() {
-		return "minecraft:dropper";
+	protected Text getContainerName() {
+		return new TranslatableText("container.dropper");
 	}
 }

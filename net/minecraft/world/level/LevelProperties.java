@@ -2,39 +2,44 @@ package net.minecraft.world.level;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.mojang.datafixers.DataFixTypes;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.types.JsonOps;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-import net.minecraft.class_4372;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.util.Util;
+import net.minecraft.SharedConstants;
+import net.minecraft.datafixers.DataFixTypes;
+import net.minecraft.datafixers.NbtOps;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.SystemUtil;
+import net.minecraft.util.TagHelper;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.GameRuleManager;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.timer.Timer;
+import net.minecraft.world.timer.TimerCallbackSerializer;
 
 public class LevelProperties {
-	private String field_13100;
-	private int field_13101;
-	private boolean field_13102;
-	public static final Difficulty NORMAL_DIFFICULTY = Difficulty.NORMAL;
-	private long seed;
-	private LevelGeneratorType levelGeneratorType = LevelGeneratorType.DEFAULT;
-	private NbtCompound field_19765 = new NbtCompound();
+	private String versionName;
+	private int versionId;
+	private boolean versionSnapshot;
+	public static final Difficulty DEFAULT_DIFFICULTY = Difficulty.field_5802;
+	private long randomSeed;
+	private LevelGeneratorType generatorType = LevelGeneratorType.DEFAULT;
+	private CompoundTag generatorOptions = new CompoundTag();
 	@Nullable
-	private String field_19766;
+	private String legacyCustomOptions;
 	private int spawnX;
 	private int spawnY;
 	private int spawnZ;
@@ -43,11 +48,10 @@ public class LevelProperties {
 	private long lastPlayed;
 	private long sizeOnDisk;
 	@Nullable
-	private final DataFixer field_19767;
-	private final int field_19768;
-	private boolean field_19769;
-	private NbtCompound playerNbt;
-	private int dimension;
+	private final DataFixer dataFixer;
+	private final int playerWorldId;
+	private boolean playerDataLoaded;
+	private CompoundTag playerData;
 	private String levelName;
 	private int version;
 	private int clearWeatherTime;
@@ -58,7 +62,7 @@ public class LevelProperties {
 	private GameMode gameMode;
 	private boolean structures;
 	private boolean hardcore;
-	private boolean allowCommands;
+	private boolean commandsAllowed;
 	private boolean initialized;
 	private Difficulty difficulty;
 	private boolean difficultyLocked;
@@ -71,287 +75,314 @@ public class LevelProperties {
 	private double borderDamagePerBlock = 0.2;
 	private int borderWarningBlocks = 5;
 	private int borderWarningTime = 15;
-	private final Set<String> field_19762 = Sets.newHashSet();
-	private final Set<String> field_19763 = Sets.newLinkedHashSet();
-	private final Map<DimensionType, NbtCompound> field_13099 = Maps.newIdentityHashMap();
-	private NbtCompound field_19764;
-	private final GameRuleManager gameRules = new GameRuleManager();
+	private final Set<String> disabledDataPacks = Sets.newHashSet();
+	private final Set<String> enabledDataPacks = Sets.newLinkedHashSet();
+	private final Map<DimensionType, CompoundTag> worldData = Maps.newIdentityHashMap();
+	private CompoundTag customBossEvents;
+	private int wanderingTraderSpawnDelay;
+	private int wanderingTraderSpawnChance;
+	private UUID wanderingTraderId;
+	private final GameRules gameRules = new GameRules();
+	private final Timer<MinecraftServer> scheduledEvents = new Timer<>(TimerCallbackSerializer.INSTANCE);
 
 	protected LevelProperties() {
-		this.field_19767 = null;
-		this.field_19768 = 1631;
-		this.method_17964(new NbtCompound());
+		this.dataFixer = null;
+		this.playerWorldId = SharedConstants.getGameVersion().getWorldVersion();
+		this.setGeneratorOptions(new CompoundTag());
 	}
 
-	public LevelProperties(NbtCompound nbtCompound, DataFixer dataFixer, int i, @Nullable NbtCompound nbtCompound2) {
-		this.field_19767 = dataFixer;
-		if (nbtCompound.contains("Version", 10)) {
-			NbtCompound nbtCompound3 = nbtCompound.getCompound("Version");
-			this.field_13100 = nbtCompound3.getString("Name");
-			this.field_13101 = nbtCompound3.getInt("Id");
-			this.field_13102 = nbtCompound3.getBoolean("Snapshot");
+	public LevelProperties(CompoundTag compoundTag, DataFixer dataFixer, int i, @Nullable CompoundTag compoundTag2) {
+		this.dataFixer = dataFixer;
+		if (compoundTag.containsKey("Version", 10)) {
+			CompoundTag compoundTag3 = compoundTag.getCompound("Version");
+			this.versionName = compoundTag3.getString("Name");
+			this.versionId = compoundTag3.getInt("Id");
+			this.versionSnapshot = compoundTag3.getBoolean("Snapshot");
 		}
 
-		this.seed = nbtCompound.getLong("RandomSeed");
-		if (nbtCompound.contains("generatorName", 8)) {
-			String string = nbtCompound.getString("generatorName");
-			this.levelGeneratorType = LevelGeneratorType.getTypeFromName(string);
-			if (this.levelGeneratorType == null) {
-				this.levelGeneratorType = LevelGeneratorType.DEFAULT;
-			} else if (this.levelGeneratorType == LevelGeneratorType.CUSTOMIZED) {
-				this.field_19766 = nbtCompound.getString("generatorOptions");
-			} else if (this.levelGeneratorType.isVersioned()) {
+		this.randomSeed = compoundTag.getLong("RandomSeed");
+		if (compoundTag.containsKey("generatorName", 8)) {
+			String string = compoundTag.getString("generatorName");
+			this.generatorType = LevelGeneratorType.getTypeFromName(string);
+			if (this.generatorType == null) {
+				this.generatorType = LevelGeneratorType.DEFAULT;
+			} else if (this.generatorType == LevelGeneratorType.CUSTOMIZED) {
+				this.legacyCustomOptions = compoundTag.getString("generatorOptions");
+			} else if (this.generatorType.isVersioned()) {
 				int j = 0;
-				if (nbtCompound.contains("generatorVersion", 99)) {
-					j = nbtCompound.getInt("generatorVersion");
+				if (compoundTag.containsKey("generatorVersion", 99)) {
+					j = compoundTag.getInt("generatorVersion");
 				}
 
-				this.levelGeneratorType = this.levelGeneratorType.getTypeForVersion(j);
+				this.generatorType = this.generatorType.getTypeForVersion(j);
 			}
 
-			this.method_17964(nbtCompound.getCompound("generatorOptions"));
+			this.setGeneratorOptions(compoundTag.getCompound("generatorOptions"));
 		}
 
-		this.gameMode = GameMode.setGameModeWithId(nbtCompound.getInt("GameType"));
-		if (nbtCompound.contains("legacy_custom_options", 8)) {
-			this.field_19766 = nbtCompound.getString("legacy_custom_options");
+		this.gameMode = GameMode.byId(compoundTag.getInt("GameType"));
+		if (compoundTag.containsKey("legacy_custom_options", 8)) {
+			this.legacyCustomOptions = compoundTag.getString("legacy_custom_options");
 		}
 
-		if (nbtCompound.contains("MapFeatures", 99)) {
-			this.structures = nbtCompound.getBoolean("MapFeatures");
+		if (compoundTag.containsKey("MapFeatures", 99)) {
+			this.structures = compoundTag.getBoolean("MapFeatures");
 		} else {
 			this.structures = true;
 		}
 
-		this.spawnX = nbtCompound.getInt("SpawnX");
-		this.spawnY = nbtCompound.getInt("SpawnY");
-		this.spawnZ = nbtCompound.getInt("SpawnZ");
-		this.time = nbtCompound.getLong("Time");
-		if (nbtCompound.contains("DayTime", 99)) {
-			this.timeOfDay = nbtCompound.getLong("DayTime");
+		this.spawnX = compoundTag.getInt("SpawnX");
+		this.spawnY = compoundTag.getInt("SpawnY");
+		this.spawnZ = compoundTag.getInt("SpawnZ");
+		this.time = compoundTag.getLong("Time");
+		if (compoundTag.containsKey("DayTime", 99)) {
+			this.timeOfDay = compoundTag.getLong("DayTime");
 		} else {
 			this.timeOfDay = this.time;
 		}
 
-		this.lastPlayed = nbtCompound.getLong("LastPlayed");
-		this.sizeOnDisk = nbtCompound.getLong("SizeOnDisk");
-		this.levelName = nbtCompound.getString("LevelName");
-		this.version = nbtCompound.getInt("version");
-		this.clearWeatherTime = nbtCompound.getInt("clearWeatherTime");
-		this.rainTime = nbtCompound.getInt("rainTime");
-		this.raining = nbtCompound.getBoolean("raining");
-		this.thunderTime = nbtCompound.getInt("thunderTime");
-		this.thundering = nbtCompound.getBoolean("thundering");
-		this.hardcore = nbtCompound.getBoolean("hardcore");
-		if (nbtCompound.contains("initialized", 99)) {
-			this.initialized = nbtCompound.getBoolean("initialized");
+		this.lastPlayed = compoundTag.getLong("LastPlayed");
+		this.sizeOnDisk = compoundTag.getLong("SizeOnDisk");
+		this.levelName = compoundTag.getString("LevelName");
+		this.version = compoundTag.getInt("version");
+		this.clearWeatherTime = compoundTag.getInt("clearWeatherTime");
+		this.rainTime = compoundTag.getInt("rainTime");
+		this.raining = compoundTag.getBoolean("raining");
+		this.thunderTime = compoundTag.getInt("thunderTime");
+		this.thundering = compoundTag.getBoolean("thundering");
+		this.hardcore = compoundTag.getBoolean("hardcore");
+		if (compoundTag.containsKey("initialized", 99)) {
+			this.initialized = compoundTag.getBoolean("initialized");
 		} else {
 			this.initialized = true;
 		}
 
-		if (nbtCompound.contains("allowCommands", 99)) {
-			this.allowCommands = nbtCompound.getBoolean("allowCommands");
+		if (compoundTag.containsKey("allowCommands", 99)) {
+			this.commandsAllowed = compoundTag.getBoolean("allowCommands");
 		} else {
-			this.allowCommands = this.gameMode == GameMode.CREATIVE;
+			this.commandsAllowed = this.gameMode == GameMode.field_9220;
 		}
 
-		this.field_19768 = i;
-		if (nbtCompound2 != null) {
-			this.playerNbt = nbtCompound2;
+		this.playerWorldId = i;
+		if (compoundTag2 != null) {
+			this.playerData = compoundTag2;
 		}
 
-		if (nbtCompound.contains("GameRules", 10)) {
-			this.gameRules.setNbt(nbtCompound.getCompound("GameRules"));
+		if (compoundTag.containsKey("GameRules", 10)) {
+			this.gameRules.fromNbt(compoundTag.getCompound("GameRules"));
 		}
 
-		if (nbtCompound.contains("Difficulty", 99)) {
-			this.difficulty = Difficulty.byOrdinal(nbtCompound.getByte("Difficulty"));
+		if (compoundTag.containsKey("Difficulty", 99)) {
+			this.difficulty = Difficulty.byOrdinal(compoundTag.getByte("Difficulty"));
 		}
 
-		if (nbtCompound.contains("DifficultyLocked", 1)) {
-			this.difficultyLocked = nbtCompound.getBoolean("DifficultyLocked");
+		if (compoundTag.containsKey("DifficultyLocked", 1)) {
+			this.difficultyLocked = compoundTag.getBoolean("DifficultyLocked");
 		}
 
-		if (nbtCompound.contains("BorderCenterX", 99)) {
-			this.borderCenterX = nbtCompound.getDouble("BorderCenterX");
+		if (compoundTag.containsKey("BorderCenterX", 99)) {
+			this.borderCenterX = compoundTag.getDouble("BorderCenterX");
 		}
 
-		if (nbtCompound.contains("BorderCenterZ", 99)) {
-			this.borderCenterZ = nbtCompound.getDouble("BorderCenterZ");
+		if (compoundTag.containsKey("BorderCenterZ", 99)) {
+			this.borderCenterZ = compoundTag.getDouble("BorderCenterZ");
 		}
 
-		if (nbtCompound.contains("BorderSize", 99)) {
-			this.borderSize = nbtCompound.getDouble("BorderSize");
+		if (compoundTag.containsKey("BorderSize", 99)) {
+			this.borderSize = compoundTag.getDouble("BorderSize");
 		}
 
-		if (nbtCompound.contains("BorderSizeLerpTime", 99)) {
-			this.borderSizeLerpTime = nbtCompound.getLong("BorderSizeLerpTime");
+		if (compoundTag.containsKey("BorderSizeLerpTime", 99)) {
+			this.borderSizeLerpTime = compoundTag.getLong("BorderSizeLerpTime");
 		}
 
-		if (nbtCompound.contains("BorderSizeLerpTarget", 99)) {
-			this.borderSizeLerpTarget = nbtCompound.getDouble("BorderSizeLerpTarget");
+		if (compoundTag.containsKey("BorderSizeLerpTarget", 99)) {
+			this.borderSizeLerpTarget = compoundTag.getDouble("BorderSizeLerpTarget");
 		}
 
-		if (nbtCompound.contains("BorderSafeZone", 99)) {
-			this.borderSafeZone = nbtCompound.getDouble("BorderSafeZone");
+		if (compoundTag.containsKey("BorderSafeZone", 99)) {
+			this.borderSafeZone = compoundTag.getDouble("BorderSafeZone");
 		}
 
-		if (nbtCompound.contains("BorderDamagePerBlock", 99)) {
-			this.borderDamagePerBlock = nbtCompound.getDouble("BorderDamagePerBlock");
+		if (compoundTag.containsKey("BorderDamagePerBlock", 99)) {
+			this.borderDamagePerBlock = compoundTag.getDouble("BorderDamagePerBlock");
 		}
 
-		if (nbtCompound.contains("BorderWarningBlocks", 99)) {
-			this.borderWarningBlocks = nbtCompound.getInt("BorderWarningBlocks");
+		if (compoundTag.containsKey("BorderWarningBlocks", 99)) {
+			this.borderWarningBlocks = compoundTag.getInt("BorderWarningBlocks");
 		}
 
-		if (nbtCompound.contains("BorderWarningTime", 99)) {
-			this.borderWarningTime = nbtCompound.getInt("BorderWarningTime");
+		if (compoundTag.containsKey("BorderWarningTime", 99)) {
+			this.borderWarningTime = compoundTag.getInt("BorderWarningTime");
 		}
 
-		if (nbtCompound.contains("DimensionData", 10)) {
-			NbtCompound nbtCompound4 = nbtCompound.getCompound("DimensionData");
+		if (compoundTag.containsKey("DimensionData", 10)) {
+			CompoundTag compoundTag4 = compoundTag.getCompound("DimensionData");
 
-			for (String string2 : nbtCompound4.getKeys()) {
-				this.field_13099.put(DimensionType.method_17195(Integer.parseInt(string2)), nbtCompound4.getCompound(string2));
+			for (String string2 : compoundTag4.getKeys()) {
+				this.worldData.put(DimensionType.byRawId(Integer.parseInt(string2)), compoundTag4.getCompound(string2));
 			}
 		}
 
-		if (nbtCompound.contains("DataPacks", 10)) {
-			NbtCompound nbtCompound5 = nbtCompound.getCompound("DataPacks");
-			NbtList nbtList = nbtCompound5.getList("Disabled", 8);
+		if (compoundTag.containsKey("DataPacks", 10)) {
+			CompoundTag compoundTag5 = compoundTag.getCompound("DataPacks");
+			ListTag listTag = compoundTag5.getList("Disabled", 8);
 
-			for (int k = 0; k < nbtList.size(); k++) {
-				this.field_19762.add(nbtList.getString(k));
+			for (int k = 0; k < listTag.size(); k++) {
+				this.disabledDataPacks.add(listTag.getString(k));
 			}
 
-			NbtList nbtList2 = nbtCompound5.getList("Enabled", 8);
+			ListTag listTag2 = compoundTag5.getList("Enabled", 8);
 
-			for (int l = 0; l < nbtList2.size(); l++) {
-				this.field_19763.add(nbtList2.getString(l));
+			for (int l = 0; l < listTag2.size(); l++) {
+				this.enabledDataPacks.add(listTag2.getString(l));
 			}
 		}
 
-		if (nbtCompound.contains("CustomBossEvents", 10)) {
-			this.field_19764 = nbtCompound.getCompound("CustomBossEvents");
+		if (compoundTag.containsKey("CustomBossEvents", 10)) {
+			this.customBossEvents = compoundTag.getCompound("CustomBossEvents");
+		}
+
+		if (compoundTag.containsKey("ScheduledEvents", 9)) {
+			this.scheduledEvents.fromTag(compoundTag.getList("ScheduledEvents", 10));
+		}
+
+		if (compoundTag.containsKey("WanderingTraderSpawnDelay", 99)) {
+			this.wanderingTraderSpawnDelay = compoundTag.getInt("WanderingTraderSpawnDelay");
+		}
+
+		if (compoundTag.containsKey("WanderingTraderSpawnChance", 99)) {
+			this.wanderingTraderSpawnChance = compoundTag.getInt("WanderingTraderSpawnChance");
+		}
+
+		if (compoundTag.containsKey("WanderingTraderId", 8)) {
+			this.wanderingTraderId = UUID.fromString(compoundTag.getString("WanderingTraderId"));
 		}
 	}
 
 	public LevelProperties(LevelInfo levelInfo, String string) {
-		this.field_19767 = null;
-		this.field_19768 = 1631;
-		this.copyFrom(levelInfo);
+		this.dataFixer = null;
+		this.playerWorldId = SharedConstants.getGameVersion().getWorldVersion();
+		this.loadLevelInfo(levelInfo);
 		this.levelName = string;
-		this.difficulty = NORMAL_DIFFICULTY;
+		this.difficulty = DEFAULT_DIFFICULTY;
 		this.initialized = false;
 	}
 
-	public void copyFrom(LevelInfo info) {
-		this.seed = info.getSeed();
-		this.gameMode = info.method_3758();
-		this.structures = info.hasStructures();
-		this.hardcore = info.isHardcore();
-		this.levelGeneratorType = info.getGeneratorType();
-		this.method_17964((NbtCompound)Dynamic.convert(JsonOps.INSTANCE, class_4372.field_21487, info.method_4695()));
-		this.allowCommands = info.allowCommands();
+	public void loadLevelInfo(LevelInfo levelInfo) {
+		this.randomSeed = levelInfo.getSeed();
+		this.gameMode = levelInfo.getGameMode();
+		this.structures = levelInfo.hasStructures();
+		this.hardcore = levelInfo.isHardcore();
+		this.generatorType = levelInfo.getGeneratorType();
+		this.setGeneratorOptions((CompoundTag)Dynamic.convert(JsonOps.INSTANCE, NbtOps.INSTANCE, levelInfo.getGeneratorOptions()));
+		this.commandsAllowed = levelInfo.allowCommands();
 	}
 
-	public NbtCompound toNbt(@Nullable NbtCompound nbt) {
-		this.method_17954();
-		if (nbt == null) {
-			nbt = this.playerNbt;
+	public CompoundTag cloneWorldTag(@Nullable CompoundTag compoundTag) {
+		this.loadPlayerData();
+		if (compoundTag == null) {
+			compoundTag = this.playerData;
 		}
 
-		NbtCompound nbtCompound = new NbtCompound();
-		this.putNbt(nbtCompound, nbt);
-		return nbtCompound;
+		CompoundTag compoundTag2 = new CompoundTag();
+		this.updateProperties(compoundTag2, compoundTag);
+		return compoundTag2;
 	}
 
-	private void putNbt(NbtCompound worldNbt, NbtCompound playerData) {
-		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putString("Name", "1.13.2");
-		nbtCompound.putInt("Id", 1631);
-		nbtCompound.putBoolean("Snapshot", false);
-		worldNbt.put("Version", nbtCompound);
-		worldNbt.putInt("DataVersion", 1631);
-		worldNbt.putLong("RandomSeed", this.seed);
-		worldNbt.putString("generatorName", this.levelGeneratorType.method_16401());
-		worldNbt.putInt("generatorVersion", this.levelGeneratorType.getVersion());
-		if (!this.field_19765.isEmpty()) {
-			worldNbt.put("generatorOptions", this.field_19765);
+	private void updateProperties(CompoundTag compoundTag, CompoundTag compoundTag2) {
+		CompoundTag compoundTag3 = new CompoundTag();
+		compoundTag3.putString("Name", SharedConstants.getGameVersion().getName());
+		compoundTag3.putInt("Id", SharedConstants.getGameVersion().getWorldVersion());
+		compoundTag3.putBoolean("Snapshot", !SharedConstants.getGameVersion().isStable());
+		compoundTag.put("Version", compoundTag3);
+		compoundTag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+		compoundTag.putLong("RandomSeed", this.randomSeed);
+		compoundTag.putString("generatorName", this.generatorType.getStoredName());
+		compoundTag.putInt("generatorVersion", this.generatorType.getVersion());
+		if (!this.generatorOptions.isEmpty()) {
+			compoundTag.put("generatorOptions", this.generatorOptions);
 		}
 
-		if (this.field_19766 != null) {
-			worldNbt.putString("legacy_custom_options", this.field_19766);
+		if (this.legacyCustomOptions != null) {
+			compoundTag.putString("legacy_custom_options", this.legacyCustomOptions);
 		}
 
-		worldNbt.putInt("GameType", this.gameMode.getGameModeId());
-		worldNbt.putBoolean("MapFeatures", this.structures);
-		worldNbt.putInt("SpawnX", this.spawnX);
-		worldNbt.putInt("SpawnY", this.spawnY);
-		worldNbt.putInt("SpawnZ", this.spawnZ);
-		worldNbt.putLong("Time", this.time);
-		worldNbt.putLong("DayTime", this.timeOfDay);
-		worldNbt.putLong("SizeOnDisk", this.sizeOnDisk);
-		worldNbt.putLong("LastPlayed", Util.method_20231());
-		worldNbt.putString("LevelName", this.levelName);
-		worldNbt.putInt("version", this.version);
-		worldNbt.putInt("clearWeatherTime", this.clearWeatherTime);
-		worldNbt.putInt("rainTime", this.rainTime);
-		worldNbt.putBoolean("raining", this.raining);
-		worldNbt.putInt("thunderTime", this.thunderTime);
-		worldNbt.putBoolean("thundering", this.thundering);
-		worldNbt.putBoolean("hardcore", this.hardcore);
-		worldNbt.putBoolean("allowCommands", this.allowCommands);
-		worldNbt.putBoolean("initialized", this.initialized);
-		worldNbt.putDouble("BorderCenterX", this.borderCenterX);
-		worldNbt.putDouble("BorderCenterZ", this.borderCenterZ);
-		worldNbt.putDouble("BorderSize", this.borderSize);
-		worldNbt.putLong("BorderSizeLerpTime", this.borderSizeLerpTime);
-		worldNbt.putDouble("BorderSafeZone", this.borderSafeZone);
-		worldNbt.putDouble("BorderDamagePerBlock", this.borderDamagePerBlock);
-		worldNbt.putDouble("BorderSizeLerpTarget", this.borderSizeLerpTarget);
-		worldNbt.putDouble("BorderWarningBlocks", (double)this.borderWarningBlocks);
-		worldNbt.putDouble("BorderWarningTime", (double)this.borderWarningTime);
+		compoundTag.putInt("GameType", this.gameMode.getId());
+		compoundTag.putBoolean("MapFeatures", this.structures);
+		compoundTag.putInt("SpawnX", this.spawnX);
+		compoundTag.putInt("SpawnY", this.spawnY);
+		compoundTag.putInt("SpawnZ", this.spawnZ);
+		compoundTag.putLong("Time", this.time);
+		compoundTag.putLong("DayTime", this.timeOfDay);
+		compoundTag.putLong("SizeOnDisk", this.sizeOnDisk);
+		compoundTag.putLong("LastPlayed", SystemUtil.getEpochTimeMs());
+		compoundTag.putString("LevelName", this.levelName);
+		compoundTag.putInt("version", this.version);
+		compoundTag.putInt("clearWeatherTime", this.clearWeatherTime);
+		compoundTag.putInt("rainTime", this.rainTime);
+		compoundTag.putBoolean("raining", this.raining);
+		compoundTag.putInt("thunderTime", this.thunderTime);
+		compoundTag.putBoolean("thundering", this.thundering);
+		compoundTag.putBoolean("hardcore", this.hardcore);
+		compoundTag.putBoolean("allowCommands", this.commandsAllowed);
+		compoundTag.putBoolean("initialized", this.initialized);
+		compoundTag.putDouble("BorderCenterX", this.borderCenterX);
+		compoundTag.putDouble("BorderCenterZ", this.borderCenterZ);
+		compoundTag.putDouble("BorderSize", this.borderSize);
+		compoundTag.putLong("BorderSizeLerpTime", this.borderSizeLerpTime);
+		compoundTag.putDouble("BorderSafeZone", this.borderSafeZone);
+		compoundTag.putDouble("BorderDamagePerBlock", this.borderDamagePerBlock);
+		compoundTag.putDouble("BorderSizeLerpTarget", this.borderSizeLerpTarget);
+		compoundTag.putDouble("BorderWarningBlocks", (double)this.borderWarningBlocks);
+		compoundTag.putDouble("BorderWarningTime", (double)this.borderWarningTime);
 		if (this.difficulty != null) {
-			worldNbt.putByte("Difficulty", (byte)this.difficulty.getId());
+			compoundTag.putByte("Difficulty", (byte)this.difficulty.getId());
 		}
 
-		worldNbt.putBoolean("DifficultyLocked", this.difficultyLocked);
-		worldNbt.put("GameRules", this.gameRules.getNbt());
-		NbtCompound nbtCompound2 = new NbtCompound();
+		compoundTag.putBoolean("DifficultyLocked", this.difficultyLocked);
+		compoundTag.put("GameRules", this.gameRules.toNbt());
+		CompoundTag compoundTag4 = new CompoundTag();
 
-		for (Entry<DimensionType, NbtCompound> entry : this.field_13099.entrySet()) {
-			nbtCompound2.put(String.valueOf(((DimensionType)entry.getKey()).method_17201()), (NbtElement)entry.getValue());
+		for (Entry<DimensionType, CompoundTag> entry : this.worldData.entrySet()) {
+			compoundTag4.put(String.valueOf(((DimensionType)entry.getKey()).getRawId()), (Tag)entry.getValue());
 		}
 
-		worldNbt.put("DimensionData", nbtCompound2);
-		if (playerData != null) {
-			worldNbt.put("Player", playerData);
+		compoundTag.put("DimensionData", compoundTag4);
+		if (compoundTag2 != null) {
+			compoundTag.put("Player", compoundTag2);
 		}
 
-		NbtCompound nbtCompound3 = new NbtCompound();
-		NbtList nbtList = new NbtList();
+		CompoundTag compoundTag5 = new CompoundTag();
+		ListTag listTag = new ListTag();
 
-		for (String string : this.field_19763) {
-			nbtList.add((NbtElement)(new NbtString(string)));
+		for (String string : this.enabledDataPacks) {
+			listTag.add(new StringTag(string));
 		}
 
-		nbtCompound3.put("Enabled", nbtList);
-		NbtList nbtList2 = new NbtList();
+		compoundTag5.put("Enabled", listTag);
+		ListTag listTag2 = new ListTag();
 
-		for (String string2 : this.field_19762) {
-			nbtList2.add((NbtElement)(new NbtString(string2)));
+		for (String string2 : this.disabledDataPacks) {
+			listTag2.add(new StringTag(string2));
 		}
 
-		nbtCompound3.put("Disabled", nbtList2);
-		worldNbt.put("DataPacks", nbtCompound3);
-		if (this.field_19764 != null) {
-			worldNbt.put("CustomBossEvents", this.field_19764);
+		compoundTag5.put("Disabled", listTag2);
+		compoundTag.put("DataPacks", compoundTag5);
+		if (this.customBossEvents != null) {
+			compoundTag.put("CustomBossEvents", this.customBossEvents);
+		}
+
+		compoundTag.put("ScheduledEvents", this.scheduledEvents.toTag());
+		compoundTag.putInt("WanderingTraderSpawnDelay", this.wanderingTraderSpawnDelay);
+		compoundTag.putInt("WanderingTraderSpawnChance", this.wanderingTraderSpawnChance);
+		if (this.wanderingTraderId != null) {
+			compoundTag.putString("WanderingTraderId", this.wanderingTraderId.toString());
 		}
 	}
 
 	public long getSeed() {
-		return this.seed;
+		return this.randomSeed;
 	}
 
 	public int getSpawnX() {
@@ -374,75 +405,65 @@ public class LevelProperties {
 		return this.timeOfDay;
 	}
 
-	public long getSizeOnDisk() {
-		return this.sizeOnDisk;
-	}
-
-	private void method_17954() {
-		if (!this.field_19769 && this.playerNbt != null) {
-			if (this.field_19768 < 1631) {
-				if (this.field_19767 == null) {
+	private void loadPlayerData() {
+		if (!this.playerDataLoaded && this.playerData != null) {
+			if (this.playerWorldId < SharedConstants.getGameVersion().getWorldVersion()) {
+				if (this.dataFixer == null) {
 					throw new NullPointerException("Fixer Upper not set inside LevelData, and the player tag is not upgraded.");
 				}
 
-				this.playerNbt = NbtHelper.method_20141(this.field_19767, DataFixTypes.PLAYER, this.playerNbt, this.field_19768);
+				this.playerData = TagHelper.update(this.dataFixer, DataFixTypes.field_19213, this.playerData, this.playerWorldId);
 			}
 
-			this.dimension = this.playerNbt.getInt("Dimension");
-			this.field_19769 = true;
+			this.playerDataLoaded = true;
 		}
 	}
 
-	public NbtCompound getNbt() {
-		this.method_17954();
-		return this.playerNbt;
+	public CompoundTag getPlayerData() {
+		this.loadPlayerData();
+		return this.playerData;
 	}
 
-	public int method_17966() {
-		this.method_17954();
-		return this.dimension;
+	public void setSpawnX(int i) {
+		this.spawnX = i;
 	}
 
-	public void setSpawnX(int spawnX) {
-		this.spawnX = spawnX;
+	public void setSpawnY(int i) {
+		this.spawnY = i;
 	}
 
-	public void setSpawnY(int spawnY) {
-		this.spawnY = spawnY;
+	public void setSpawnZ(int i) {
+		this.spawnZ = i;
 	}
 
-	public void setSpawnZ(int spawnZ) {
-		this.spawnZ = spawnZ;
+	public void setTime(long l) {
+		this.time = l;
 	}
 
-	public void setTime(long time) {
-		this.time = time;
+	public void setTimeOfDay(long l) {
+		this.timeOfDay = l;
 	}
 
-	public void setDayTime(long time) {
-		this.timeOfDay = time;
-	}
-
-	public void setSpawnPos(BlockPos pos) {
-		this.spawnX = pos.getX();
-		this.spawnY = pos.getY();
-		this.spawnZ = pos.getZ();
+	public void setSpawnPos(BlockPos blockPos) {
+		this.spawnX = blockPos.getX();
+		this.spawnY = blockPos.getY();
+		this.spawnZ = blockPos.getZ();
 	}
 
 	public String getLevelName() {
 		return this.levelName;
 	}
 
-	public void setLevelName(String name) {
-		this.levelName = name;
+	public void setLevelName(String string) {
+		this.levelName = string;
 	}
 
 	public int getVersion() {
 		return this.version;
 	}
 
-	public void setVersion(int version) {
-		this.version = version;
+	public void setVersion(int i) {
+		this.version = i;
 	}
 
 	public long getLastPlayed() {
@@ -453,43 +474,43 @@ public class LevelProperties {
 		return this.clearWeatherTime;
 	}
 
-	public void setClearWeatherTime(int time) {
-		this.clearWeatherTime = time;
+	public void setClearWeatherTime(int i) {
+		this.clearWeatherTime = i;
 	}
 
 	public boolean isThundering() {
 		return this.thundering;
 	}
 
-	public void setThundering(boolean thundering) {
-		this.thundering = thundering;
+	public void setThundering(boolean bl) {
+		this.thundering = bl;
 	}
 
 	public int getThunderTime() {
 		return this.thunderTime;
 	}
 
-	public void setThunderTime(int time) {
-		this.thunderTime = time;
+	public void setThunderTime(int i) {
+		this.thunderTime = i;
 	}
 
 	public boolean isRaining() {
 		return this.raining;
 	}
 
-	public void setRaining(boolean raining) {
-		this.raining = raining;
+	public void setRaining(boolean bl) {
+		this.raining = bl;
 	}
 
 	public int getRainTime() {
 		return this.rainTime;
 	}
 
-	public void setRainTime(int rainTime) {
-		this.rainTime = rainTime;
+	public void setRainTime(int i) {
+		this.rainTime = i;
 	}
 
-	public GameMode getGamemode() {
+	public GameMode getGameMode() {
 		return this.gameMode;
 	}
 
@@ -497,11 +518,11 @@ public class LevelProperties {
 		return this.structures;
 	}
 
-	public void setStructures(boolean structures) {
-		this.structures = structures;
+	public void setStructures(boolean bl) {
+		this.structures = bl;
 	}
 
-	public void getGameMode(GameMode gameMode) {
+	public void setGameMode(GameMode gameMode) {
 		this.gameMode = gameMode;
 	}
 
@@ -509,43 +530,43 @@ public class LevelProperties {
 		return this.hardcore;
 	}
 
-	public void setHardcore(boolean hardcore) {
-		this.hardcore = hardcore;
+	public void setHardcore(boolean bl) {
+		this.hardcore = bl;
 	}
 
 	public LevelGeneratorType getGeneratorType() {
-		return this.levelGeneratorType;
+		return this.generatorType;
 	}
 
-	public void setLevelGeneratorType(LevelGeneratorType type) {
-		this.levelGeneratorType = type;
+	public void setGeneratorType(LevelGeneratorType levelGeneratorType) {
+		this.generatorType = levelGeneratorType;
 	}
 
-	public NbtCompound method_17950() {
-		return this.field_19765;
+	public CompoundTag getGeneratorOptions() {
+		return this.generatorOptions;
 	}
 
-	public void method_17964(NbtCompound nbtCompound) {
-		this.field_19765 = nbtCompound;
+	public void setGeneratorOptions(CompoundTag compoundTag) {
+		this.generatorOptions = compoundTag;
 	}
 
-	public boolean areCheatsEnabled() {
-		return this.allowCommands;
+	public boolean areCommandsAllowed() {
+		return this.commandsAllowed;
 	}
 
-	public void setCheats(boolean enabled) {
-		this.allowCommands = enabled;
+	public void setCommandsAllowed(boolean bl) {
+		this.commandsAllowed = bl;
 	}
 
 	public boolean isInitialized() {
 		return this.initialized;
 	}
 
-	public void setInitialized(boolean initialized) {
-		this.initialized = initialized;
+	public void setInitialized(boolean bl) {
+		this.initialized = bl;
 	}
 
-	public GameRuleManager getGamerules() {
+	public GameRules getGameRules() {
 		return this.gameRules;
 	}
 
@@ -561,48 +582,48 @@ public class LevelProperties {
 		return this.borderSize;
 	}
 
-	public void setBorderSize(double size) {
-		this.borderSize = size;
+	public void setBorderSize(double d) {
+		this.borderSize = d;
 	}
 
 	public long getBorderSizeLerpTime() {
 		return this.borderSizeLerpTime;
 	}
 
-	public void setBorderSizeLerpTime(long time) {
-		this.borderSizeLerpTime = time;
+	public void setBorderSizeLerpTime(long l) {
+		this.borderSizeLerpTime = l;
 	}
 
 	public double getBorderSizeLerpTarget() {
 		return this.borderSizeLerpTarget;
 	}
 
-	public void setBorderSizeLerpTarget(double target) {
-		this.borderSizeLerpTarget = target;
+	public void setBorderSizeLerpTarget(double d) {
+		this.borderSizeLerpTarget = d;
 	}
 
-	public void setBorderCenterZ(double y) {
-		this.borderCenterZ = y;
+	public void borderCenterZ(double d) {
+		this.borderCenterZ = d;
 	}
 
-	public void setBorderCenterX(double x) {
-		this.borderCenterX = x;
+	public void setBorderCenterX(double d) {
+		this.borderCenterX = d;
 	}
 
-	public double getSafeZone() {
+	public double getBorderSafeZone() {
 		return this.borderSafeZone;
 	}
 
-	public void setSafeZone(double zone) {
-		this.borderSafeZone = zone;
+	public void setBorderSafeZone(double d) {
+		this.borderSafeZone = d;
 	}
 
 	public double getBorderDamagePerBlock() {
 		return this.borderDamagePerBlock;
 	}
 
-	public void setBorderDamagePerBlock(double damage) {
-		this.borderDamagePerBlock = damage;
+	public void setBorderDamagePerBlock(double d) {
+		this.borderDamagePerBlock = d;
 	}
 
 	public int getBorderWarningBlocks() {
@@ -613,12 +634,12 @@ public class LevelProperties {
 		return this.borderWarningTime;
 	}
 
-	public void setBorderWarningBlocks(int blocks) {
-		this.borderWarningBlocks = blocks;
+	public void setBorderWarningBlocks(int i) {
+		this.borderWarningBlocks = i;
 	}
 
-	public void setBorderWarningTime(int time) {
-		this.borderWarningTime = time;
+	public void setBorderWarningTime(int i) {
+		this.borderWarningTime = i;
 	}
 
 	public Difficulty getDifficulty() {
@@ -633,27 +654,27 @@ public class LevelProperties {
 		return this.difficultyLocked;
 	}
 
-	public void setDifficultyLocked(boolean difficultyLocked) {
-		this.difficultyLocked = difficultyLocked;
+	public void setDifficultyLocked(boolean bl) {
+		this.difficultyLocked = bl;
 	}
 
-	public void addToCrashReport(CrashReportSection section) {
-		section.add("Level seed", (CrashCallable<String>)(() -> String.valueOf(this.getSeed())));
-		section.add(
+	public Timer<MinecraftServer> getScheduledEvents() {
+		return this.scheduledEvents;
+	}
+
+	public void populateCrashReport(CrashReportSection crashReportSection) {
+		crashReportSection.add("Level name", (CrashCallable<String>)(() -> this.levelName));
+		crashReportSection.add("Level seed", (CrashCallable<String>)(() -> String.valueOf(this.randomSeed)));
+		crashReportSection.add(
 			"Level generator",
 			(CrashCallable<String>)(() -> String.format(
-					"ID %02d - %s, ver %d. Features enabled: %b",
-					this.levelGeneratorType.getId(),
-					this.levelGeneratorType.getName(),
-					this.levelGeneratorType.getVersion(),
-					this.structures
+					"ID %02d - %s, ver %d. Features enabled: %b", this.generatorType.getId(), this.generatorType.getName(), this.generatorType.getVersion(), this.structures
 				))
 		);
-		section.add("Level generator options", (CrashCallable<String>)(() -> this.field_19765.toString()));
-		section.add("Level spawn location", (CrashCallable<String>)(() -> CrashReportSection.createPositionString(this.spawnX, this.spawnY, this.spawnZ)));
-		section.add("Level time", (CrashCallable<String>)(() -> String.format("%d game time, %d day time", this.time, this.timeOfDay)));
-		section.add("Level dimension", (CrashCallable<String>)(() -> String.valueOf(this.dimension)));
-		section.add("Level storage version", (CrashCallable<String>)(() -> {
+		crashReportSection.add("Level generator options", (CrashCallable<String>)(() -> this.generatorOptions.toString()));
+		crashReportSection.add("Level spawn location", (CrashCallable<String>)(() -> CrashReportSection.createPositionString(this.spawnX, this.spawnY, this.spawnZ)));
+		crashReportSection.add("Level time", (CrashCallable<String>)(() -> String.format("%d game time, %d day time", this.time, this.timeOfDay)));
+		crashReportSection.add("Level storage version", (CrashCallable<String>)(() -> {
 			String string = "Unknown?";
 
 			try {
@@ -669,55 +690,75 @@ public class LevelProperties {
 
 			return String.format("0x%05X - %s", this.version, string);
 		}));
-		section.add(
+		crashReportSection.add(
 			"Level weather",
 			(CrashCallable<String>)(() -> String.format(
 					"Rain time: %d (now: %b), thunder time: %d (now: %b)", this.rainTime, this.raining, this.thunderTime, this.thundering
 				))
 		);
-		section.add(
+		crashReportSection.add(
 			"Level game mode",
 			(CrashCallable<String>)(() -> String.format(
-					"Game mode: %s (ID %d). Hardcore: %b. Cheats: %b", this.gameMode.getGameModeName(), this.gameMode.getGameModeId(), this.hardcore, this.allowCommands
+					"Game mode: %s (ID %d). Hardcore: %b. Cheats: %b", this.gameMode.getName(), this.gameMode.getId(), this.hardcore, this.commandsAllowed
 				))
 		);
 	}
 
-	public NbtCompound method_11954(DimensionType dimensionType) {
-		NbtCompound nbtCompound = (NbtCompound)this.field_13099.get(dimensionType);
-		return nbtCompound == null ? new NbtCompound() : nbtCompound;
+	public CompoundTag getWorldData(DimensionType dimensionType) {
+		CompoundTag compoundTag = (CompoundTag)this.worldData.get(dimensionType);
+		return compoundTag == null ? new CompoundTag() : compoundTag;
 	}
 
-	public void method_11955(DimensionType dimensionType, NbtCompound nbtCompound) {
-		this.field_13099.put(dimensionType, nbtCompound);
+	public void setWorldData(DimensionType dimensionType, CompoundTag compoundTag) {
+		this.worldData.put(dimensionType, compoundTag);
 	}
 
-	public int method_11951() {
-		return this.field_13101;
+	public int getVersionId() {
+		return this.versionId;
 	}
 
-	public boolean method_11952() {
-		return this.field_13102;
+	public boolean isVersionSnapshot() {
+		return this.versionSnapshot;
 	}
 
-	public String method_11953() {
-		return this.field_13100;
+	public String getVersionName() {
+		return this.versionName;
 	}
 
-	public Set<String> method_17951() {
-		return this.field_19762;
+	public Set<String> getDisabledDataPacks() {
+		return this.disabledDataPacks;
 	}
 
-	public Set<String> method_17952() {
-		return this.field_19763;
+	public Set<String> getEnabledDataPacks() {
+		return this.enabledDataPacks;
 	}
 
 	@Nullable
-	public NbtCompound method_17953() {
-		return this.field_19764;
+	public CompoundTag getCustomBossEvents() {
+		return this.customBossEvents;
 	}
 
-	public void method_17965(@Nullable NbtCompound nbtCompound) {
-		this.field_19764 = nbtCompound;
+	public void setCustomBossEvents(@Nullable CompoundTag compoundTag) {
+		this.customBossEvents = compoundTag;
+	}
+
+	public int getWanderingTraderSpawnDelay() {
+		return this.wanderingTraderSpawnDelay;
+	}
+
+	public void setWanderingTraderSpawnDelay(int i) {
+		this.wanderingTraderSpawnDelay = i;
+	}
+
+	public int getWanderingTraderSpawnChance() {
+		return this.wanderingTraderSpawnChance;
+	}
+
+	public void setWanderingTraderSpawnChance(int i) {
+		this.wanderingTraderSpawnChance = i;
+	}
+
+	public void setWanderingTraderId(UUID uUID) {
+		this.wanderingTraderId = uUID;
 	}
 }

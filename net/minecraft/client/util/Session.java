@@ -49,20 +49,20 @@ public class Session {
 	}
 
 	public static enum AccountType {
-		LEGACY("legacy"),
-		MOJANG("mojang");
+		field_1990("legacy"),
+		field_1988("mojang");
 
-		private static final Map<String, Session.AccountType> field_20013 = (Map<String, Session.AccountType>)Arrays.stream(values())
-			.collect(Collectors.toMap(accountType -> accountType.field_20014, Function.identity()));
-		private final String field_20014;
+		private static final Map<String, Session.AccountType> field_1989 = (Map<String, Session.AccountType>)Arrays.stream(values())
+			.collect(Collectors.toMap(accountType -> accountType.field_1986, Function.identity()));
+		private final String field_1986;
 
 		private AccountType(String string2) {
-			this.field_20014 = string2;
+			this.field_1986 = string2;
 		}
 
 		@Nullable
 		public static Session.AccountType byName(String string) {
-			return (Session.AccountType)field_20013.get(string.toLowerCase(Locale.ROOT));
+			return (Session.AccountType)field_1989.get(string.toLowerCase(Locale.ROOT));
 		}
 	}
 }

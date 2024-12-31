@@ -1,47 +1,46 @@
 package net.minecraft.client.texture;
 
+import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.IOException;
 import javax.annotation.Nullable;
-import net.minecraft.class_4277;
 import net.minecraft.resource.ResourceManager;
 
 public class NativeImageBackedTexture extends AbstractTexture implements AutoCloseable {
-	@Nullable
-	private class_4277 field_20979;
+	private NativeImage image;
 
-	public NativeImageBackedTexture(class_4277 arg) {
-		this.field_20979 = arg;
-		TextureUtil.prepareImage(this.getGlId(), this.field_20979.method_19458(), this.field_20979.method_19478());
+	public NativeImageBackedTexture(NativeImage nativeImage) {
+		this.image = nativeImage;
+		TextureUtil.prepareImage(this.getGlId(), this.image.getWidth(), this.image.getHeight());
 		this.upload();
 	}
 
 	public NativeImageBackedTexture(int i, int j, boolean bl) {
-		this.field_20979 = new class_4277(i, j, bl);
-		TextureUtil.prepareImage(this.getGlId(), this.field_20979.method_19458(), this.field_20979.method_19478());
+		this.image = new NativeImage(i, j, bl);
+		TextureUtil.prepareImage(this.getGlId(), this.image.getWidth(), this.image.getHeight());
 	}
 
 	@Override
-	public void load(ResourceManager manager) throws IOException {
+	public void load(ResourceManager resourceManager) throws IOException {
 	}
 
 	public void upload() {
-		this.method_19530();
-		this.field_20979.method_19466(0, 0, 0, false);
+		this.bindTexture();
+		this.image.upload(0, 0, 0, false);
 	}
 
 	@Nullable
-	public class_4277 method_19449() {
-		return this.field_20979;
+	public NativeImage getImage() {
+		return this.image;
 	}
 
-	public void method_19448(class_4277 arg) throws Exception {
-		this.field_20979.close();
-		this.field_20979 = arg;
+	public void setImage(NativeImage nativeImage) throws Exception {
+		this.image.close();
+		this.image = nativeImage;
 	}
 
 	public void close() {
-		this.field_20979.close();
+		this.image.close();
 		this.clearGlId();
-		this.field_20979 = null;
+		this.image = null;
 	}
 }

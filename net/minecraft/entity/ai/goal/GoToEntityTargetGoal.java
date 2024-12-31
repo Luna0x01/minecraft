@@ -1,12 +1,13 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.PathAwareEntity;
-import net.minecraft.util.RandomVectorGenerator;
+import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.util.math.Vec3d;
 
 public class GoToEntityTargetGoal extends Goal {
-	private final PathAwareEntity mob;
+	private final MobEntityWithAi mob;
 	private LivingEntity target;
 	private double x;
 	private double y;
@@ -14,11 +15,11 @@ public class GoToEntityTargetGoal extends Goal {
 	private final double speed;
 	private final float maxDistance;
 
-	public GoToEntityTargetGoal(PathAwareEntity pathAwareEntity, double d, float f) {
-		this.mob = pathAwareEntity;
+	public GoToEntityTargetGoal(MobEntityWithAi mobEntityWithAi, double d, float f) {
+		this.mob = mobEntityWithAi;
 		this.speed = d;
 		this.maxDistance = f;
-		this.setCategoryBits(1);
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
 	}
 
 	@Override
@@ -29,7 +30,7 @@ public class GoToEntityTargetGoal extends Goal {
 		} else if (this.target.squaredDistanceTo(this.mob) > (double)(this.maxDistance * this.maxDistance)) {
 			return false;
 		} else {
-			Vec3d vec3d = RandomVectorGenerator.method_2800(this.mob, 16, 7, new Vec3d(this.target.x, this.target.y, this.target.z));
+			Vec3d vec3d = PathfindingUtil.method_6373(this.mob, 16, 7, new Vec3d(this.target.x, this.target.y, this.target.z));
 			if (vec3d == null) {
 				return false;
 			} else {

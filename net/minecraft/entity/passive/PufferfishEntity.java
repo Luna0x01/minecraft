@@ -2,8 +2,10 @@ package net.minecraft.entity.passive;
 
 import java.util.List;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
-import net.minecraft.class_3462;
+import net.minecraft.client.network.packet.GameStateChangeS2CPacket;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -15,136 +17,101 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.loot.LootTables;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
-import net.minecraft.util.Identifier;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.world.World;
 
 public class PufferfishEntity extends FishEntity {
-	private static final TrackedData<Integer> field_16919 = DataTracker.registerData(PufferfishEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private int field_16923;
-	private int field_16924;
-	private static final Predicate<LivingEntity> field_16920 = livingEntity -> {
+	private static final TrackedData<Integer> PUFF_STATE = DataTracker.registerData(PufferfishEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private int field_6833;
+	private int field_6832;
+	private static final Predicate<LivingEntity> field_6834 = livingEntity -> {
 		if (livingEntity == null) {
 			return false;
 		} else {
-			return !(livingEntity instanceof PlayerEntity) || !((PlayerEntity)livingEntity).isSpectator() && !((PlayerEntity)livingEntity).isCreative()
-				? livingEntity.method_2647() != class_3462.field_16822
+			return !(livingEntity instanceof PlayerEntity) || !livingEntity.isSpectator() && !((PlayerEntity)livingEntity).isCreative()
+				? livingEntity.getGroup() != EntityGroup.AQUATIC
 				: false;
 		}
 	};
-	private float field_16921 = -1.0F;
-	private float field_16922;
 
-	public PufferfishEntity(World world) {
-		super(EntityType.PUFFERFISH, world);
-		this.setBounds(0.7F, 0.7F);
+	public PufferfishEntity(EntityType<? extends PufferfishEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_16919, 0);
+		this.dataTracker.startTracking(PUFF_STATE, 0);
 	}
 
-	public int method_15766() {
-		return this.dataTracker.get(field_16919);
+	public int getPuffState() {
+		return this.dataTracker.get(PUFF_STATE);
 	}
 
-	public void method_15763(int i) {
-		this.dataTracker.set(field_16919, i);
-		this.method_15765(i);
+	public void setPuffState(int i) {
+		this.dataTracker.set(PUFF_STATE, i);
 	}
 
-	private void method_15765(int i) {
-		float f = 1.0F;
-		if (i == 1) {
-			f = 0.7F;
-		} else if (i == 0) {
-			f = 0.5F;
+	@Override
+	public void onTrackedDataSet(TrackedData<?> trackedData) {
+		if (PUFF_STATE.equals(trackedData)) {
+			this.calculateDimensions();
 		}
 
-		this.method_15760(f);
+		super.onTrackedDataSet(trackedData);
 	}
 
 	@Override
-	protected final void setBounds(float width, float height) {
-		boolean bl = this.field_16921 > 0.0F;
-		this.field_16921 = width;
-		this.field_16922 = height;
-		if (!bl) {
-			this.method_15760(1.0F);
-		}
-	}
-
-	private void method_15760(float f) {
-		super.setBounds(this.field_16921 * f, this.field_16922 * f);
+	public void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		compoundTag.putInt("PuffState", this.getPuffState());
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> data) {
-		this.method_15765(this.method_15766());
-		super.onTrackedDataSet(data);
+	public void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		this.setPuffState(compoundTag.getInt("PuffState"));
 	}
 
 	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("PuffState", this.method_15766());
-	}
-
-	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.method_15763(nbt.getInt("PuffState"));
-	}
-
-	@Nullable
-	@Override
-	protected Identifier getLootTableId() {
-		return LootTables.PUFFERFISH_ENTITIE;
-	}
-
-	@Override
-	protected ItemStack method_15726() {
-		return new ItemStack(Items.PUFFERFISH_BUCKET);
+	protected ItemStack getFishBucketItem() {
+		return new ItemStack(Items.field_8108);
 	}
 
 	@Override
 	protected void initGoals() {
 		super.initGoals();
-		this.goals.add(1, new PufferfishEntity.class_3489(this));
+		this.goalSelector.add(1, new PufferfishEntity.class_1455(this));
 	}
 
 	@Override
 	public void tick() {
-		if (this.isAlive() && !this.world.isClient) {
-			if (this.field_16923 > 0) {
-				if (this.method_15766() == 0) {
-					this.playSound(Sounds.ENTITY_PUFFER_FISH_BLOW_UP, this.getSoundVolume(), this.getSoundPitch());
-					this.method_15763(1);
-				} else if (this.field_16923 > 40 && this.method_15766() == 1) {
-					this.playSound(Sounds.ENTITY_PUFFER_FISH_BLOW_UP, this.getSoundVolume(), this.getSoundPitch());
-					this.method_15763(2);
+		if (!this.world.isClient && this.isAlive() && this.canMoveVoluntarily()) {
+			if (this.field_6833 > 0) {
+				if (this.getPuffState() == 0) {
+					this.playSound(SoundEvents.field_15235, this.getSoundVolume(), this.getSoundPitch());
+					this.setPuffState(1);
+				} else if (this.field_6833 > 40 && this.getPuffState() == 1) {
+					this.playSound(SoundEvents.field_15235, this.getSoundVolume(), this.getSoundPitch());
+					this.setPuffState(2);
 				}
 
-				this.field_16923++;
-			} else if (this.method_15766() != 0) {
-				if (this.field_16924 > 60 && this.method_15766() == 2) {
-					this.playSound(Sounds.ENTITY_PUFFER_FISH_BLOW_OUT, this.getSoundVolume(), this.getSoundPitch());
-					this.method_15763(1);
-				} else if (this.field_16924 > 100 && this.method_15766() == 1) {
-					this.playSound(Sounds.ENTITY_PUFFER_FISH_BLOW_OUT, this.getSoundVolume(), this.getSoundPitch());
-					this.method_15763(0);
+				this.field_6833++;
+			} else if (this.getPuffState() != 0) {
+				if (this.field_6832 > 60 && this.getPuffState() == 2) {
+					this.playSound(SoundEvents.field_15133, this.getSoundVolume(), this.getSoundPitch());
+					this.setPuffState(1);
+				} else if (this.field_6832 > 100 && this.getPuffState() == 1) {
+					this.playSound(SoundEvents.field_15133, this.getSoundVolume(), this.getSoundPitch());
+					this.setPuffState(0);
 				}
 
-				this.field_16924++;
+				this.field_6832++;
 			}
 		}
 
@@ -154,83 +121,95 @@ public class PufferfishEntity extends FishEntity {
 	@Override
 	public void tickMovement() {
 		super.tickMovement();
-		if (this.method_15766() > 0) {
-			for (MobEntity mobEntity : this.world.method_16325(MobEntity.class, this.getBoundingBox().expand(0.3), field_16920)) {
+		if (this.isAlive() && this.getPuffState() > 0) {
+			for (MobEntity mobEntity : this.world.getEntities(MobEntity.class, this.getBoundingBox().expand(0.3), field_6834)) {
 				if (mobEntity.isAlive()) {
-					this.method_15761(mobEntity);
+					this.sting(mobEntity);
 				}
 			}
 		}
 	}
 
-	private void method_15761(MobEntity mobEntity) {
-		int i = this.method_15766();
+	private void sting(MobEntity mobEntity) {
+		int i = this.getPuffState();
 		if (mobEntity.damage(DamageSource.mob(this), (float)(1 + i))) {
-			mobEntity.method_2654(new StatusEffectInstance(StatusEffects.POISON, 60 * i, 0));
-			this.playSound(Sounds.ENTITY_PUFFER_FISH_STING, 1.0F, 1.0F);
+			mobEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5899, 60 * i, 0));
+			this.playSound(SoundEvents.field_14848, 1.0F, 1.0F);
 		}
 	}
 
 	@Override
-	public void onPlayerCollision(PlayerEntity player) {
-		int i = this.method_15766();
-		if (player instanceof ServerPlayerEntity && i > 0 && player.damage(DamageSource.mob(this), (float)(1 + i))) {
-			((ServerPlayerEntity)player).networkHandler.sendPacket(new GameStateChangeS2CPacket(9, 0.0F));
-			player.method_2654(new StatusEffectInstance(StatusEffects.POISON, 60 * i, 0));
+	public void onPlayerCollision(PlayerEntity playerEntity) {
+		int i = this.getPuffState();
+		if (playerEntity instanceof ServerPlayerEntity && i > 0 && playerEntity.damage(DamageSource.mob(this), (float)(1 + i))) {
+			((ServerPlayerEntity)playerEntity).networkHandler.sendPacket(new GameStateChangeS2CPacket(9, 0.0F));
+			playerEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5899, 60 * i, 0));
 		}
 	}
 
 	@Override
-	protected Sound ambientSound() {
-		return Sounds.ENTITY_PUFFER_FISH_AMBIENT;
+	protected SoundEvent getAmbientSound() {
+		return SoundEvents.field_14553;
 	}
 
 	@Override
-	protected Sound deathSound() {
-		return Sounds.ENTITY_PUFFER_FISH_DEATH;
+	protected SoundEvent getDeathSound() {
+		return SoundEvents.field_14888;
 	}
 
 	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_PUFFER_FISH_HURT;
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
+		return SoundEvents.field_14748;
 	}
 
 	@Override
-	protected Sound method_15724() {
-		return Sounds.ENTITY_PUFFER_FISH_FLOP;
+	protected SoundEvent getFlopSound() {
+		return SoundEvents.field_15004;
 	}
 
-	static class class_3489 extends Goal {
-		private final PufferfishEntity field_16925;
+	@Override
+	public EntityDimensions getDimensions(EntityPose entityPose) {
+		return super.getDimensions(entityPose).scaled(getScaleForPuffState(this.getPuffState()));
+	}
 
-		public class_3489(PufferfishEntity pufferfishEntity) {
-			this.field_16925 = pufferfishEntity;
+	private static float getScaleForPuffState(int i) {
+		switch (i) {
+			case 0:
+				return 0.5F;
+			case 1:
+				return 0.7F;
+			default:
+				return 1.0F;
+		}
+	}
+
+	static class class_1455 extends Goal {
+		private final PufferfishEntity pufferfish;
+
+		public class_1455(PufferfishEntity pufferfishEntity) {
+			this.pufferfish = pufferfishEntity;
 		}
 
 		@Override
 		public boolean canStart() {
-			List<LivingEntity> list = this.field_16925
-				.world
-				.method_16325(LivingEntity.class, this.field_16925.getBoundingBox().expand(2.0), PufferfishEntity.field_16920);
+			List<LivingEntity> list = this.pufferfish.world.getEntities(LivingEntity.class, this.pufferfish.getBoundingBox().expand(2.0), PufferfishEntity.field_6834);
 			return !list.isEmpty();
 		}
 
 		@Override
 		public void start() {
-			this.field_16925.field_16923 = 1;
-			this.field_16925.field_16924 = 0;
+			this.pufferfish.field_6833 = 1;
+			this.pufferfish.field_6832 = 0;
 		}
 
 		@Override
 		public void stop() {
-			this.field_16925.field_16923 = 0;
+			this.pufferfish.field_6833 = 0;
 		}
 
 		@Override
 		public boolean shouldContinue() {
-			List<LivingEntity> list = this.field_16925
-				.world
-				.method_16325(LivingEntity.class, this.field_16925.getBoundingBox().expand(2.0), PufferfishEntity.field_16920);
+			List<LivingEntity> list = this.pufferfish.world.getEntities(LivingEntity.class, this.pufferfish.getBoundingBox().expand(2.0), PufferfishEntity.field_6834);
 			return !list.isEmpty();
 		}
 	}

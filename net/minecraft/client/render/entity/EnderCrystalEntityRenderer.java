@@ -1,58 +1,58 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.CameraView;
-import net.minecraft.client.render.entity.model.EnderCrystalEntityModel;
+import net.minecraft.client.render.VisibleRegion;
+import net.minecraft.client.render.entity.model.EndCrystalEntityModel;
 import net.minecraft.client.render.entity.model.EntityModel;
-import net.minecraft.entity.EndCrystalEntity;
+import net.minecraft.entity.decoration.EnderCrystalEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
-public class EnderCrystalEntityRenderer extends EntityRenderer<EndCrystalEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/end_crystal/end_crystal.png");
-	private final EntityModel model = new EnderCrystalEntityModel(0.0F, true);
-	private final EntityModel field_13630 = new EnderCrystalEntityModel(0.0F, false);
+public class EnderCrystalEntityRenderer extends EntityRenderer<EnderCrystalEntity> {
+	private static final Identifier SKIN = new Identifier("textures/entity/end_crystal/end_crystal.png");
+	private final EntityModel<EnderCrystalEntity> field_4662 = new EndCrystalEntityModel<>(0.0F, true);
+	private final EntityModel<EnderCrystalEntity> field_4664 = new EndCrystalEntityModel<>(0.0F, false);
 
 	public EnderCrystalEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.shadowSize = 0.5F;
+		this.field_4673 = 0.5F;
 	}
 
-	public void render(EndCrystalEntity endCrystalEntity, double d, double e, double f, float g, float h) {
-		float i = (float)endCrystalEntity.endCrystalAge + h;
+	public void method_3908(EnderCrystalEntity enderCrystalEntity, double d, double e, double f, float g, float h) {
+		float i = (float)enderCrystalEntity.field_7034 + h;
 		GlStateManager.pushMatrix();
-		GlStateManager.translate((float)d, (float)e, (float)f);
-		this.bindTexture(TEXTURE);
+		GlStateManager.translatef((float)d, (float)e, (float)f);
+		this.bindTexture(SKIN);
 		float j = MathHelper.sin(i * 0.2F) / 2.0F + 0.5F;
 		j = j * j + j;
-		if (this.field_13631) {
+		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
-			GlStateManager.method_12309(this.method_12454(endCrystalEntity));
+			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(enderCrystalEntity));
 		}
 
-		if (endCrystalEntity.shouldShowBottom()) {
-			this.model.render(endCrystalEntity, 0.0F, i * 3.0F, j * 0.2F, 0.0F, 0.0F, 0.0625F);
+		if (enderCrystalEntity.getShowBottom()) {
+			this.field_4662.render(enderCrystalEntity, 0.0F, i * 3.0F, j * 0.2F, 0.0F, 0.0F, 0.0625F);
 		} else {
-			this.field_13630.render(endCrystalEntity, 0.0F, i * 3.0F, j * 0.2F, 0.0F, 0.0F, 0.0625F);
+			this.field_4664.render(enderCrystalEntity, 0.0F, i * 3.0F, j * 0.2F, 0.0F, 0.0F, 0.0625F);
 		}
 
-		if (this.field_13631) {
-			GlStateManager.method_12315();
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
 		GlStateManager.popMatrix();
-		BlockPos blockPos = endCrystalEntity.getBeamTarget();
+		BlockPos blockPos = enderCrystalEntity.getBeamTarget();
 		if (blockPos != null) {
-			this.bindTexture(EnderDragonEntityRenderer.CRYSTAL_BEAM_TEXTURE);
+			this.bindTexture(EnderDragonEntityRenderer.CRYSTAL_BEAM);
 			float k = (float)blockPos.getX() + 0.5F;
 			float l = (float)blockPos.getY() + 0.5F;
 			float m = (float)blockPos.getZ() + 0.5F;
-			double n = (double)k - endCrystalEntity.x;
-			double o = (double)l - endCrystalEntity.y;
-			double p = (double)m - endCrystalEntity.z;
-			EnderDragonEntityRenderer.method_12445(
+			double n = (double)k - enderCrystalEntity.x;
+			double o = (double)l - enderCrystalEntity.y;
+			double p = (double)m - enderCrystalEntity.z;
+			EnderDragonEntityRenderer.renderCrystalBeam(
 				d + n,
 				e - 0.3 + (double)(j * 0.4F) + o,
 				f + p,
@@ -60,21 +60,21 @@ public class EnderCrystalEntityRenderer extends EntityRenderer<EndCrystalEntity>
 				(double)k,
 				(double)l,
 				(double)m,
-				endCrystalEntity.endCrystalAge,
-				endCrystalEntity.x,
-				endCrystalEntity.y,
-				endCrystalEntity.z
+				enderCrystalEntity.field_7034,
+				enderCrystalEntity.x,
+				enderCrystalEntity.y,
+				enderCrystalEntity.z
 			);
 		}
 
-		super.render(endCrystalEntity, d, e, f, g, h);
+		super.render(enderCrystalEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(EndCrystalEntity endCrystalEntity) {
-		return TEXTURE;
+	protected Identifier method_3909(EnderCrystalEntity enderCrystalEntity) {
+		return SKIN;
 	}
 
-	public boolean shouldRender(EndCrystalEntity endCrystalEntity, CameraView cameraView, double d, double e, double f) {
-		return super.shouldRender(endCrystalEntity, cameraView, d, e, f) || endCrystalEntity.getBeamTarget() != null;
+	public boolean method_3907(EnderCrystalEntity enderCrystalEntity, VisibleRegion visibleRegion, double d, double e, double f) {
+		return super.isVisible(enderCrystalEntity, visibleRegion, d, e, f) || enderCrystalEntity.getBeamTarget() != null;
 	}
 }

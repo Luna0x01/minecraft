@@ -1,23 +1,24 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
+import net.minecraft.client.model.Model;
 
-public class SignBlockEntityModel extends EntityModel {
-	private final ModelPart plate = new ModelPart(this, 0, 0);
-	private final ModelPart stick;
+public class SignBlockEntityModel extends Model {
+	private final Cuboid field_3562 = new Cuboid(this, 0, 0);
+	private final Cuboid signpost;
 
 	public SignBlockEntityModel() {
-		this.plate.addCuboid(-12.0F, -14.0F, -1.0F, 24, 12, 2, 0.0F);
-		this.stick = new ModelPart(this, 0, 14);
-		this.stick.addCuboid(-1.0F, -2.0F, -1.0F, 2, 14, 2, 0.0F);
+		this.field_3562.addBox(-12.0F, -14.0F, -1.0F, 24, 12, 2, 0.0F);
+		this.signpost = new Cuboid(this, 0, 14);
+		this.signpost.addBox(-1.0F, -2.0F, -1.0F, 2, 14, 2, 0.0F);
 	}
 
 	public void render() {
-		this.plate.render(0.0625F);
-		this.stick.render(0.0625F);
+		this.field_3562.render(0.0625F);
+		this.signpost.render(0.0625F);
 	}
 
-	public ModelPart method_18937() {
-		return this.stick;
+	public Cuboid getSignpostModel() {
+		return this.signpost;
 	}
 }

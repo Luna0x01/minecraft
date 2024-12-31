@@ -3,11 +3,13 @@ package net.minecraft.entity.data;
 import net.minecraft.util.PacketByteBuf;
 
 public interface TrackedDataHandler<T> {
-	void write(PacketByteBuf buf, T value);
+	void write(PacketByteBuf packetByteBuf, T object);
 
-	T read(PacketByteBuf buf);
+	T read(PacketByteBuf packetByteBuf);
 
-	TrackedData<T> create(int i);
+	default TrackedData<T> create(int i) {
+		return new TrackedData<>(i, this);
+	}
 
-	T copy(T value);
+	T copy(T object);
 }

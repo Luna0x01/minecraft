@@ -4,61 +4,68 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ItemPickupParticle extends Particle {
-	private final Entity itemEntity;
-	private final Entity interactingEntity;
-	private int pickupAge;
-	private final int pickupMaxAge;
-	private final float field_1751;
-	private final EntityRenderDispatcher entityRenderManager = MinecraftClient.getInstance().getEntityRenderManager();
+	private final Entity field_3823;
+	private final Entity field_3821;
+	private int field_3826;
+	private final int field_3825;
+	private final float field_3822;
+	private final EntityRenderDispatcher field_3824 = MinecraftClient.getInstance().getEntityRenderManager();
 
 	public ItemPickupParticle(World world, Entity entity, Entity entity2, float f) {
-		super(world, entity.x, entity.y, entity.z, entity.velocityX, entity.velocityY, entity.velocityZ);
-		this.itemEntity = entity;
-		this.interactingEntity = entity2;
-		this.pickupMaxAge = 3;
-		this.field_1751 = f;
+		this(world, entity, entity2, f, entity.getVelocity());
+	}
+
+	private ItemPickupParticle(World world, Entity entity, Entity entity2, float f, Vec3d vec3d) {
+		super(world, entity.x, entity.y, entity.z, vec3d.x, vec3d.y, vec3d.z);
+		this.field_3823 = entity;
+		this.field_3821 = entity2;
+		this.field_3825 = 3;
+		this.field_3822 = f;
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.pickupAge + tickDelta) / (float)this.pickupMaxAge;
-		f *= f;
-		double d = this.itemEntity.x;
-		double e = this.itemEntity.y;
-		double l = this.itemEntity.z;
-		double m = this.interactingEntity.prevTickX + (this.interactingEntity.x - this.interactingEntity.prevTickX) * (double)tickDelta;
-		double n = this.interactingEntity.prevTickY + (this.interactingEntity.y - this.interactingEntity.prevTickY) * (double)tickDelta + (double)this.field_1751;
-		double o = this.interactingEntity.prevTickZ + (this.interactingEntity.z - this.interactingEntity.prevTickZ) * (double)tickDelta;
-		double p = d + (m - d) * (double)f;
-		double q = e + (n - e) * (double)f;
-		double r = l + (o - l) * (double)f;
-		int s = this.method_12243(tickDelta);
-		int t = s % 65536;
-		int u = s / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)t, (float)u);
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		p -= field_1722;
-		q -= field_1723;
-		r -= field_1724;
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.CUSTOM;
+	}
+
+	@Override
+	public void buildGeometry(BufferBuilder bufferBuilder, Camera camera, float f, float g, float h, float i, float j, float k) {
+		float l = ((float)this.field_3826 + f) / (float)this.field_3825;
+		l *= l;
+		double d = this.field_3823.x;
+		double e = this.field_3823.y;
+		double m = this.field_3823.z;
+		double n = MathHelper.lerp((double)f, this.field_3821.prevRenderX, this.field_3821.x);
+		double o = MathHelper.lerp((double)f, this.field_3821.prevRenderY, this.field_3821.y) + (double)this.field_3822;
+		double p = MathHelper.lerp((double)f, this.field_3821.prevRenderZ, this.field_3821.z);
+		double q = MathHelper.lerp((double)l, d, n);
+		double r = MathHelper.lerp((double)l, e, o);
+		double s = MathHelper.lerp((double)l, m, p);
+		int t = this.getColorMultiplier(f);
+		int u = t % 65536;
+		int v = t / 65536;
+		GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)u, (float)v);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		q -= cameraX;
+		r -= cameraY;
+		s -= cameraZ;
 		GlStateManager.enableLighting();
-		this.entityRenderManager.method_12446(this.itemEntity, p, q, r, this.itemEntity.yaw, tickDelta, false);
+		this.field_3824.render(this.field_3823, q, r, s, this.field_3823.yaw, f, false);
 	}
 
 	@Override
-	public void method_12241() {
-		this.pickupAge++;
-		if (this.pickupAge == this.pickupMaxAge) {
-			this.method_12251();
+	public void tick() {
+		this.field_3826++;
+		if (this.field_3826 == this.field_3825) {
+			this.markDead();
 		}
-	}
-
-	@Override
-	public int getLayer() {
-		return 3;
 	}
 }

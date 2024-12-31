@@ -2,8 +2,8 @@ package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
@@ -14,22 +14,25 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Supplier;
 
 public abstract class BlockEntity {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final BlockEntityType<?> field_18593;
+	private final BlockEntityType<?> type;
+	@Nullable
 	protected World world;
 	protected BlockPos pos = BlockPos.ORIGIN;
-	protected boolean removed;
+	protected boolean invalid;
 	@Nullable
-	private BlockState field_18594;
+	private BlockState cachedState;
+	private boolean field_19314;
 
 	public BlockEntity(BlockEntityType<?> blockEntityType) {
-		this.field_18593 = blockEntityType;
+		this.type = blockEntityType;
 	}
 
 	@Nullable
-	public World getEntityWorld() {
+	public World getWorld() {
 		return this.world;
 	}
 
@@ -41,67 +44,66 @@ public abstract class BlockEntity {
 		return this.world != null;
 	}
 
-	public void fromNbt(NbtCompound nbt) {
-		this.pos = new BlockPos(nbt.getInt("x"), nbt.getInt("y"), nbt.getInt("z"));
+	public void fromTag(CompoundTag compoundTag) {
+		this.pos = new BlockPos(compoundTag.getInt("x"), compoundTag.getInt("y"), compoundTag.getInt("z"));
 	}
 
-	public NbtCompound toNbt(NbtCompound nbt) {
-		return this.method_11648(nbt);
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		return this.writeIdentifyingData(compoundTag);
 	}
 
-	private NbtCompound method_11648(NbtCompound tag) {
-		Identifier identifier = BlockEntityType.method_16785(this.method_16780());
+	private CompoundTag writeIdentifyingData(CompoundTag compoundTag) {
+		Identifier identifier = BlockEntityType.getId(this.getType());
 		if (identifier == null) {
 			throw new RuntimeException(this.getClass() + " is missing a mapping! This is a bug!");
 		} else {
-			tag.putString("id", identifier.toString());
-			tag.putInt("x", this.pos.getX());
-			tag.putInt("y", this.pos.getY());
-			tag.putInt("z", this.pos.getZ());
-			return tag;
+			compoundTag.putString("id", identifier.toString());
+			compoundTag.putInt("x", this.pos.getX());
+			compoundTag.putInt("y", this.pos.getY());
+			compoundTag.putInt("z", this.pos.getZ());
+			return compoundTag;
 		}
 	}
 
 	@Nullable
-	public static BlockEntity method_16781(NbtCompound nbtCompound) {
-		BlockEntity blockEntity = null;
-		String string = nbtCompound.getString("id");
-
-		try {
-			blockEntity = BlockEntityType.method_16786(string);
-		} catch (Throwable var5) {
-			LOGGER.error("Failed to create block entity {}", string, var5);
-		}
-
-		if (blockEntity != null) {
+	public static BlockEntity createFromTag(CompoundTag compoundTag) {
+		String string = compoundTag.getString("id");
+		return (BlockEntity)Registry.BLOCK_ENTITY.getOrEmpty(new Identifier(string)).map(blockEntityType -> {
 			try {
-				blockEntity.fromNbt(nbtCompound);
+				return blockEntityType.instantiate();
+			} catch (Throwable var3) {
+				LOGGER.error("Failed to create block entity {}", string, var3);
+				return null;
+			}
+		}).map(blockEntity -> {
+			try {
+				blockEntity.fromTag(compoundTag);
+				return blockEntity;
 			} catch (Throwable var4) {
 				LOGGER.error("Failed to load data for block entity {}", string, var4);
-				blockEntity = null;
+				return null;
 			}
-		} else {
+		}).orElseGet(() -> {
 			LOGGER.warn("Skipping BlockEntity with id {}", string);
-		}
-
-		return blockEntity;
+			return null;
+		});
 	}
 
 	public void markDirty() {
 		if (this.world != null) {
-			this.field_18594 = this.world.getBlockState(this.pos);
+			this.cachedState = this.world.getBlockState(this.pos);
 			this.world.markDirty(this.pos, this);
-			if (!this.field_18594.isAir()) {
-				this.world.updateHorizontalAdjacent(this.pos, this.field_18594.getBlock());
+			if (!this.cachedState.isAir()) {
+				this.world.updateHorizontalAdjacent(this.pos, this.cachedState.getBlock());
 			}
 		}
 	}
 
-	public double getSquaredDistance(double x, double y, double z) {
-		double d = (double)this.pos.getX() + 0.5 - x;
-		double e = (double)this.pos.getY() + 0.5 - y;
-		double f = (double)this.pos.getZ() + 0.5 - z;
-		return d * d + e * e + f * f;
+	public double getSquaredDistance(double d, double e, double f) {
+		double g = (double)this.pos.getX() + 0.5 - d;
+		double h = (double)this.pos.getY() + 0.5 - e;
+		double i = (double)this.pos.getZ() + 0.5 - f;
+		return g * g + h * h + i * i;
 	}
 
 	public double getSquaredRenderDistance() {
@@ -112,66 +114,73 @@ public abstract class BlockEntity {
 		return this.pos;
 	}
 
-	public BlockState method_16783() {
-		if (this.field_18594 == null) {
-			this.field_18594 = this.world.getBlockState(this.pos);
+	public BlockState getCachedState() {
+		if (this.cachedState == null) {
+			this.cachedState = this.world.getBlockState(this.pos);
 		}
 
-		return this.field_18594;
+		return this.cachedState;
 	}
 
 	@Nullable
-	public BlockEntityUpdateS2CPacket getUpdatePacket() {
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
 		return null;
 	}
 
-	public NbtCompound getUpdatePacketContent() {
-		return this.method_11648(new NbtCompound());
+	public CompoundTag toInitialChunkDataTag() {
+		return this.writeIdentifyingData(new CompoundTag());
 	}
 
-	public boolean isRemoved() {
-		return this.removed;
+	public boolean isInvalid() {
+		return this.invalid;
 	}
 
-	public void markRemoved() {
-		this.removed = true;
+	public void invalidate() {
+		this.invalid = true;
 	}
 
-	public void cancelRemoval() {
-		this.removed = false;
+	public void validate() {
+		this.invalid = false;
 	}
 
-	public boolean onBlockAction(int code, int data) {
+	public boolean onBlockAction(int i, int j) {
 		return false;
 	}
 
 	public void resetBlock() {
-		this.field_18594 = null;
+		this.cachedState = null;
 	}
 
-	public void populateCrashReport(CrashReportSection section) {
-		section.add("Name", (CrashCallable<String>)(() -> Registry.BLOCK_ENTITY_TYPE.getId(this.method_16780()) + " // " + this.getClass().getCanonicalName()));
+	public void populateCrashReport(CrashReportSection crashReportSection) {
+		crashReportSection.add("Name", (CrashCallable<String>)(() -> Registry.BLOCK_ENTITY.getId(this.getType()) + " // " + this.getClass().getCanonicalName()));
 		if (this.world != null) {
-			CrashReportSection.addBlockInfo(section, this.pos, this.method_16783());
-			CrashReportSection.addBlockInfo(section, this.pos, this.world.getBlockState(this.pos));
+			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.getCachedState());
+			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.world.getBlockState(this.pos));
 		}
 	}
 
-	public void setPosition(BlockPos pos) {
-		this.pos = pos.toImmutable();
+	public void setPos(BlockPos blockPos) {
+		this.pos = blockPos.toImmutable();
 	}
 
-	public boolean shouldNotCopyNbtFromItem() {
+	public boolean shouldNotCopyTagFromItem() {
 		return false;
 	}
 
-	public void method_13322(BlockRotation rotation) {
+	public void applyRotation(BlockRotation blockRotation) {
 	}
 
-	public void method_13321(BlockMirror mirror) {
+	public void applyMirror(BlockMirror blockMirror) {
 	}
 
-	public BlockEntityType<?> method_16780() {
-		return this.field_18593;
+	public BlockEntityType<?> getType() {
+		return this.type;
+	}
+
+	public void method_20525() {
+		if (!this.field_19314) {
+			this.field_19314 = true;
+			LOGGER.warn("Block entity invalid: {} @ {}", new Supplier[]{() -> Registry.BLOCK_ENTITY.getId(this.getType()), this::getPos});
+		}
 	}
 }

@@ -1,8 +1,7 @@
 package net.minecraft.util.math;
 
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtFloat;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.ListTag;
 
 public class EulerAngle {
 	protected final float pitch;
@@ -15,16 +14,16 @@ public class EulerAngle {
 		this.roll = !Float.isInfinite(h) && !Float.isNaN(h) ? h % 360.0F : 0.0F;
 	}
 
-	public EulerAngle(NbtList nbtList) {
-		this(nbtList.getFloat(0), nbtList.getFloat(1), nbtList.getFloat(2));
+	public EulerAngle(ListTag listTag) {
+		this(listTag.getFloat(0), listTag.getFloat(1), listTag.getFloat(2));
 	}
 
-	public NbtList serialize() {
-		NbtList nbtList = new NbtList();
-		nbtList.add((NbtElement)(new NbtFloat(this.pitch)));
-		nbtList.add((NbtElement)(new NbtFloat(this.yaw)));
-		nbtList.add((NbtElement)(new NbtFloat(this.roll)));
-		return nbtList;
+	public ListTag serialize() {
+		ListTag listTag = new ListTag();
+		listTag.add(new FloatTag(this.pitch));
+		listTag.add(new FloatTag(this.yaw));
+		listTag.add(new FloatTag(this.roll));
+		return listTag;
 	}
 
 	public boolean equals(Object object) {

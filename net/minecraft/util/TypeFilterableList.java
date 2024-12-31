@@ -3,84 +3,44 @@ package net.minecraft.util;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import java.util.AbstractSet;
+import java.util.AbstractCollection;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
-public class TypeFilterableList<T> extends AbstractSet<T> {
-	private static final Set<Class<?>> field_11829 = Sets.newHashSet();
+public class TypeFilterableList<T> extends AbstractCollection<T> {
 	private final Map<Class<?>, List<T>> elementsByType = Maps.newHashMap();
-	private final Set<Class<?>> field_11831 = Sets.newIdentityHashSet();
 	private final Class<T> elementType;
 	private final List<T> allElements = Lists.newArrayList();
 
 	public TypeFilterableList(Class<T> class_) {
 		this.elementType = class_;
-		this.field_11831.add(class_);
 		this.elementsByType.put(class_, this.allElements);
-
-		for (Class<?> class2 : Lists.newArrayList(field_11829)) {
-			this.method_10802(class2);
-		}
-	}
-
-	protected void method_10802(Class<?> class_) {
-		field_11829.add(class_);
-
-		for (T object : this.allElements) {
-			if (class_.isAssignableFrom(object.getClass())) {
-				this.method_10803(object, class_);
-			}
-		}
-
-		this.field_11831.add(class_);
-	}
-
-	protected Class<?> method_10805(Class<?> class_) {
-		if (this.elementType.isAssignableFrom(class_)) {
-			if (!this.field_11831.contains(class_)) {
-				this.method_10802(class_);
-			}
-
-			return class_;
-		} else {
-			throw new IllegalArgumentException("Don't know how to search for " + class_);
-		}
 	}
 
 	public boolean add(T object) {
-		for (Class<?> class_ : this.field_11831) {
-			if (class_.isAssignableFrom(object.getClass())) {
-				this.method_10803(object, class_);
+		boolean bl = false;
+
+		for (Entry<Class<?>, List<T>> entry : this.elementsByType.entrySet()) {
+			if (((Class)entry.getKey()).isInstance(object)) {
+				bl |= ((List)entry.getValue()).add(object);
 			}
 		}
 
-		return true;
-	}
-
-	private void method_10803(T object, Class<?> class_) {
-		List<T> list = (List<T>)this.elementsByType.get(class_);
-		if (list == null) {
-			this.elementsByType.put(class_, Lists.newArrayList(new Object[]{object}));
-		} else {
-			list.add(object);
-		}
+		return bl;
 	}
 
 	public boolean remove(Object object) {
-		T object2 = (T)object;
 		boolean bl = false;
 
-		for (Class<?> class_ : this.field_11831) {
-			if (class_.isAssignableFrom(object2.getClass())) {
-				List<T> list = (List<T>)this.elementsByType.get(class_);
-				if (list != null && list.remove(object2)) {
-					bl = true;
-				}
+		for (Entry<Class<?>, List<T>> entry : this.elementsByType.entrySet()) {
+			if (((Class)entry.getKey()).isInstance(object)) {
+				List<T> list = (List<T>)entry.getValue();
+				bl |= list.remove(object);
 			}
 		}
 
@@ -88,19 +48,17 @@ public class TypeFilterableList<T> extends AbstractSet<T> {
 	}
 
 	public boolean contains(Object object) {
-		return Iterators.contains(this.method_10806(object.getClass()).iterator(), object);
+		return this.getAllOfType(object.getClass()).contains(object);
 	}
 
-	public <S> Iterable<S> method_10806(Class<S> class_) {
-		return () -> {
-			List<T> list = (List<T>)this.elementsByType.get(this.method_10805(class_));
-			if (list == null) {
-				return Collections.emptyIterator();
-			} else {
-				Iterator<T> iterator = list.iterator();
-				return Iterators.filter(iterator, class_);
-			}
-		};
+	public <S> Collection<S> getAllOfType(Class<S> class_) {
+		if (!this.elementType.isAssignableFrom(class_)) {
+			throw new IllegalArgumentException("Don't know how to search for " + class_);
+		} else {
+			List<T> list = (List<T>)this.elementsByType
+				.computeIfAbsent(class_, class_x -> (List)this.allElements.stream().filter(class_x::isInstance).collect(Collectors.toList()));
+			return Collections.unmodifiableCollection(list);
+		}
 	}
 
 	public Iterator<T> iterator() {

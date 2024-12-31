@@ -1,86 +1,73 @@
 package net.minecraft.client.gui.screen;
 
-import net.minecraft.client.gui.screen.options.ChatOptionsScreen;
-import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
-import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
-import net.minecraft.client.gui.screen.options.SkinOptionsScreen;
+import net.minecraft.client.gui.screen.controls.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.resourcepack.ResourcePackOptionsScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.LockButtonWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
-import net.minecraft.client.gui.widget.OptionSliderWidget;
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.options.Option;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.server.network.packet.UpdateDifficultyC2SPacket;
+import net.minecraft.server.network.packet.UpdateDifficultyLockC2SPacket;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.world.Difficulty;
 
 public class SettingsScreen extends Screen {
-	private static final GameOptions.Option[] OPTIONS = new GameOptions.Option[]{GameOptions.Option.FIELD_OF_VIEW};
+	private static final Option[] OPTIONS = new Option[]{Option.FOV};
 	private final Screen parent;
-	private final GameOptions options;
+	private final GameOptions settings;
 	private ButtonWidget difficultyButton;
 	private LockButtonWidget lockDifficultyButton;
-	protected String title = "Options";
+	private Difficulty difficulty;
 
 	public SettingsScreen(Screen screen, GameOptions gameOptions) {
+		super(new TranslatableText("options.title"));
 		this.parent = screen;
-		this.options = gameOptions;
+		this.settings = gameOptions;
 	}
 
 	@Override
 	protected void init() {
-		this.title = I18n.translate("options.title");
 		int i = 0;
 
-		for (GameOptions.Option option : OPTIONS) {
-			if (option.isNumeric()) {
-				this.addButton(new OptionSliderWidget(option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), option));
-			} else {
-				OptionButtonWidget optionButtonWidget = new OptionButtonWidget(
-					option.getOrdinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), option, this.options.method_18260(option)
-				) {
-					@Override
-					public void method_18374(double d, double e) {
-						SettingsScreen.this.options.method_18258(this.getOption(), 1);
-						this.message = SettingsScreen.this.options.method_18260(GameOptions.Option.byOrdinal(this.id));
-					}
-				};
-				this.addButton(optionButtonWidget);
-			}
-
+		for (Option option : OPTIONS) {
+			int j = this.width / 2 - 155 + i % 2 * 160;
+			int k = this.height / 6 - 12 + 24 * (i >> 1);
+			this.addButton(option.createButton(this.minecraft.options, j, k, 150));
 			i++;
 		}
 
-		if (this.client.world != null) {
-			Difficulty difficulty = this.client.world.method_16346();
-			this.difficultyButton = new ButtonWidget(
-				108, this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), 150, 20, this.getDifficultyButtonText(difficulty)
-			) {
-				@Override
-				public void method_18374(double d, double e) {
-					SettingsScreen.this.client.world.method_3588().setDifficulty(Difficulty.byOrdinal(SettingsScreen.this.client.world.method_16346().getId() + 1));
-					SettingsScreen.this.difficultyButton.message = SettingsScreen.this.getDifficultyButtonText(SettingsScreen.this.client.world.method_16346());
-				}
-			};
-			this.addButton(this.difficultyButton);
-			if (this.client.isInSingleplayer() && !this.client.world.method_3588().isHardcore()) {
-				this.difficultyButton.setWidth(this.difficultyButton.getWidth() - 20);
-				this.lockDifficultyButton = new LockButtonWidget(109, this.difficultyButton.x + this.difficultyButton.getWidth(), this.difficultyButton.y) {
-					@Override
-					public void method_18374(double d, double e) {
-						SettingsScreen.this.client
-							.setScreen(
-								new ConfirmScreen(
-									SettingsScreen.this,
-									new TranslatableText("difficulty.lock.title").asFormattedString(),
-									new TranslatableText("difficulty.lock.question", new TranslatableText(SettingsScreen.this.client.world.method_3588().getDifficulty().getName()))
-										.asFormattedString(),
-									109
-								)
-							);
+		if (this.minecraft.world != null) {
+			this.difficulty = this.minecraft.world.getDifficulty();
+			this.difficultyButton = this.addButton(
+				new ButtonWidget(
+					this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), 150, 20, this.getDifficultyButtonText(this.difficulty), buttonWidget -> {
+						this.difficulty = Difficulty.byOrdinal(this.difficulty.getId() + 1);
+						this.minecraft.getNetworkHandler().sendPacket(new UpdateDifficultyC2SPacket(this.difficulty));
+						this.difficultyButton.setMessage(this.getDifficultyButtonText(this.difficulty));
 					}
-				};
-				this.addButton(this.lockDifficultyButton);
-				this.lockDifficultyButton.setLocked(this.client.world.method_3588().isDifficultyLocked());
+				)
+			);
+			if (this.minecraft.isIntegratedServerRunning() && !this.minecraft.world.getLevelProperties().isHardcore()) {
+				this.difficultyButton.setWidth(this.difficultyButton.getWidth() - 20);
+				this.lockDifficultyButton = this.addButton(
+					new LockButtonWidget(
+						this.difficultyButton.x + this.difficultyButton.getWidth(),
+						this.difficultyButton.y,
+						buttonWidget -> this.minecraft
+								.openScreen(
+									new ConfirmScreen(
+										this::lockDifficulty,
+										new TranslatableText("difficulty.lock.title"),
+										new TranslatableText(
+											"difficulty.lock.question", new TranslatableText("options.difficulty." + this.minecraft.world.getLevelProperties().getDifficulty().getName())
+										)
+									)
+								)
+					)
+				);
+				this.lockDifficultyButton.setLocked(this.minecraft.world.getLevelProperties().isDifficultyLocked());
 				this.lockDifficultyButton.active = !this.lockDifficultyButton.isLocked();
 				this.difficultyButton.active = !this.lockDifficultyButton.isLocked();
 			} else {
@@ -89,98 +76,114 @@ public class SettingsScreen extends Screen {
 		} else {
 			this.addButton(
 				new OptionButtonWidget(
-					GameOptions.Option.REALMS_NOTIFICATIONS.getOrdinal(),
 					this.width / 2 - 155 + i % 2 * 160,
 					this.height / 6 - 12 + 24 * (i >> 1),
-					GameOptions.Option.REALMS_NOTIFICATIONS,
-					this.options.method_18260(GameOptions.Option.REALMS_NOTIFICATIONS)
-				) {
-					@Override
-					public void method_18374(double d, double e) {
-						SettingsScreen.this.options.method_18258(this.getOption(), 1);
-						this.message = SettingsScreen.this.options.method_18260(GameOptions.Option.byOrdinal(this.id));
+					150,
+					20,
+					Option.REALMS_NOTIFICATIONS,
+					Option.REALMS_NOTIFICATIONS.getDisplayString(this.settings),
+					buttonWidget -> {
+						Option.REALMS_NOTIFICATIONS.set(this.settings);
+						this.settings.write();
+						buttonWidget.setMessage(Option.REALMS_NOTIFICATIONS.getDisplayString(this.settings));
 					}
-				}
+				)
 			);
 		}
 
-		this.addButton(new ButtonWidget(110, this.width / 2 - 155, this.height / 6 + 48 - 6, 150, 20, I18n.translate("options.skinCustomisation")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new SkinOptionsScreen(SettingsScreen.this));
-			}
-		});
-		this.addButton(new ButtonWidget(106, this.width / 2 + 5, this.height / 6 + 48 - 6, 150, 20, I18n.translate("options.sounds")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new SoundsScreen(SettingsScreen.this, SettingsScreen.this.options));
-			}
-		});
-		this.addButton(new ButtonWidget(101, this.width / 2 - 155, this.height / 6 + 72 - 6, 150, 20, I18n.translate("options.video")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new VideoOptionsScreen(SettingsScreen.this, SettingsScreen.this.options));
-			}
-		});
-		this.addButton(new ButtonWidget(100, this.width / 2 + 5, this.height / 6 + 72 - 6, 150, 20, I18n.translate("options.controls")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new ControlsOptionsScreen(SettingsScreen.this, SettingsScreen.this.options));
-			}
-		});
 		this.addButton(
-			new ButtonWidget(102, this.width / 2 - 155, this.height / 6 + 96 - 6, 150, 20, I18n.translate("options.language")) {
-				@Override
-				public void method_18374(double d, double e) {
-					SettingsScreen.this.client.options.save();
-					SettingsScreen.this.client
-						.setScreen(new LanguageOptionsScreen(SettingsScreen.this, SettingsScreen.this.options, SettingsScreen.this.client.getLanguageManager()));
-				}
-			}
+			new ButtonWidget(
+				this.width / 2 - 155,
+				this.height / 6 + 48 - 6,
+				150,
+				20,
+				I18n.translate("options.skinCustomisation"),
+				buttonWidget -> this.minecraft.openScreen(new SkinOptionsScreen(this))
+			)
 		);
-		this.addButton(new ButtonWidget(103, this.width / 2 + 5, this.height / 6 + 96 - 6, 150, 20, I18n.translate("options.chat.title")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new ChatOptionsScreen(SettingsScreen.this, SettingsScreen.this.options));
-			}
-		});
-		this.addButton(new ButtonWidget(105, this.width / 2 - 155, this.height / 6 + 120 - 6, 150, 20, I18n.translate("options.resourcepack")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new ResourcePackScreen(SettingsScreen.this));
-			}
-		});
-		this.addButton(new ButtonWidget(104, this.width / 2 + 5, this.height / 6 + 120 - 6, 150, 20, I18n.translate("options.snooper.view")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(new SnooperScreen(SettingsScreen.this, SettingsScreen.this.options));
-			}
-		});
-		this.addButton(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 168, I18n.translate("gui.done")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SettingsScreen.this.client.options.save();
-				SettingsScreen.this.client.setScreen(SettingsScreen.this.parent);
-			}
-		});
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 + 5,
+				this.height / 6 + 48 - 6,
+				150,
+				20,
+				I18n.translate("options.sounds"),
+				buttonWidget -> this.minecraft.openScreen(new SoundOptionsScreen(this, this.settings))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 155,
+				this.height / 6 + 72 - 6,
+				150,
+				20,
+				I18n.translate("options.video"),
+				buttonWidget -> this.minecraft.openScreen(new VideoOptionsScreen(this, this.settings))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 + 5,
+				this.height / 6 + 72 - 6,
+				150,
+				20,
+				I18n.translate("options.controls"),
+				buttonWidget -> this.minecraft.openScreen(new ControlsOptionsScreen(this, this.settings))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 155,
+				this.height / 6 + 96 - 6,
+				150,
+				20,
+				I18n.translate("options.language"),
+				buttonWidget -> this.minecraft.openScreen(new LanguageOptionsScreen(this, this.settings, this.minecraft.getLanguageManager()))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 + 5,
+				this.height / 6 + 96 - 6,
+				150,
+				20,
+				I18n.translate("options.chat.title"),
+				buttonWidget -> this.minecraft.openScreen(new ChatOptionsScreen(this, this.settings))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 155,
+				this.height / 6 + 120 - 6,
+				150,
+				20,
+				I18n.translate("options.resourcepack"),
+				buttonWidget -> this.minecraft.openScreen(new ResourcePackOptionsScreen(this))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 + 5,
+				this.height / 6 + 120 - 6,
+				150,
+				20,
+				I18n.translate("options.accessibility.title"),
+				buttonWidget -> this.minecraft.openScreen(new AccessibilityScreen(this, this.settings))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(this.width / 2 - 100, this.height / 6 + 168, 200, 20, I18n.translate("gui.done"), buttonWidget -> this.minecraft.openScreen(this.parent))
+		);
 	}
 
 	public String getDifficultyButtonText(Difficulty difficulty) {
-		return new TranslatableText("options.difficulty").append(": ").append(difficulty.method_15537()).asFormattedString();
+		return new TranslatableText("options.difficulty").append(": ").append(difficulty.getTranslatableName()).asFormattedString();
 	}
 
-	@Override
-	public void confirmResult(boolean bl, int i) {
-		this.client.setScreen(this);
-		if (i == 109 && bl && this.client.world != null) {
-			this.client.world.method_3588().setDifficultyLocked(true);
+	private void lockDifficulty(boolean bl) {
+		this.minecraft.openScreen(this);
+		if (bl && this.minecraft.world != null) {
+			this.minecraft.getNetworkHandler().sendPacket(new UpdateDifficultyLockC2SPacket(true));
 			this.lockDifficultyButton.setLocked(true);
 			this.lockDifficultyButton.active = false;
 			this.difficultyButton.active = false;
@@ -188,15 +191,14 @@ public class SettingsScreen extends Screen {
 	}
 
 	@Override
-	public void method_18608() {
-		this.client.options.save();
-		super.method_18608();
+	public void removed() {
+		this.settings.write();
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		this.drawCenteredString(this.textRenderer, this.title, this.width / 2, 15, 16777215);
-		super.render(mouseX, mouseY, tickDelta);
+		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 15, 16777215);
+		super.render(i, j, f);
 	}
 }

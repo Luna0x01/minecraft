@@ -3,72 +3,81 @@ package net.minecraft.world.border;
 import com.google.common.collect.Lists;
 import java.util.List;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.Util;
+import net.minecraft.util.BooleanBiFunction;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.level.LevelProperties;
 
 public class WorldBorder {
 	private final List<WorldBorderListener> listeners = Lists.newArrayList();
 	private double damagePerBlock = 0.2;
-	private double safeZone = 5.0;
+	private double buffer = 5.0;
 	private int warningTime = 15;
 	private int warningBlocks = 5;
 	private double centerX;
 	private double centerZ;
 	private int maxWorldBorderRadius = 29999984;
-	private WorldBorder.class_3778 field_18825 = new WorldBorder.class_3780(6.0E7);
+	private WorldBorder.Area area = new WorldBorder.StaticArea(6.0E7);
 
-	public boolean contains(BlockPos pos) {
-		return (double)(pos.getX() + 1) > this.getBoundWest()
-			&& (double)pos.getX() < this.getBoundEast()
-			&& (double)(pos.getZ() + 1) > this.getBoundNorth()
-			&& (double)pos.getZ() < this.getBoundSouth();
+	public boolean contains(BlockPos blockPos) {
+		return (double)(blockPos.getX() + 1) > this.getBoundWest()
+			&& (double)blockPos.getX() < this.getBoundEast()
+			&& (double)(blockPos.getZ() + 1) > this.getBoundNorth()
+			&& (double)blockPos.getZ() < this.getBoundSouth();
 	}
 
-	public boolean contains(ChunkPos pos) {
-		return (double)pos.getOppositeX() > this.getBoundWest()
-			&& (double)pos.getActualX() < this.getBoundEast()
-			&& (double)pos.getOppositeZ() > this.getBoundNorth()
-			&& (double)pos.getActualZ() < this.getBoundSouth();
+	public boolean contains(ChunkPos chunkPos) {
+		return (double)chunkPos.getEndX() > this.getBoundWest()
+			&& (double)chunkPos.getStartX() < this.getBoundEast()
+			&& (double)chunkPos.getEndZ() > this.getBoundNorth()
+			&& (double)chunkPos.getStartZ() < this.getBoundSouth();
 	}
 
 	public boolean contains(Box box) {
 		return box.maxX > this.getBoundWest() && box.minX < this.getBoundEast() && box.maxZ > this.getBoundNorth() && box.minZ < this.getBoundSouth();
 	}
 
-	public double getDistanceInsideBorder(Entity entity) {
-		return this.getDistanceInsideBorder(entity.x, entity.z);
+	public double contains(Entity entity) {
+		return this.contains(entity.x, entity.z);
 	}
 
-	public double getDistanceInsideBorder(double x, double z) {
-		double d = z - this.getBoundNorth();
-		double e = this.getBoundSouth() - z;
-		double f = x - this.getBoundWest();
-		double g = this.getBoundEast() - x;
-		double h = Math.min(f, g);
-		h = Math.min(h, d);
-		return Math.min(h, e);
+	public VoxelShape asVoxelShape() {
+		return this.area.method_17906();
 	}
 
-	public WorldBorderStage getWorldBorderStage() {
-		return this.field_18825.method_16984();
+	public double contains(double d, double e) {
+		double f = e - this.getBoundNorth();
+		double g = this.getBoundSouth() - e;
+		double h = d - this.getBoundWest();
+		double i = this.getBoundEast() - d;
+		double j = Math.min(h, i);
+		j = Math.min(j, f);
+		return Math.min(j, g);
+	}
+
+	public WorldBorderStage getStage() {
+		return this.area.getStage();
 	}
 
 	public double getBoundWest() {
-		return this.field_18825.method_16976();
+		return this.area.getBoundWest();
 	}
 
 	public double getBoundNorth() {
-		return this.field_18825.method_16978();
+		return this.area.getBoundNorth();
 	}
 
 	public double getBoundEast() {
-		return this.field_18825.method_16977();
+		return this.area.getBoundEast();
 	}
 
 	public double getBoundSouth() {
-		return this.field_18825.method_16979();
+		return this.area.getBoundSouth();
 	}
 
 	public double getCenterX() {
@@ -79,43 +88,41 @@ public class WorldBorder {
 		return this.centerZ;
 	}
 
-	public void setCenter(double x, double z) {
-		this.centerX = x;
-		this.centerZ = z;
-		this.field_18825.method_16986();
+	public void setCenter(double d, double e) {
+		this.centerX = d;
+		this.centerZ = e;
+		this.area.onCenterChanged();
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onCenterChanged(this, x, z);
+			worldBorderListener.onCenterChanged(this, d, e);
 		}
 	}
 
-	public double getOldSize() {
-		return this.field_18825.method_16980();
+	public double getSize() {
+		return this.area.getSize();
 	}
 
-	public long getInterpolationDuration() {
-		return this.field_18825.method_16982();
+	public long getTargetRemainingTime() {
+		return this.area.getTargetRemainingTime();
 	}
 
 	public double getTargetSize() {
-		return this.field_18825.method_16983();
+		return this.area.getTargetSize();
 	}
 
-	public void setSize(double size) {
-		this.field_18825 = new WorldBorder.class_3780(size);
+	public void setSize(double d) {
+		this.area = new WorldBorder.StaticArea(d);
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onSizeChange(this, size);
+			worldBorderListener.onSizeChange(this, d);
 		}
 	}
 
-	public void interpolateSize(double oldSize, double targetSize, long time) {
-		this.field_18825 = (WorldBorder.class_3778)(oldSize != targetSize
-			? new WorldBorder.class_3779(oldSize, targetSize, time)
-			: new WorldBorder.class_3780(targetSize));
+	public void interpolateSize(double d, double e, long l) {
+		this.area = (WorldBorder.Area)(d == e ? new WorldBorder.StaticArea(e) : new WorldBorder.MovingArea(d, e, l));
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onInterpolateSize(this, oldSize, targetSize, time);
+			worldBorderListener.onInterpolateSize(this, d, e, l);
 		}
 	}
 
@@ -123,56 +130,56 @@ public class WorldBorder {
 		return Lists.newArrayList(this.listeners);
 	}
 
-	public void addListener(WorldBorderListener listener) {
-		this.listeners.add(listener);
+	public void addListener(WorldBorderListener worldBorderListener) {
+		this.listeners.add(worldBorderListener);
 	}
 
-	public void setMaxWorldBorderRadius(int radius) {
-		this.maxWorldBorderRadius = radius;
-		this.field_18825.method_16985();
+	public void setMaxWorldBorderRadius(int i) {
+		this.maxWorldBorderRadius = i;
+		this.area.onMaxWorldBorderRadiusChanged();
 	}
 
 	public int getMaxWorldBorderRadius() {
 		return this.maxWorldBorderRadius;
 	}
 
-	public double getSafeZone() {
-		return this.safeZone;
+	public double getBuffer() {
+		return this.buffer;
 	}
 
-	public void setSafeZone(double safeZone) {
-		this.safeZone = safeZone;
+	public void setBuffer(double d) {
+		this.buffer = d;
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onSafeZoneChanged(this, safeZone);
+			worldBorderListener.onSafeZoneChanged(this, d);
 		}
 	}
 
-	public double getBorderDamagePerBlock() {
+	public double getDamagePerBlock() {
 		return this.damagePerBlock;
 	}
 
-	public void setDamagePerBlock(double damagePerBlock) {
-		this.damagePerBlock = damagePerBlock;
+	public void setDamagePerBlock(double d) {
+		this.damagePerBlock = d;
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onDamagePerBlockChanged(this, damagePerBlock);
+			worldBorderListener.onDamagePerBlockChanged(this, d);
 		}
 	}
 
 	public double getShrinkingSpeed() {
-		return this.field_18825.method_16981();
+		return this.area.getShrinkingSpeed();
 	}
 
 	public int getWarningTime() {
 		return this.warningTime;
 	}
 
-	public void setWarningTime(int warningTime) {
-		this.warningTime = warningTime;
+	public void setWarningTime(int i) {
+		this.warningTime = i;
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onWarningTimeChanged(this, warningTime);
+			worldBorderListener.onWarningTimeChanged(this, i);
 		}
 	}
 
@@ -180,196 +187,257 @@ public class WorldBorder {
 		return this.warningBlocks;
 	}
 
-	public void setWarningBlocks(int warningBlocks) {
-		this.warningBlocks = warningBlocks;
+	public void setWarningBlocks(int i) {
+		this.warningBlocks = i;
 
 		for (WorldBorderListener worldBorderListener : this.getListeners()) {
-			worldBorderListener.onWarningBlocksChanged(this, warningBlocks);
+			worldBorderListener.onWarningBlocksChanged(this, i);
 		}
 	}
 
-	public void method_16975() {
-		this.field_18825 = this.field_18825.method_16987();
+	public void tick() {
+		this.area = this.area.getAreaInstance();
 	}
 
-	interface class_3778 {
-		double method_16976();
-
-		double method_16977();
-
-		double method_16978();
-
-		double method_16979();
-
-		double method_16980();
-
-		double method_16981();
-
-		long method_16982();
-
-		double method_16983();
-
-		WorldBorderStage method_16984();
-
-		void method_16985();
-
-		void method_16986();
-
-		WorldBorder.class_3778 method_16987();
+	public void save(LevelProperties levelProperties) {
+		levelProperties.setBorderSize(this.getSize());
+		levelProperties.setBorderCenterX(this.getCenterX());
+		levelProperties.borderCenterZ(this.getCenterZ());
+		levelProperties.setBorderSafeZone(this.getBuffer());
+		levelProperties.setBorderDamagePerBlock(this.getDamagePerBlock());
+		levelProperties.setBorderWarningBlocks(this.getWarningBlocks());
+		levelProperties.setBorderWarningTime(this.getWarningTime());
+		levelProperties.setBorderSizeLerpTarget(this.getTargetSize());
+		levelProperties.setBorderSizeLerpTime(this.getTargetRemainingTime());
 	}
 
-	class class_3779 implements WorldBorder.class_3778 {
-		private final double field_18827;
-		private final double field_18828;
-		private final long field_18829;
-		private final long field_18830;
-		private final double field_18831;
-
-		private class_3779(double d, double e, long l) {
-			this.field_18827 = d;
-			this.field_18828 = e;
-			this.field_18831 = (double)l;
-			this.field_18830 = Util.method_20227();
-			this.field_18829 = this.field_18830 + l;
-		}
-
-		@Override
-		public double method_16976() {
-			return Math.max(WorldBorder.this.getCenterX() - this.method_16980() / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
-		}
-
-		@Override
-		public double method_16978() {
-			return Math.max(WorldBorder.this.getCenterZ() - this.method_16980() / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
-		}
-
-		@Override
-		public double method_16977() {
-			return Math.min(WorldBorder.this.getCenterX() + this.method_16980() / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
-		}
-
-		@Override
-		public double method_16979() {
-			return Math.min(WorldBorder.this.getCenterZ() + this.method_16980() / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
-		}
-
-		@Override
-		public double method_16980() {
-			double d = (double)(Util.method_20227() - this.field_18830) / this.field_18831;
-			return d < 1.0 ? this.field_18827 + (this.field_18828 - this.field_18827) * d : this.field_18828;
-		}
-
-		@Override
-		public double method_16981() {
-			return Math.abs(this.field_18827 - this.field_18828) / (double)(this.field_18829 - this.field_18830);
-		}
-
-		@Override
-		public long method_16982() {
-			return this.field_18829 - Util.method_20227();
-		}
-
-		@Override
-		public double method_16983() {
-			return this.field_18828;
-		}
-
-		@Override
-		public WorldBorderStage method_16984() {
-			return this.field_18828 < this.field_18827 ? WorldBorderStage.SHRINKING : WorldBorderStage.GROWING;
-		}
-
-		@Override
-		public void method_16986() {
-		}
-
-		@Override
-		public void method_16985() {
-		}
-
-		@Override
-		public WorldBorder.class_3778 method_16987() {
-			return (WorldBorder.class_3778)(this.method_16982() <= 0L ? WorldBorder.this.new class_3780(this.field_18828) : this);
+	public void load(LevelProperties levelProperties) {
+		this.setCenter(levelProperties.getBorderCenterX(), levelProperties.getBorderCenterZ());
+		this.setDamagePerBlock(levelProperties.getBorderDamagePerBlock());
+		this.setBuffer(levelProperties.getBorderSafeZone());
+		this.setWarningBlocks(levelProperties.getBorderWarningBlocks());
+		this.setWarningTime(levelProperties.getBorderWarningTime());
+		if (levelProperties.getBorderSizeLerpTime() > 0L) {
+			this.interpolateSize(levelProperties.getBorderSize(), levelProperties.getBorderSizeLerpTarget(), levelProperties.getBorderSizeLerpTime());
+		} else {
+			this.setSize(levelProperties.getBorderSize());
 		}
 	}
 
-	class class_3780 implements WorldBorder.class_3778 {
-		private final double field_18833;
-		private double field_18834;
-		private double field_18835;
-		private double field_18836;
-		private double field_18837;
+	interface Area {
+		double getBoundWest();
 
-		public class_3780(double d) {
-			this.field_18833 = d;
-			this.method_16988();
+		double getBoundEast();
+
+		double getBoundNorth();
+
+		double getBoundSouth();
+
+		double getSize();
+
+		double getShrinkingSpeed();
+
+		long getTargetRemainingTime();
+
+		double getTargetSize();
+
+		WorldBorderStage getStage();
+
+		void onMaxWorldBorderRadiusChanged();
+
+		void onCenterChanged();
+
+		WorldBorder.Area getAreaInstance();
+
+		VoxelShape method_17906();
+	}
+
+	class MovingArea implements WorldBorder.Area {
+		private final double oldSize;
+		private final double newSize;
+		private final long timeEnd;
+		private final long timeStart;
+		private final double timeDuration;
+
+		private MovingArea(double d, double e, long l) {
+			this.oldSize = d;
+			this.newSize = e;
+			this.timeDuration = (double)l;
+			this.timeStart = SystemUtil.getMeasuringTimeMs();
+			this.timeEnd = this.timeStart + l;
 		}
 
 		@Override
-		public double method_16976() {
-			return this.field_18834;
+		public double getBoundWest() {
+			return Math.max(WorldBorder.this.getCenterX() - this.getSize() / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
 		}
 
 		@Override
-		public double method_16977() {
-			return this.field_18836;
+		public double getBoundNorth() {
+			return Math.max(WorldBorder.this.getCenterZ() - this.getSize() / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
 		}
 
 		@Override
-		public double method_16978() {
-			return this.field_18835;
+		public double getBoundEast() {
+			return Math.min(WorldBorder.this.getCenterX() + this.getSize() / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
 		}
 
 		@Override
-		public double method_16979() {
-			return this.field_18837;
+		public double getBoundSouth() {
+			return Math.min(WorldBorder.this.getCenterZ() + this.getSize() / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
 		}
 
 		@Override
-		public double method_16980() {
-			return this.field_18833;
+		public double getSize() {
+			double d = (double)(SystemUtil.getMeasuringTimeMs() - this.timeStart) / this.timeDuration;
+			return d < 1.0 ? MathHelper.lerp(d, this.oldSize, this.newSize) : this.newSize;
 		}
 
 		@Override
-		public WorldBorderStage method_16984() {
-			return WorldBorderStage.STATIONARY;
+		public double getShrinkingSpeed() {
+			return Math.abs(this.oldSize - this.newSize) / (double)(this.timeEnd - this.timeStart);
 		}
 
 		@Override
-		public double method_16981() {
+		public long getTargetRemainingTime() {
+			return this.timeEnd - SystemUtil.getMeasuringTimeMs();
+		}
+
+		@Override
+		public double getTargetSize() {
+			return this.newSize;
+		}
+
+		@Override
+		public WorldBorderStage getStage() {
+			return this.newSize < this.oldSize ? WorldBorderStage.field_12756 : WorldBorderStage.field_12754;
+		}
+
+		@Override
+		public void onCenterChanged() {
+		}
+
+		@Override
+		public void onMaxWorldBorderRadiusChanged() {
+		}
+
+		@Override
+		public WorldBorder.Area getAreaInstance() {
+			return (WorldBorder.Area)(this.getTargetRemainingTime() <= 0L ? WorldBorder.this.new StaticArea(this.newSize) : this);
+		}
+
+		@Override
+		public VoxelShape method_17906() {
+			return VoxelShapes.combineAndSimplify(
+				VoxelShapes.UNBOUNDED,
+				VoxelShapes.cuboid(
+					Math.floor(this.getBoundWest()),
+					Double.NEGATIVE_INFINITY,
+					Math.floor(this.getBoundNorth()),
+					Math.ceil(this.getBoundEast()),
+					Double.POSITIVE_INFINITY,
+					Math.ceil(this.getBoundSouth())
+				),
+				BooleanBiFunction.ONLY_FIRST
+			);
+		}
+	}
+
+	class StaticArea implements WorldBorder.Area {
+		private final double size;
+		private double boundWest;
+		private double boundNorth;
+		private double boundEast;
+		private double boundSouth;
+		private VoxelShape field_17653;
+
+		public StaticArea(double d) {
+			this.size = d;
+			this.recalculateBounds();
+		}
+
+		@Override
+		public double getBoundWest() {
+			return this.boundWest;
+		}
+
+		@Override
+		public double getBoundEast() {
+			return this.boundEast;
+		}
+
+		@Override
+		public double getBoundNorth() {
+			return this.boundNorth;
+		}
+
+		@Override
+		public double getBoundSouth() {
+			return this.boundSouth;
+		}
+
+		@Override
+		public double getSize() {
+			return this.size;
+		}
+
+		@Override
+		public WorldBorderStage getStage() {
+			return WorldBorderStage.field_12753;
+		}
+
+		@Override
+		public double getShrinkingSpeed() {
 			return 0.0;
 		}
 
 		@Override
-		public long method_16982() {
+		public long getTargetRemainingTime() {
 			return 0L;
 		}
 
 		@Override
-		public double method_16983() {
-			return this.field_18833;
+		public double getTargetSize() {
+			return this.size;
 		}
 
-		private void method_16988() {
-			this.field_18834 = Math.max(WorldBorder.this.getCenterX() - this.field_18833 / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
-			this.field_18835 = Math.max(WorldBorder.this.getCenterZ() - this.field_18833 / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
-			this.field_18836 = Math.min(WorldBorder.this.getCenterX() + this.field_18833 / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
-			this.field_18837 = Math.min(WorldBorder.this.getCenterZ() + this.field_18833 / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
+		private void recalculateBounds() {
+			this.boundWest = Math.max(WorldBorder.this.getCenterX() - this.size / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
+			this.boundNorth = Math.max(WorldBorder.this.getCenterZ() - this.size / 2.0, (double)(-WorldBorder.this.maxWorldBorderRadius));
+			this.boundEast = Math.min(WorldBorder.this.getCenterX() + this.size / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
+			this.boundSouth = Math.min(WorldBorder.this.getCenterZ() + this.size / 2.0, (double)WorldBorder.this.maxWorldBorderRadius);
+			this.field_17653 = VoxelShapes.combineAndSimplify(
+				VoxelShapes.UNBOUNDED,
+				VoxelShapes.cuboid(
+					Math.floor(this.getBoundWest()),
+					Double.NEGATIVE_INFINITY,
+					Math.floor(this.getBoundNorth()),
+					Math.ceil(this.getBoundEast()),
+					Double.POSITIVE_INFINITY,
+					Math.ceil(this.getBoundSouth())
+				),
+				BooleanBiFunction.ONLY_FIRST
+			);
 		}
 
 		@Override
-		public void method_16985() {
-			this.method_16988();
+		public void onMaxWorldBorderRadiusChanged() {
+			this.recalculateBounds();
 		}
 
 		@Override
-		public void method_16986() {
-			this.method_16988();
+		public void onCenterChanged() {
+			this.recalculateBounds();
 		}
 
 		@Override
-		public WorldBorder.class_3778 method_16987() {
+		public WorldBorder.Area getAreaInstance() {
 			return this;
+		}
+
+		@Override
+		public VoxelShape method_17906() {
+			return this.field_17653;
 		}
 	}
 }

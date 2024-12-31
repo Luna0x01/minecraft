@@ -2,40 +2,45 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.entity.decoration.painting.Painting;
+import net.minecraft.client.texture.PaintingManager;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
+import net.minecraft.entity.decoration.painting.PaintingMotive;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
-	private static final Identifier field_6511 = new Identifier("textures/painting/paintings_kristoffer_zetterstrand.png");
-
 	public PaintingEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void render(PaintingEntity paintingEntity, double d, double e, double f, float g, float h) {
+	public void method_4075(PaintingEntity paintingEntity, double d, double e, double f, float g, float h) {
 		GlStateManager.pushMatrix();
-		GlStateManager.translate(d, e, f);
-		GlStateManager.rotate(180.0F - g, 0.0F, 1.0F, 0.0F);
+		GlStateManager.translated(d, e, f);
+		GlStateManager.rotatef(180.0F - g, 0.0F, 1.0F, 0.0F);
 		GlStateManager.enableRescaleNormal();
-		this.bindTexture(paintingEntity);
-		Painting painting = paintingEntity.field_3380;
+		this.bindEntityTexture(paintingEntity);
+		PaintingMotive paintingMotive = paintingEntity.motive;
 		float i = 0.0625F;
-		GlStateManager.scale(0.0625F, 0.0625F, 0.0625F);
-		if (this.field_13631) {
+		GlStateManager.scalef(0.0625F, 0.0625F, 0.0625F);
+		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
-			GlStateManager.method_12309(this.method_12454(paintingEntity));
+			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(paintingEntity));
 		}
 
-		this.method_1577(paintingEntity, painting.method_15840(), painting.method_15841(), painting.method_15842(), painting.method_15843());
-		if (this.field_13631) {
-			GlStateManager.method_12315();
+		PaintingManager paintingManager = MinecraftClient.getInstance().getPaintingManager();
+		this.method_4074(
+			paintingEntity, paintingMotive.getWidth(), paintingMotive.getHeight(), paintingManager.getPaintingSprite(paintingMotive), paintingManager.getBackSprite()
+		);
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
@@ -44,95 +49,99 @@ public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 		super.render(paintingEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(PaintingEntity paintingEntity) {
-		return field_6511;
+	protected Identifier method_4077(PaintingEntity paintingEntity) {
+		return SpriteAtlasTexture.PAINTING_ATLAS_TEX;
 	}
 
-	private void method_1577(PaintingEntity paintingEntity, int i, int j, int k, int l) {
+	private void method_4074(PaintingEntity paintingEntity, int i, int j, Sprite sprite, Sprite sprite2) {
 		float f = (float)(-i) / 2.0F;
 		float g = (float)(-j) / 2.0F;
 		float h = 0.5F;
-		float m = 0.75F;
-		float n = 0.8125F;
-		float o = 0.0F;
-		float p = 0.0625F;
-		float q = 0.75F;
-		float r = 0.8125F;
-		float s = 0.001953125F;
-		float t = 0.001953125F;
-		float u = 0.7519531F;
-		float v = 0.7519531F;
-		float w = 0.0F;
-		float x = 0.0625F;
+		float k = sprite2.getMinU();
+		float l = sprite2.getMaxU();
+		float m = sprite2.getMinV();
+		float n = sprite2.getMaxV();
+		float o = sprite2.getMinU();
+		float p = sprite2.getMaxU();
+		float q = sprite2.getMinV();
+		float r = sprite2.getV(1.0);
+		float s = sprite2.getMinU();
+		float t = sprite2.getU(1.0);
+		float u = sprite2.getMinV();
+		float v = sprite2.getMaxV();
+		int w = i / 16;
+		int x = j / 16;
+		double d = 16.0 / (double)w;
+		double e = 16.0 / (double)x;
 
-		for (int y = 0; y < i / 16; y++) {
-			for (int z = 0; z < j / 16; z++) {
+		for (int y = 0; y < w; y++) {
+			for (int z = 0; z < x; z++) {
 				float aa = f + (float)((y + 1) * 16);
 				float ab = f + (float)(y * 16);
 				float ac = g + (float)((z + 1) * 16);
 				float ad = g + (float)(z * 16);
-				this.method_1576(paintingEntity, (aa + ab) / 2.0F, (ac + ad) / 2.0F);
-				float ae = (float)(k + i - y * 16) / 256.0F;
-				float af = (float)(k + i - (y + 1) * 16) / 256.0F;
-				float ag = (float)(l + j - z * 16) / 256.0F;
-				float ah = (float)(l + j - (z + 1) * 16) / 256.0F;
+				this.method_4076(paintingEntity, (aa + ab) / 2.0F, (ac + ad) / 2.0F);
+				float ae = sprite.getU(d * (double)(w - y));
+				float af = sprite.getU(d * (double)(w - (y + 1)));
+				float ag = sprite.getV(e * (double)(x - z));
+				float ah = sprite.getV(e * (double)(x - (z + 1)));
 				Tessellator tessellator = Tessellator.getInstance();
-				BufferBuilder bufferBuilder = tessellator.getBuffer();
-				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_NORMAL);
+				BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+				bufferBuilder.begin(7, VertexFormats.POSITION_UV_NORMAL);
 				bufferBuilder.vertex((double)aa, (double)ad, -0.5).texture((double)af, (double)ag).normal(0.0F, 0.0F, -1.0F).next();
 				bufferBuilder.vertex((double)ab, (double)ad, -0.5).texture((double)ae, (double)ag).normal(0.0F, 0.0F, -1.0F).next();
 				bufferBuilder.vertex((double)ab, (double)ac, -0.5).texture((double)ae, (double)ah).normal(0.0F, 0.0F, -1.0F).next();
 				bufferBuilder.vertex((double)aa, (double)ac, -0.5).texture((double)af, (double)ah).normal(0.0F, 0.0F, -1.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ac, 0.5).texture(0.75, 0.0).normal(0.0F, 0.0F, 1.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ac, 0.5).texture(0.8125, 0.0).normal(0.0F, 0.0F, 1.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ad, 0.5).texture(0.8125, 0.0625).normal(0.0F, 0.0F, 1.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ad, 0.5).texture(0.75, 0.0625).normal(0.0F, 0.0F, 1.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ac, -0.5).texture(0.75, 0.001953125).normal(0.0F, 1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ac, -0.5).texture(0.8125, 0.001953125).normal(0.0F, 1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ac, 0.5).texture(0.8125, 0.001953125).normal(0.0F, 1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ac, 0.5).texture(0.75, 0.001953125).normal(0.0F, 1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ad, 0.5).texture(0.75, 0.001953125).normal(0.0F, -1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ad, 0.5).texture(0.8125, 0.001953125).normal(0.0F, -1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ad, -0.5).texture(0.8125, 0.001953125).normal(0.0F, -1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ad, -0.5).texture(0.75, 0.001953125).normal(0.0F, -1.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ac, 0.5).texture(0.7519531F, 0.0).normal(-1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ad, 0.5).texture(0.7519531F, 0.0625).normal(-1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ad, -0.5).texture(0.7519531F, 0.0625).normal(-1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)aa, (double)ac, -0.5).texture(0.7519531F, 0.0).normal(-1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ac, -0.5).texture(0.7519531F, 0.0).normal(1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ad, -0.5).texture(0.7519531F, 0.0625).normal(1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ad, 0.5).texture(0.7519531F, 0.0625).normal(1.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex((double)ab, (double)ac, 0.5).texture(0.7519531F, 0.0).normal(1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ac, 0.5).texture((double)k, (double)m).normal(0.0F, 0.0F, 1.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ac, 0.5).texture((double)l, (double)m).normal(0.0F, 0.0F, 1.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ad, 0.5).texture((double)l, (double)n).normal(0.0F, 0.0F, 1.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ad, 0.5).texture((double)k, (double)n).normal(0.0F, 0.0F, 1.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ac, -0.5).texture((double)o, (double)q).normal(0.0F, 1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ac, -0.5).texture((double)p, (double)q).normal(0.0F, 1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ac, 0.5).texture((double)p, (double)r).normal(0.0F, 1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ac, 0.5).texture((double)o, (double)r).normal(0.0F, 1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ad, 0.5).texture((double)o, (double)q).normal(0.0F, -1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ad, 0.5).texture((double)p, (double)q).normal(0.0F, -1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ad, -0.5).texture((double)p, (double)r).normal(0.0F, -1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ad, -0.5).texture((double)o, (double)r).normal(0.0F, -1.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ac, 0.5).texture((double)t, (double)u).normal(-1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ad, 0.5).texture((double)t, (double)v).normal(-1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ad, -0.5).texture((double)s, (double)v).normal(-1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)aa, (double)ac, -0.5).texture((double)s, (double)u).normal(-1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ac, -0.5).texture((double)t, (double)u).normal(1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ad, -0.5).texture((double)t, (double)v).normal(1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ad, 0.5).texture((double)s, (double)v).normal(1.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex((double)ab, (double)ac, 0.5).texture((double)s, (double)u).normal(1.0F, 0.0F, 0.0F).next();
 				tessellator.draw();
 			}
 		}
 	}
 
-	private void method_1576(PaintingEntity paintingEntity, float f, float g) {
+	private void method_4076(PaintingEntity paintingEntity, float f, float g) {
 		int i = MathHelper.floor(paintingEntity.x);
 		int j = MathHelper.floor(paintingEntity.y + (double)(g / 16.0F));
 		int k = MathHelper.floor(paintingEntity.z);
-		Direction direction = paintingEntity.direction;
-		if (direction == Direction.NORTH) {
+		Direction direction = paintingEntity.getHorizontalFacing();
+		if (direction == Direction.field_11043) {
 			i = MathHelper.floor(paintingEntity.x + (double)(f / 16.0F));
 		}
 
-		if (direction == Direction.WEST) {
+		if (direction == Direction.field_11039) {
 			k = MathHelper.floor(paintingEntity.z - (double)(f / 16.0F));
 		}
 
-		if (direction == Direction.SOUTH) {
+		if (direction == Direction.field_11035) {
 			i = MathHelper.floor(paintingEntity.x - (double)(f / 16.0F));
 		}
 
-		if (direction == Direction.EAST) {
+		if (direction == Direction.field_11034) {
 			k = MathHelper.floor(paintingEntity.z + (double)(f / 16.0F));
 		}
 
-		int l = this.dispatcher.world.method_8578(new BlockPos(i, j, k), 0);
+		int l = this.renderManager.world.getLightmapIndex(new BlockPos(i, j, k), 0);
 		int m = l % 65536;
 		int n = l / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)m, (float)n);
-		GlStateManager.color(1.0F, 1.0F, 1.0F);
+		GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)m, (float)n);
+		GlStateManager.color3f(1.0F, 1.0F, 1.0F);
 	}
 }

@@ -1,13 +1,13 @@
 package net.minecraft.server.dedicated;
 
-import net.minecraft.class_3915;
+import net.minecraft.server.command.ServerCommandSource;
 
 public class PendingServerCommand {
 	public final String command;
-	public final class_3915 field_2697;
+	public final ServerCommandSource source;
 
-	public PendingServerCommand(String string, class_3915 arg) {
+	public PendingServerCommand(String string, ServerCommandSource serverCommandSource) {
 		this.command = string;
-		this.field_2697 = arg;
+		this.source = serverCommandSource;
 	}
 }

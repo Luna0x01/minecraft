@@ -3,73 +3,71 @@ package net.minecraft.inventory;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 
-public class EnderChestInventory extends SimpleInventory {
-	private EnderChestBlockEntity blockEntity;
+public class EnderChestInventory extends BasicInventory {
+	private EnderChestBlockEntity currentBlockEntity;
 
 	public EnderChestInventory() {
-		super(new TranslatableText("container.enderchest"), 27);
+		super(27);
 	}
 
-	public void setBlockEntity(EnderChestBlockEntity blockEntity) {
-		this.blockEntity = blockEntity;
+	public void setCurrentBlockEntity(EnderChestBlockEntity enderChestBlockEntity) {
+		this.currentBlockEntity = enderChestBlockEntity;
 	}
 
-	public void readNbtList(NbtList nbtList) {
+	public void readTags(ListTag listTag) {
 		for (int i = 0; i < this.getInvSize(); i++) {
 			this.setInvStack(i, ItemStack.EMPTY);
 		}
 
-		for (int j = 0; j < nbtList.size(); j++) {
-			NbtCompound nbtCompound = nbtList.getCompound(j);
-			int k = nbtCompound.getByte("Slot") & 255;
+		for (int j = 0; j < listTag.size(); j++) {
+			CompoundTag compoundTag = listTag.getCompoundTag(j);
+			int k = compoundTag.getByte("Slot") & 255;
 			if (k >= 0 && k < this.getInvSize()) {
-				this.setInvStack(k, ItemStack.from(nbtCompound));
+				this.setInvStack(k, ItemStack.fromTag(compoundTag));
 			}
 		}
 	}
 
-	public NbtList toNbtList() {
-		NbtList nbtList = new NbtList();
+	public ListTag getTags() {
+		ListTag listTag = new ListTag();
 
 		for (int i = 0; i < this.getInvSize(); i++) {
 			ItemStack itemStack = this.getInvStack(i);
 			if (!itemStack.isEmpty()) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Slot", (byte)i);
-				itemStack.toNbt(nbtCompound);
-				nbtList.add((NbtElement)nbtCompound);
+				CompoundTag compoundTag = new CompoundTag();
+				compoundTag.putByte("Slot", (byte)i);
+				itemStack.toTag(compoundTag);
+				listTag.add(compoundTag);
 			}
 		}
 
-		return nbtList;
+		return listTag;
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity player) {
-		return this.blockEntity != null && !this.blockEntity.canPlayerUse(player) ? false : super.canPlayerUseInv(player);
+	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
+		return this.currentBlockEntity != null && !this.currentBlockEntity.canPlayerUse(playerEntity) ? false : super.canPlayerUseInv(playerEntity);
 	}
 
 	@Override
-	public void onInvOpen(PlayerEntity player) {
-		if (this.blockEntity != null) {
-			this.blockEntity.onOpen();
+	public void onInvOpen(PlayerEntity playerEntity) {
+		if (this.currentBlockEntity != null) {
+			this.currentBlockEntity.onOpen();
 		}
 
-		super.onInvOpen(player);
+		super.onInvOpen(playerEntity);
 	}
 
 	@Override
-	public void onInvClose(PlayerEntity player) {
-		if (this.blockEntity != null) {
-			this.blockEntity.onClose();
+	public void onInvClose(PlayerEntity playerEntity) {
+		if (this.currentBlockEntity != null) {
+			this.currentBlockEntity.onClose();
 		}
 
-		super.onInvClose(player);
-		this.blockEntity = null;
+		super.onInvClose(playerEntity);
+		this.currentBlockEntity = null;
 	}
 }

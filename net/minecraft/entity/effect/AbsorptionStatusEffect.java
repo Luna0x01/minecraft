@@ -4,19 +4,19 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AbstractEntityAttributeContainer;
 
 public class AbsorptionStatusEffect extends StatusEffect {
-	protected AbsorptionStatusEffect(boolean bl, int i) {
-		super(bl, i);
+	protected AbsorptionStatusEffect(StatusEffectType statusEffectType, int i) {
+		super(statusEffectType, i);
 	}
 
 	@Override
-	public void onRemoved(LivingEntity entity, AbstractEntityAttributeContainer attributes, int amplifier) {
-		entity.setAbsorption(entity.getAbsorption() - (float)(4 * (amplifier + 1)));
-		super.onRemoved(entity, attributes, amplifier);
+	public void method_5562(LivingEntity livingEntity, AbstractEntityAttributeContainer abstractEntityAttributeContainer, int i) {
+		livingEntity.setAbsorptionAmount(livingEntity.getAbsorptionAmount() - (float)(4 * (i + 1)));
+		super.method_5562(livingEntity, abstractEntityAttributeContainer, i);
 	}
 
 	@Override
-	public void method_6091(LivingEntity entity, AbstractEntityAttributeContainer attributes, int i) {
-		entity.setAbsorption(entity.getAbsorption() + (float)(4 * (i + 1)));
-		super.method_6091(entity, attributes, i);
+	public void method_5555(LivingEntity livingEntity, AbstractEntityAttributeContainer abstractEntityAttributeContainer, int i) {
+		livingEntity.setAbsorptionAmount(livingEntity.getAbsorptionAmount() + (float)(4 * (i + 1)));
+		super.method_5555(livingEntity, abstractEntityAttributeContainer, i);
 	}
 }

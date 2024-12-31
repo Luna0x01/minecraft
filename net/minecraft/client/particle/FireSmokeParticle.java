@@ -1,20 +1,15 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class FireSmokeParticle extends Particle {
-	private final float prevScale;
+public class FireSmokeParticle extends SpriteBillboardParticle {
+	private final SpriteProvider field_17868;
 
-	private FireSmokeParticle(World world, double d, double e, double f, double g, double h, double i) {
-		this(world, d, e, f, g, h, i, 1.0F);
-	}
-
-	protected FireSmokeParticle(World world, double d, double e, double f, double g, double h, double i, float j) {
+	protected FireSmokeParticle(World world, double d, double e, double f, double g, double h, double i, float j, SpriteProvider spriteProvider) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
+		this.field_17868 = spriteProvider;
 		this.velocityX *= 0.1F;
 		this.velocityY *= 0.1F;
 		this.velocityZ *= 0.1F;
@@ -22,54 +17,61 @@ public class FireSmokeParticle extends Particle {
 		this.velocityY += h;
 		this.velocityZ += i;
 		float k = (float)(Math.random() * 0.3F);
-		this.red = k;
-		this.green = k;
-		this.blue = k;
-		this.scale *= 0.75F;
-		this.scale *= j;
-		this.prevScale = this.scale;
+		this.colorRed = k;
+		this.colorGreen = k;
+		this.colorBlue = k;
+		this.scale *= 0.75F * j;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.2));
 		this.maxAge = (int)((float)this.maxAge * j);
 		this.maxAge = Math.max(this.maxAge, 1);
+		this.setSpriteForAge(spriteProvider);
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge * 32.0F;
-		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		this.scale = this.prevScale * f;
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
+	public float getSize(float f) {
+		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
+	}
+
+	@Override
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
-		}
+			this.markDead();
+		} else {
+			this.setSpriteForAge(this.field_17868);
+			this.velocityY += 0.004;
+			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			if (this.y == this.prevPosY) {
+				this.velocityX *= 1.1;
+				this.velocityZ *= 1.1;
+			}
 
-		this.setMiscTexture(7 - this.age * 8 / this.maxAge);
-		this.velocityY += 0.004;
-		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.field_13429 == this.field_13426) {
-			this.velocityX *= 1.1;
-			this.velocityZ *= 1.1;
-		}
-
-		this.velocityX *= 0.96F;
-		this.velocityY *= 0.96F;
-		this.velocityZ *= 0.96F;
-		if (this.field_13434) {
-			this.velocityX *= 0.7F;
-			this.velocityZ *= 0.7F;
+			this.velocityX *= 0.96F;
+			this.velocityY *= 0.96F;
+			this.velocityZ *= 0.96F;
+			if (this.onGround) {
+				this.velocityX *= 0.7F;
+				this.velocityZ *= 0.7F;
+			}
 		}
 	}
 
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new FireSmokeParticle(world, d, e, f, g, h, i);
+	public static class Factory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17869;
+
+		public Factory(SpriteProvider spriteProvider) {
+			this.field_17869 = spriteProvider;
+		}
+
+		public Particle method_3101(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			return new FireSmokeParticle(world, d, e, f, g, h, i, 1.0F, this.field_17869);
 		}
 	}
 }

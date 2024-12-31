@@ -10,15 +10,15 @@ import net.minecraft.world.World;
 public class ClockItem extends Item {
 	public ClockItem(Item.Settings settings) {
 		super(settings);
-		this.addProperty(new Identifier("time"), new ItemPropertyGetter() {
-			private double field_12286;
-			private double field_12287;
-			private long field_12288;
+		this.addPropertyGetter(new Identifier("time"), new ItemPropertyGetter() {
+			private double time;
+			private double step;
+			private long lastTick;
 
 			@Override
 			public float call(ItemStack itemStack, @Nullable World world, @Nullable LivingEntity livingEntity) {
 				boolean bl = livingEntity != null;
-				Entity entity = (Entity)(bl ? livingEntity : itemStack.getItemFrame());
+				Entity entity = (Entity)(bl ? livingEntity : itemStack.getFrame());
 				if (world == null && entity != null) {
 					world = entity.world;
 				}
@@ -27,28 +27,28 @@ public class ClockItem extends Item {
 					return 0.0F;
 				} else {
 					double d;
-					if (world.dimension.canPlayersSleep()) {
-						d = (double)world.method_16349(1.0F);
+					if (world.dimension.hasVisibleSky()) {
+						d = (double)world.getSkyAngle(1.0F);
 					} else {
 						d = Math.random();
 					}
 
-					d = this.method_11366(world, d);
+					d = this.getTime(world, d);
 					return (float)d;
 				}
 			}
 
-			private double method_11366(World world, double d) {
-				if (world.getLastUpdateTime() != this.field_12288) {
-					this.field_12288 = world.getLastUpdateTime();
-					double e = d - this.field_12286;
+			private double getTime(World world, double d) {
+				if (world.getTime() != this.lastTick) {
+					this.lastTick = world.getTime();
+					double e = d - this.time;
 					e = MathHelper.floorMod(e + 0.5, 1.0) - 0.5;
-					this.field_12287 += e * 0.1;
-					this.field_12287 *= 0.9;
-					this.field_12286 = MathHelper.floorMod(this.field_12286 + this.field_12287, 1.0);
+					this.step += e * 0.1;
+					this.step *= 0.9;
+					this.time = MathHelper.floorMod(this.time + this.step, 1.0);
 				}
 
-				return this.field_12286;
+				return this.time;
 			}
 		});
 	}

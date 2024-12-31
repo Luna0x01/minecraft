@@ -1,26 +1,16 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import javax.annotation.Nullable;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.util.Identifier;
 
-public class AreaEffectCloudEntityRenderer extends EntityRenderer<Entity> {
+public class AreaEffectCloudEntityRenderer extends EntityRenderer<AreaEffectCloudEntity> {
 	public AreaEffectCloudEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	@Override
-	public void render(Entity entity, double x, double y, double z, float yaw, float tickDelta) {
-		GlStateManager.pushMatrix();
-		method_1527(entity.getBoundingBox(), x - entity.prevTickX, y - entity.prevTickY, z - entity.prevTickZ);
-		GlStateManager.popMatrix();
-		super.render(entity, x, y, z, yaw, tickDelta);
-	}
-
 	@Nullable
-	@Override
-	protected Identifier getTexture(Entity entity) {
+	protected Identifier method_3873(AreaEffectCloudEntity areaEffectCloudEntity) {
 		return null;
 	}
 }

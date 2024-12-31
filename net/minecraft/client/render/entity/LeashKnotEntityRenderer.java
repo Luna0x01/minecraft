@@ -2,42 +2,42 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.LeashEntityModel;
-import net.minecraft.entity.decoration.LeashKnotEntity;
+import net.minecraft.entity.decoration.LeadKnotEntity;
 import net.minecraft.util.Identifier;
 
-public class LeashKnotEntityRenderer extends EntityRenderer<LeashKnotEntity> {
-	private static final Identifier field_6500 = new Identifier("textures/entity/lead_knot.png");
-	private final LeashEntityModel field_6501 = new LeashEntityModel();
+public class LeashKnotEntityRenderer extends EntityRenderer<LeadKnotEntity> {
+	private static final Identifier SKIN = new Identifier("textures/entity/lead_knot.png");
+	private final LeashEntityModel<LeadKnotEntity> model = new LeashEntityModel<>();
 
 	public LeashKnotEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void render(LeashKnotEntity leashKnotEntity, double d, double e, double f, float g, float h) {
+	public void method_4035(LeadKnotEntity leadKnotEntity, double d, double e, double f, float g, float h) {
 		GlStateManager.pushMatrix();
 		GlStateManager.disableCull();
-		GlStateManager.translate((float)d, (float)e, (float)f);
+		GlStateManager.translatef((float)d, (float)e, (float)f);
 		float i = 0.0625F;
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.scale(-1.0F, -1.0F, 1.0F);
+		GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
 		GlStateManager.enableAlphaTest();
-		this.bindTexture(leashKnotEntity);
-		if (this.field_13631) {
+		this.bindEntityTexture(leadKnotEntity);
+		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
-			GlStateManager.method_12309(this.method_12454(leashKnotEntity));
+			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(leadKnotEntity));
 		}
 
-		this.field_6501.render(leashKnotEntity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-		if (this.field_13631) {
-			GlStateManager.method_12315();
+		this.model.render(leadKnotEntity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
 		GlStateManager.popMatrix();
-		super.render(leashKnotEntity, d, e, f, g, h);
+		super.render(leadKnotEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(LeashKnotEntity leashKnotEntity) {
-		return field_6500;
+	protected Identifier method_4036(LeadKnotEntity leadKnotEntity) {
+		return SKIN;
 	}
 }

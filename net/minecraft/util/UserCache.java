@@ -43,7 +43,7 @@ public class UserCache {
 	private static boolean useRemote;
 	private final Map<String, UserCache.Entry> byName = Maps.newHashMap();
 	private final Map<UUID, UserCache.Entry> byUuid = Maps.newHashMap();
-	private final Deque<GameProfile> lastAccessed = Lists.newLinkedList();
+	private final Deque<GameProfile> byAccessTime = Lists.newLinkedList();
 	private final GameProfileRepository profileRepository;
 	protected final Gson gson;
 	private final File cacheFile;
@@ -70,7 +70,7 @@ public class UserCache {
 		this.load();
 	}
 
-	private static GameProfile findProfileByName(GameProfileRepository repository, String name) {
+	private static GameProfile findProfileByName(GameProfileRepository gameProfileRepository, String string) {
 		final GameProfile[] gameProfiles = new GameProfile[1];
 		ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
 			public void onProfileLookupSucceeded(GameProfile gameProfile) {
@@ -81,70 +81,70 @@ public class UserCache {
 				gameProfiles[0] = null;
 			}
 		};
-		repository.findProfilesByNames(new String[]{name}, Agent.MINECRAFT, profileLookupCallback);
+		gameProfileRepository.findProfilesByNames(new String[]{string}, Agent.MINECRAFT, profileLookupCallback);
 		if (!shouldUseRemote() && gameProfiles[0] == null) {
-			UUID uUID = PlayerEntity.getUuidFromProfile(new GameProfile(null, name));
-			GameProfile gameProfile = new GameProfile(uUID, name);
+			UUID uUID = PlayerEntity.getUuidFromProfile(new GameProfile(null, string));
+			GameProfile gameProfile = new GameProfile(uUID, string);
 			profileLookupCallback.onProfileLookupSucceeded(gameProfile);
 		}
 
 		return gameProfiles[0];
 	}
 
-	public static void setUseRemote(boolean useRemote) {
-		UserCache.useRemote = useRemote;
+	public static void setUseRemote(boolean bl) {
+		useRemote = bl;
 	}
 
 	private static boolean shouldUseRemote() {
 		return useRemote;
 	}
 
-	public void add(GameProfile profile) {
-		this.add(profile, null);
+	public void add(GameProfile gameProfile) {
+		this.add(gameProfile, null);
 	}
 
-	private void add(GameProfile profile, Date expirationDate) {
-		UUID uUID = profile.getId();
-		if (expirationDate == null) {
+	private void add(GameProfile gameProfile, Date date) {
+		UUID uUID = gameProfile.getId();
+		if (date == null) {
 			Calendar calendar = Calendar.getInstance();
 			calendar.setTime(new Date());
 			calendar.add(2, 1);
-			expirationDate = calendar.getTime();
+			date = calendar.getTime();
 		}
 
-		UserCache.Entry entry = new UserCache.Entry(profile, expirationDate);
+		UserCache.Entry entry = new UserCache.Entry(gameProfile, date);
 		if (this.byUuid.containsKey(uUID)) {
 			UserCache.Entry entry2 = (UserCache.Entry)this.byUuid.get(uUID);
 			this.byName.remove(entry2.getProfile().getName().toLowerCase(Locale.ROOT));
-			this.lastAccessed.remove(profile);
+			this.byAccessTime.remove(gameProfile);
 		}
 
-		this.byName.put(profile.getName().toLowerCase(Locale.ROOT), entry);
+		this.byName.put(gameProfile.getName().toLowerCase(Locale.ROOT), entry);
 		this.byUuid.put(uUID, entry);
-		this.lastAccessed.addFirst(profile);
+		this.byAccessTime.addFirst(gameProfile);
 		this.save();
 	}
 
 	@Nullable
-	public GameProfile findByName(String name) {
-		String string = name.toLowerCase(Locale.ROOT);
-		UserCache.Entry entry = (UserCache.Entry)this.byName.get(string);
+	public GameProfile findByName(String string) {
+		String string2 = string.toLowerCase(Locale.ROOT);
+		UserCache.Entry entry = (UserCache.Entry)this.byName.get(string2);
 		if (entry != null && new Date().getTime() >= entry.expirationDate.getTime()) {
 			this.byUuid.remove(entry.getProfile().getId());
 			this.byName.remove(entry.getProfile().getName().toLowerCase(Locale.ROOT));
-			this.lastAccessed.remove(entry.getProfile());
+			this.byAccessTime.remove(entry.getProfile());
 			entry = null;
 		}
 
 		if (entry != null) {
 			GameProfile gameProfile = entry.getProfile();
-			this.lastAccessed.remove(gameProfile);
-			this.lastAccessed.addFirst(gameProfile);
+			this.byAccessTime.remove(gameProfile);
+			this.byAccessTime.addFirst(gameProfile);
 		} else {
-			GameProfile gameProfile2 = findProfileByName(this.profileRepository, string);
+			GameProfile gameProfile2 = findProfileByName(this.profileRepository, string2);
 			if (gameProfile2 != null) {
 				this.add(gameProfile2);
-				entry = (UserCache.Entry)this.byName.get(string);
+				entry = (UserCache.Entry)this.byName.get(string2);
 			}
 		}
 
@@ -153,17 +153,17 @@ public class UserCache {
 	}
 
 	@Nullable
-	public GameProfile getByUuid(UUID uuid) {
-		UserCache.Entry entry = (UserCache.Entry)this.byUuid.get(uuid);
+	public GameProfile getByUuid(UUID uUID) {
+		UserCache.Entry entry = (UserCache.Entry)this.byUuid.get(uUID);
 		return entry == null ? null : entry.getProfile();
 	}
 
-	private UserCache.Entry getEntry(UUID uuid) {
-		UserCache.Entry entry = (UserCache.Entry)this.byUuid.get(uuid);
+	private UserCache.Entry getEntry(UUID uUID) {
+		UserCache.Entry entry = (UserCache.Entry)this.byUuid.get(uUID);
 		if (entry != null) {
 			GameProfile gameProfile = entry.getProfile();
-			this.lastAccessed.remove(gameProfile);
-			this.lastAccessed.addFirst(gameProfile);
+			this.byAccessTime.remove(gameProfile);
+			this.byAccessTime.addFirst(gameProfile);
 		}
 
 		return entry;
@@ -177,7 +177,7 @@ public class UserCache {
 			List<UserCache.Entry> list = JsonHelper.deserialize(this.gson, bufferedReader, ENTRY_LIST_TYPE);
 			this.byName.clear();
 			this.byUuid.clear();
-			this.lastAccessed.clear();
+			this.byAccessTime.clear();
 			if (list != null) {
 				for (UserCache.Entry entry : Lists.reverse(list)) {
 					if (entry != null) {
@@ -208,10 +208,10 @@ public class UserCache {
 		}
 	}
 
-	private List<UserCache.Entry> getLastAccessedEntries(int limit) {
+	private List<UserCache.Entry> getLastAccessedEntries(int i) {
 		List<UserCache.Entry> list = Lists.newArrayList();
 
-		for (GameProfile gameProfile : Lists.newArrayList(Iterators.limit(this.lastAccessed.iterator(), limit))) {
+		for (GameProfile gameProfile : Lists.newArrayList(Iterators.limit(this.byAccessTime.iterator(), i))) {
 			UserCache.Entry entry = this.getEntry(gameProfile.getId());
 			if (entry != null) {
 				list.add(entry);
@@ -243,7 +243,7 @@ public class UserCache {
 		private JsonConverter() {
 		}
 
-		public JsonElement serialize(UserCache.Entry entry, Type type, JsonSerializationContext jsonSerializationContext) {
+		public JsonElement method_14522(UserCache.Entry entry, Type type, JsonSerializationContext jsonSerializationContext) {
 			JsonObject jsonObject = new JsonObject();
 			jsonObject.addProperty("name", entry.getProfile().getName());
 			UUID uUID = entry.getProfile().getId();
@@ -252,7 +252,7 @@ public class UserCache {
 			return jsonObject;
 		}
 
-		public UserCache.Entry deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public UserCache.Entry method_14523(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonObject()) {
 				JsonObject jsonObject = jsonElement.getAsJsonObject();
 				JsonElement jsonElement2 = jsonObject.get("name");

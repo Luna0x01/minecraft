@@ -14,23 +14,23 @@ public class BannedPlayerList extends ServerConfigList<GameProfile, BannedPlayer
 		return new BannedPlayerEntry(jsonObject);
 	}
 
-	public boolean contains(GameProfile profile) {
-		return this.contains(profile);
+	public boolean contains(GameProfile gameProfile) {
+		return this.contains(gameProfile);
 	}
 
 	@Override
 	public String[] getNames() {
-		String[] strings = new String[this.method_21390().size()];
+		String[] strings = new String[this.values().size()];
 		int i = 0;
 
-		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.method_21390()) {
+		for (ServerConfigEntry<GameProfile> serverConfigEntry : this.values()) {
 			strings[i++] = serverConfigEntry.getKey().getName();
 		}
 
 		return strings;
 	}
 
-	protected String toString(GameProfile gameProfile) {
+	protected String method_14649(GameProfile gameProfile) {
 		return gameProfile.getId().toString();
 	}
 }

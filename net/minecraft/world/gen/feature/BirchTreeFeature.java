@@ -1,29 +1,31 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.class_3871;
-import net.minecraft.block.Block;
+import java.util.function.Function;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorld;
+import net.minecraft.util.math.MutableIntBoundingBox;
+import net.minecraft.world.ModifiableTestableWorld;
 
-public class BirchTreeFeature extends FoliageFeature<class_3871> {
-	private static final BlockState LOG = Blocks.BIRCH_LOG.getDefaultState();
-	private static final BlockState LEAVES = Blocks.BIRCH_LEAVES.getDefaultState();
-	private final boolean generateTall;
+public class BirchTreeFeature extends AbstractTreeFeature<DefaultFeatureConfig> {
+	private static final BlockState LOG = Blocks.field_10511.getDefaultState();
+	private static final BlockState LEAVES = Blocks.field_10539.getDefaultState();
+	private final boolean alwaysTall;
 
-	public BirchTreeFeature(boolean bl, boolean bl2) {
-		super(bl);
-		this.generateTall = bl2;
+	public BirchTreeFeature(Function<Dynamic<?>, ? extends DefaultFeatureConfig> function, boolean bl, boolean bl2) {
+		super(function, bl);
+		this.alwaysTall = bl2;
 	}
 
 	@Override
-	public boolean method_17294(Set<BlockPos> set, IWorld iWorld, Random random, BlockPos blockPos) {
+	public boolean generate(
+		Set<BlockPos> set, ModifiableTestableWorld modifiableTestableWorld, Random random, BlockPos blockPos, MutableIntBoundingBox mutableIntBoundingBox
+	) {
 		int i = random.nextInt(3) + 5;
-		if (this.generateTall) {
+		if (this.alwaysTall) {
 			i += random.nextInt(7);
 		}
 
@@ -45,7 +47,7 @@ public class BirchTreeFeature extends FoliageFeature<class_3871> {
 					for (int m = blockPos.getZ() - k; m <= blockPos.getZ() + k && bl; m++) {
 						if (j < 0 || j >= 256) {
 							bl = false;
-						} else if (!this.isBlockReplaceable(iWorld.getBlockState(mutable.setPosition(l, j, m)).getBlock())) {
+						} else if (!canTreeReplace(modifiableTestableWorld, mutable.set(l, j, m))) {
 							bl = false;
 						}
 					}
@@ -54,42 +56,37 @@ public class BirchTreeFeature extends FoliageFeature<class_3871> {
 
 			if (!bl) {
 				return false;
-			} else {
-				Block block = iWorld.getBlockState(blockPos.down()).getBlock();
-				if ((block == Blocks.GRASS_BLOCK || Block.method_16588(block) || block == Blocks.FARMLAND) && blockPos.getY() < 256 - i - 1) {
-					this.method_17292(iWorld, blockPos.down());
+			} else if (isDirtOrGrass(modifiableTestableWorld, blockPos.down()) && blockPos.getY() < 256 - i - 1) {
+				this.setToDirt(modifiableTestableWorld, blockPos.down());
 
-					for (int n = blockPos.getY() - 3 + i; n <= blockPos.getY() + i; n++) {
-						int o = n - (blockPos.getY() + i);
-						int p = 1 - o / 2;
+				for (int n = blockPos.getY() - 3 + i; n <= blockPos.getY() + i; n++) {
+					int o = n - (blockPos.getY() + i);
+					int p = 1 - o / 2;
 
-						for (int q = blockPos.getX() - p; q <= blockPos.getX() + p; q++) {
-							int r = q - blockPos.getX();
+					for (int q = blockPos.getX() - p; q <= blockPos.getX() + p; q++) {
+						int r = q - blockPos.getX();
 
-							for (int s = blockPos.getZ() - p; s <= blockPos.getZ() + p; s++) {
-								int t = s - blockPos.getZ();
-								if (Math.abs(r) != p || Math.abs(t) != p || random.nextInt(2) != 0 && o != 0) {
-									BlockPos blockPos2 = new BlockPos(q, n, s);
-									BlockState blockState = iWorld.getBlockState(blockPos2);
-									if (blockState.isAir() || blockState.isIn(BlockTags.LEAVES)) {
-										this.method_17344(iWorld, blockPos2, LEAVES);
-									}
+						for (int s = blockPos.getZ() - p; s <= blockPos.getZ() + p; s++) {
+							int t = s - blockPos.getZ();
+							if (Math.abs(r) != p || Math.abs(t) != p || random.nextInt(2) != 0 && o != 0) {
+								BlockPos blockPos2 = new BlockPos(q, n, s);
+								if (isAirOrLeaves(modifiableTestableWorld, blockPos2)) {
+									this.setBlockState(set, modifiableTestableWorld, blockPos2, LEAVES, mutableIntBoundingBox);
 								}
 							}
 						}
 					}
-
-					for (int u = 0; u < i; u++) {
-						BlockState blockState2 = iWorld.getBlockState(blockPos.up(u));
-						if (blockState2.isAir() || blockState2.isIn(BlockTags.LEAVES)) {
-							this.method_17293(set, iWorld, blockPos.up(u), LOG);
-						}
-					}
-
-					return true;
-				} else {
-					return false;
 				}
+
+				for (int u = 0; u < i; u++) {
+					if (isAirOrLeaves(modifiableTestableWorld, blockPos.up(u))) {
+						this.setBlockState(set, modifiableTestableWorld, blockPos.up(u), LOG, mutableIntBoundingBox);
+					}
+				}
+
+				return true;
+			} else {
+				return false;
 			}
 		} else {
 			return false;

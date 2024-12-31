@@ -1,23 +1,19 @@
 package net.minecraft.client.render.entity;
 
-import net.minecraft.client.render.entity.feature.SnowGolemPumpkinFeatureRenderer;
+import net.minecraft.client.render.entity.feature.SnowmanPumpkinFeatureRenderer;
 import net.minecraft.client.render.entity.model.SnowmanEntityModel;
 import net.minecraft.entity.passive.SnowGolemEntity;
 import net.minecraft.util.Identifier;
 
-public class SnowGolemEntityRenderer extends MobEntityRenderer<SnowGolemEntity> {
-	private static final Identifier SNOW_GOLEM_TEX = new Identifier("textures/entity/snow_golem.png");
+public class SnowGolemEntityRenderer extends MobEntityRenderer<SnowGolemEntity, SnowmanEntityModel<SnowGolemEntity>> {
+	private static final Identifier SKIN = new Identifier("textures/entity/snow_golem.png");
 
 	public SnowGolemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new SnowmanEntityModel(), 0.5F);
-		this.addFeature(new SnowGolemPumpkinFeatureRenderer(this));
+		super(entityRenderDispatcher, new SnowmanEntityModel<>(), 0.5F);
+		this.addFeature(new SnowmanPumpkinFeatureRenderer(this));
 	}
 
-	protected Identifier getTexture(SnowGolemEntity snowGolemEntity) {
-		return SNOW_GOLEM_TEX;
-	}
-
-	public SnowmanEntityModel getModel() {
-		return (SnowmanEntityModel)super.getModel();
+	protected Identifier method_4122(SnowGolemEntity snowGolemEntity) {
+		return SKIN;
 	}
 }

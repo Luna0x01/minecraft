@@ -4,90 +4,95 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Collectors;
-import net.minecraft.class_4305;
-import net.minecraft.class_4306;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Quaternion;
 
-public enum ModelRotation {
-	X0_Y0(0, 0),
-	X0_Y90(0, 90),
-	X0_Y180(0, 180),
-	X0_Y270(0, 270),
-	X90_Y0(90, 0),
-	X90_Y90(90, 90),
-	X90_Y180(90, 180),
-	X90_Y270(90, 270),
-	X180_Y0(180, 0),
-	X180_Y90(180, 90),
-	X180_Y180(180, 180),
-	X180_Y270(180, 270),
-	X270_Y0(270, 0),
-	X270_Y90(270, 90),
-	X270_Y180(270, 180),
-	X270_Y270(270, 270);
+public enum ModelRotation implements ModelBakeSettings {
+	field_5350(0, 0),
+	field_5366(0, 90),
+	field_5355(0, 180),
+	field_5347(0, 270),
+	field_5351(90, 0),
+	field_5360(90, 90),
+	field_5367(90, 180),
+	field_5354(90, 270),
+	field_5358(180, 0),
+	field_5348(180, 90),
+	field_5356(180, 180),
+	field_5359(180, 270),
+	field_5353(270, 0),
+	field_5349(270, 90),
+	field_5361(270, 180),
+	field_5352(270, 270);
 
-	private static final Map<Integer, ModelRotation> field_21055 = (Map<Integer, ModelRotation>)Arrays.stream(values())
-		.sorted(Comparator.comparingInt(modelRotation -> modelRotation.field_21056))
-		.collect(Collectors.toMap(modelRotation -> modelRotation.field_21056, modelRotation -> modelRotation));
-	private final int field_21056;
-	private final class_4305 field_21057;
-	private final int quarterX;
-	private final int quarterY;
+	private static final Map<Integer, ModelRotation> BY_INDEX = (Map<Integer, ModelRotation>)Arrays.stream(values())
+		.sorted(Comparator.comparingInt(modelRotation -> modelRotation.index))
+		.collect(Collectors.toMap(modelRotation -> modelRotation.index, modelRotation -> modelRotation));
+	private final int index;
+	private final Quaternion quaternion;
+	private final int xRotations;
+	private final int yRotations;
 
-	private static int getIndex(int x, int y) {
-		return x * 360 + y;
+	private static int getIndex(int i, int j) {
+		return i * 360 + j;
 	}
 
 	private ModelRotation(int j, int k) {
-		this.field_21056 = getIndex(j, k);
-		class_4305 lv = new class_4305(new class_4306(0.0F, 1.0F, 0.0F), (float)(-k), true);
-		lv.method_19657(new class_4305(new class_4306(1.0F, 0.0F, 0.0F), (float)(-j), true));
-		this.field_21057 = lv;
-		this.quarterX = MathHelper.abs(j / 90);
-		this.quarterY = MathHelper.abs(k / 90);
+		this.index = getIndex(j, k);
+		Quaternion quaternion = new Quaternion(new Vector3f(0.0F, 1.0F, 0.0F), (float)(-k), true);
+		quaternion.copyFrom(new Quaternion(new Vector3f(1.0F, 0.0F, 0.0F), (float)(-j), true));
+		this.quaternion = quaternion;
+		this.xRotations = MathHelper.abs(j / 90);
+		this.yRotations = MathHelper.abs(k / 90);
 	}
 
-	public class_4305 method_10378() {
-		return this.field_21057;
+	@Override
+	public ModelRotation getRotation() {
+		return this;
 	}
 
-	public Direction rotate(Direction direction) {
+	public Quaternion getQuaternion() {
+		return this.quaternion;
+	}
+
+	public Direction apply(Direction direction) {
 		Direction direction2 = direction;
 
-		for (int i = 0; i < this.quarterX; i++) {
-			direction2 = direction2.getClockWiseFacingByAxis(Direction.Axis.X);
+		for (int i = 0; i < this.xRotations; i++) {
+			direction2 = direction2.rotateClockwise(Direction.Axis.field_11048);
 		}
 
-		if (direction2.getAxis() != Direction.Axis.Y) {
-			for (int j = 0; j < this.quarterY; j++) {
-				direction2 = direction2.getClockWiseFacingByAxis(Direction.Axis.Y);
+		if (direction2.getAxis() != Direction.Axis.field_11052) {
+			for (int j = 0; j < this.yRotations; j++) {
+				direction2 = direction2.rotateClockwise(Direction.Axis.field_11052);
 			}
 		}
 
 		return direction2;
 	}
 
-	public int rotate(Direction direction, int vertex) {
-		int i = vertex;
-		if (direction.getAxis() == Direction.Axis.X) {
-			i = (vertex + this.quarterX) % 4;
+	public int method_4706(Direction direction, int i) {
+		int j = i;
+		if (direction.getAxis() == Direction.Axis.field_11048) {
+			j = (i + this.xRotations) % 4;
 		}
 
 		Direction direction2 = direction;
 
-		for (int j = 0; j < this.quarterX; j++) {
-			direction2 = direction2.getClockWiseFacingByAxis(Direction.Axis.X);
+		for (int k = 0; k < this.xRotations; k++) {
+			direction2 = direction2.rotateClockwise(Direction.Axis.field_11048);
 		}
 
-		if (direction2.getAxis() == Direction.Axis.Y) {
-			i = (i + this.quarterY) % 4;
+		if (direction2.getAxis() == Direction.Axis.field_11052) {
+			j = (j + this.yRotations) % 4;
 		}
 
-		return i;
+		return j;
 	}
 
-	public static ModelRotation get(int x, int y) {
-		return (ModelRotation)field_21055.get(getIndex(MathHelper.floorMod(x, 360), MathHelper.floorMod(y, 360)));
+	public static ModelRotation get(int i, int j) {
+		return (ModelRotation)BY_INDEX.get(getIndex(MathHelper.floorMod(i, 360), MathHelper.floorMod(j, 360)));
 	}
 }

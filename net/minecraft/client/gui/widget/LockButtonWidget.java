@@ -2,56 +2,53 @@ package net.minecraft.client.gui.widget;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.resource.language.I18n;
 
-public abstract class LockButtonWidget extends ButtonWidget {
+public class LockButtonWidget extends ButtonWidget {
 	private boolean locked;
 
-	public LockButtonWidget(int i, int j, int k) {
-		super(i, j, k, 20, 20, "");
+	public LockButtonWidget(int i, int j, ButtonWidget.PressAction pressAction) {
+		super(i, j, 20, 20, I18n.translate("narrator.button.difficulty_lock"), pressAction);
+	}
+
+	@Override
+	protected String getNarrationMessage() {
+		return super.getNarrationMessage()
+			+ ". "
+			+ (this.isLocked() ? I18n.translate("narrator.button.difficulty_lock.locked") : I18n.translate("narrator.button.difficulty_lock.unlocked"));
 	}
 
 	public boolean isLocked() {
 		return this.locked;
 	}
 
-	public void setLocked(boolean locked) {
-		this.locked = locked;
+	public void setLocked(boolean bl) {
+		this.locked = bl;
 	}
 
 	@Override
-	public void method_891(int i, int j, float f) {
-		if (this.visible) {
-			MinecraftClient.getInstance().getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
-			LockButtonWidget.IconLocation iconLocation;
-			if (this.locked) {
-				if (!this.active) {
-					iconLocation = LockButtonWidget.IconLocation.LOCKED_DISABLED;
-				} else if (bl) {
-					iconLocation = LockButtonWidget.IconLocation.LOCKED_HOVER;
-				} else {
-					iconLocation = LockButtonWidget.IconLocation.LOCKED;
-				}
-			} else if (!this.active) {
-				iconLocation = LockButtonWidget.IconLocation.UNLOCKED_DISABLED;
-			} else if (bl) {
-				iconLocation = LockButtonWidget.IconLocation.UNLOCKED_HOVER;
-			} else {
-				iconLocation = LockButtonWidget.IconLocation.UNLOCKED;
-			}
-
-			this.drawTexture(this.x, this.y, iconLocation.getU(), iconLocation.getV(), this.width, this.height);
+	public void renderButton(int i, int j, float f) {
+		MinecraftClient.getInstance().getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		LockButtonWidget.IconLocation iconLocation;
+		if (!this.active) {
+			iconLocation = this.locked ? LockButtonWidget.IconLocation.field_2139 : LockButtonWidget.IconLocation.field_2140;
+		} else if (this.isHovered()) {
+			iconLocation = this.locked ? LockButtonWidget.IconLocation.field_2138 : LockButtonWidget.IconLocation.field_2133;
+		} else {
+			iconLocation = this.locked ? LockButtonWidget.IconLocation.field_2137 : LockButtonWidget.IconLocation.field_2132;
 		}
+
+		this.blit(this.x, this.y, iconLocation.getU(), iconLocation.getV(), this.width, this.height);
 	}
 
 	static enum IconLocation {
-		LOCKED(0, 146),
-		LOCKED_HOVER(0, 166),
-		LOCKED_DISABLED(0, 186),
-		UNLOCKED(20, 146),
-		UNLOCKED_HOVER(20, 166),
-		UNLOCKED_DISABLED(20, 186);
+		field_2137(0, 146),
+		field_2138(0, 166),
+		field_2139(0, 186),
+		field_2132(20, 146),
+		field_2133(20, 166),
+		field_2140(20, 186);
 
 		private final int u;
 		private final int v;

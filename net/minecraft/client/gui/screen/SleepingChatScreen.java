@@ -3,22 +3,23 @@ package net.minecraft.client.gui.screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.server.network.packet.ClientCommandC2SPacket;
 
 public class SleepingChatScreen extends ChatScreen {
-	@Override
-	protected void init() {
-		super.init();
-		this.addButton(new ButtonWidget(1, this.width / 2 - 100, this.height - 40, I18n.translate("multiplayer.stopSleeping")) {
-			@Override
-			public void method_18374(double d, double e) {
-				SleepingChatScreen.this.stopSleeping();
-			}
-		});
+	public SleepingChatScreen() {
+		super("");
 	}
 
 	@Override
-	public void method_18608() {
+	protected void init() {
+		super.init();
+		this.addButton(
+			new ButtonWidget(this.width / 2 - 100, this.height - 40, 200, 20, I18n.translate("multiplayer.stopSleeping"), buttonWidget -> this.stopSleeping())
+		);
+	}
+
+	@Override
+	public void onClose() {
 		this.stopSleeping();
 	}
 
@@ -29,11 +30,11 @@ public class SleepingChatScreen extends ChatScreen {
 		} else if (i == 257 || i == 335) {
 			String string = this.chatField.getText().trim();
 			if (!string.isEmpty()) {
-				this.client.player.sendChatMessage(string);
+				this.minecraft.player.sendChatMessage(string);
 			}
 
 			this.chatField.setText("");
-			this.client.inGameHud.getChatHud().resetScroll();
+			this.minecraft.inGameHud.getChatHud().method_1820();
 			return true;
 		}
 
@@ -41,7 +42,7 @@ public class SleepingChatScreen extends ChatScreen {
 	}
 
 	private void stopSleeping() {
-		ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.player.networkHandler;
-		clientPlayNetworkHandler.sendPacket(new ClientCommandC2SPacket(this.client.player, ClientCommandC2SPacket.Mode.STOP_SLEEPING));
+		ClientPlayNetworkHandler clientPlayNetworkHandler = this.minecraft.player.networkHandler;
+		clientPlayNetworkHandler.sendPacket(new ClientCommandC2SPacket(this.minecraft.player, ClientCommandC2SPacket.Mode.field_12986));
 	}
 }

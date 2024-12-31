@@ -1,48 +1,43 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class FlameParticle extends Particle {
-	private final float prevScale;
-
-	protected FlameParticle(World world, double d, double e, double f, double g, double h, double i) {
+public class FlameParticle extends SpriteBillboardParticle {
+	private FlameParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, g, h, i);
 		this.velocityX = this.velocityX * 0.01F + g;
 		this.velocityY = this.velocityY * 0.01F + h;
 		this.velocityZ = this.velocityZ * 0.01F + i;
-		this.field_13428 = this.field_13428 + (double)((this.field_13438.nextFloat() - this.field_13438.nextFloat()) * 0.05F);
-		this.field_13429 = this.field_13429 + (double)((this.field_13438.nextFloat() - this.field_13438.nextFloat()) * 0.05F);
-		this.field_13430 = this.field_13430 + (double)((this.field_13438.nextFloat() - this.field_13438.nextFloat()) * 0.05F);
-		this.prevScale = this.scale;
-		this.red = 1.0F;
-		this.green = 1.0F;
-		this.blue = 1.0F;
+		this.x = this.x + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.05F);
+		this.y = this.y + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.05F);
+		this.z = this.z + (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.05F);
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.2)) + 4;
-		this.setMiscTexture(48);
 	}
 
 	@Override
-	public void method_12242(double d, double e, double f) {
-		this.method_12246(this.method_12254().offset(d, e, f));
-		this.method_12252();
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge;
-		this.scale = this.prevScale * (1.0F - f * f * 0.5F);
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
+	public void move(double d, double e, double f) {
+		this.setBoundingBox(this.getBoundingBox().offset(d, e, f));
+		this.repositionFromBoundingBox();
 	}
 
 	@Override
-	public int method_12243(float f) {
+	public float getSize(float f) {
+		float g = ((float)this.age + f) / (float)this.maxAge;
+		return this.scale * (1.0F - g * g * 0.5F);
+	}
+
+	@Override
+	public int getColorMultiplier(float f) {
 		float g = ((float)this.age + f) / (float)this.maxAge;
 		g = MathHelper.clamp(g, 0.0F, 1.0F);
-		int i = super.method_12243(f);
+		int i = super.getColorMultiplier(f);
 		int j = i & 0xFF;
 		int k = i >> 16 & 0xFF;
 		j += (int)(g * 15.0F * 16.0F);
@@ -54,27 +49,35 @@ public class FlameParticle extends Particle {
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
-		}
-
-		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		this.velocityX *= 0.96F;
-		this.velocityY *= 0.96F;
-		this.velocityZ *= 0.96F;
-		if (this.field_13434) {
-			this.velocityX *= 0.7F;
-			this.velocityZ *= 0.7F;
+			this.markDead();
+		} else {
+			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.velocityX *= 0.96F;
+			this.velocityY *= 0.96F;
+			this.velocityZ *= 0.96F;
+			if (this.onGround) {
+				this.velocityX *= 0.7F;
+				this.velocityZ *= 0.7F;
+			}
 		}
 	}
 
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new FlameParticle(world, d, e, f, g, h, i);
+	public static class Factory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17812;
+
+		public Factory(SpriteProvider spriteProvider) {
+			this.field_17812 = spriteProvider;
+		}
+
+		public Particle method_3036(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			FlameParticle flameParticle = new FlameParticle(world, d, e, f, g, h, i);
+			flameParticle.setSprite(this.field_17812);
+			return flameParticle;
 		}
 	}
 }

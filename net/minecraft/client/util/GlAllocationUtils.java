@@ -8,12 +8,12 @@ import java.nio.FloatBuffer;
 
 public class GlAllocationUtils {
 	public static synchronized int genLists(int i) {
-		int j = GlStateManager.method_12319(i);
+		int j = GlStateManager.genLists(i);
 		if (j == 0) {
-			int k = GlStateManager.method_12271();
+			int k = GlStateManager.getError();
 			String string = "No error code reported";
 			if (k != 0) {
-				string = GLX.method_19690(k);
+				string = GLX.getErrorString(k);
 			}
 
 			throw new IllegalStateException("glGenLists returned an ID of 0 for a count of " + i + ", GL error (" + k + "): " + string);
@@ -23,18 +23,18 @@ public class GlAllocationUtils {
 	}
 
 	public static synchronized void deleteLists(int i, int j) {
-		GlStateManager.method_12310(i, j);
+		GlStateManager.deleteLists(i, j);
 	}
 
 	public static synchronized void deleteSingletonList(int i) {
 		deleteLists(i, 1);
 	}
 
-	public static synchronized ByteBuffer allocateByteBuffer(int size) {
-		return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+	public static synchronized ByteBuffer allocateByteBuffer(int i) {
+		return ByteBuffer.allocateDirect(i).order(ByteOrder.nativeOrder());
 	}
 
-	public static FloatBuffer allocateFloatBuffer(int size) {
-		return allocateByteBuffer(size << 2).asFloatBuffer();
+	public static FloatBuffer allocateFloatBuffer(int i) {
+		return allocateByteBuffer(i << 2).asFloatBuffer();
 	}
 }

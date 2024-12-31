@@ -12,47 +12,46 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.lang.reflect.Type;
 import javax.annotation.Nullable;
-import net.minecraft.class_4374;
 import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.StringUtils;
 
 public class Identifier implements Comparable<Identifier> {
-	private static final SimpleCommandExceptionType INVALID_ID = new SimpleCommandExceptionType(new TranslatableText("argument.id.invalid"));
+	private static final SimpleCommandExceptionType COMMAND_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.id.invalid"));
 	protected final String namespace;
 	protected final String path;
 
 	protected Identifier(String[] strings) {
 		this.namespace = StringUtils.isEmpty(strings[0]) ? "minecraft" : strings[0];
 		this.path = strings[1];
-		if (!this.namespace.chars().allMatch(i -> i == 95 || i == 45 || i >= 97 && i <= 122 || i >= 48 && i <= 57 || i == 46)) {
-			throw new class_4374("Non [a-z0-9_.-] character in namespace of location: " + this.namespace + ':' + this.path);
-		} else if (!this.path.chars().allMatch(i -> i == 95 || i == 45 || i >= 97 && i <= 122 || i >= 48 && i <= 57 || i == 47 || i == 46)) {
-			throw new class_4374("Non [a-z0-9/._-] character in path of location: " + this.namespace + ':' + this.path);
+		if (!isNamespaceValid(this.namespace)) {
+			throw new InvalidIdentifierException("Non [a-z0-9_.-] character in namespace of location: " + this.namespace + ':' + this.path);
+		} else if (!isPathValid(this.path)) {
+			throw new InvalidIdentifierException("Non [a-z0-9/._-] character in path of location: " + this.namespace + ':' + this.path);
 		}
 	}
 
 	public Identifier(String string) {
-		this(method_20446(string, ':'));
+		this(split(string, ':'));
 	}
 
 	public Identifier(String string, String string2) {
 		this(new String[]{string, string2});
 	}
 
-	public static Identifier method_20444(String string, char c) {
-		return new Identifier(method_20446(string, c));
+	public static Identifier splitOn(String string, char c) {
+		return new Identifier(split(string, c));
 	}
 
 	@Nullable
-	public static Identifier fromString(String identifier) {
+	public static Identifier tryParse(String string) {
 		try {
-			return new Identifier(identifier);
-		} catch (class_4374 var2) {
+			return new Identifier(string);
+		} catch (InvalidIdentifierException var2) {
 			return null;
 		}
 	}
 
-	protected static String[] method_20446(String string, char c) {
+	protected static String[] split(String string, char c) {
 		String[] strings = new String[]{"minecraft", string};
 		int i = string.indexOf(c);
 		if (i >= 0) {
@@ -92,7 +91,7 @@ public class Identifier implements Comparable<Identifier> {
 		return 31 * this.namespace.hashCode() + this.path.hashCode();
 	}
 
-	public int compareTo(Identifier identifier) {
+	public int method_12833(Identifier identifier) {
 		int i = this.path.compareTo(identifier.path);
 		if (i == 0) {
 			i = this.namespace.compareTo(identifier.namespace);
@@ -101,10 +100,10 @@ public class Identifier implements Comparable<Identifier> {
 		return i;
 	}
 
-	public static Identifier method_20442(StringReader stringReader) throws CommandSyntaxException {
+	public static Identifier fromCommandInput(StringReader stringReader) throws CommandSyntaxException {
 		int i = stringReader.getCursor();
 
-		while (stringReader.canRead() && method_20440(stringReader.peek())) {
+		while (stringReader.canRead() && isCharValid(stringReader.peek())) {
 			stringReader.skip();
 		}
 
@@ -112,22 +111,35 @@ public class Identifier implements Comparable<Identifier> {
 
 		try {
 			return new Identifier(string);
-		} catch (class_4374 var4) {
+		} catch (InvalidIdentifierException var4) {
 			stringReader.setCursor(i);
-			throw INVALID_ID.createWithContext(stringReader);
+			throw COMMAND_EXCEPTION.createWithContext(stringReader);
 		}
 	}
 
-	public static boolean method_20440(char c) {
+	public static boolean isCharValid(char c) {
 		return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c == '_' || c == ':' || c == '/' || c == '.' || c == '-';
 	}
 
-	public static class class_3346 implements JsonDeserializer<Identifier>, JsonSerializer<Identifier> {
-		public Identifier deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+	private static boolean isPathValid(String string) {
+		return string.chars().allMatch(i -> i == 95 || i == 45 || i >= 97 && i <= 122 || i >= 48 && i <= 57 || i == 47 || i == 46);
+	}
+
+	private static boolean isNamespaceValid(String string) {
+		return string.chars().allMatch(i -> i == 95 || i == 45 || i >= 97 && i <= 122 || i >= 48 && i <= 57 || i == 46);
+	}
+
+	public static boolean isValid(String string) {
+		String[] strings = split(string, ':');
+		return isNamespaceValid(StringUtils.isEmpty(strings[0]) ? "minecraft" : strings[0]) && isPathValid(strings[1]);
+	}
+
+	public static class Serializer implements JsonDeserializer<Identifier>, JsonSerializer<Identifier> {
+		public Identifier method_12840(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			return new Identifier(JsonHelper.asString(jsonElement, "location"));
 		}
 
-		public JsonElement serialize(Identifier identifier, Type type, JsonSerializationContext jsonSerializationContext) {
+		public JsonElement method_12839(Identifier identifier, Type type, JsonSerializationContext jsonSerializationContext) {
 			return new JsonPrimitive(identifier.toString());
 		}
 	}

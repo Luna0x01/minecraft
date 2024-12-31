@@ -2,52 +2,50 @@ package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.PlayerModelPart;
-import net.minecraft.client.render.entity.model.ElytraModel;
+import net.minecraft.client.render.entity.model.ElytraEntityModel;
+import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 
-public class ElytraFeatureRenderer implements FeatureRenderer<LivingEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/elytra.png");
-	protected final LivingEntityRenderer<?> field_15316;
-	private final ElytraModel model = new ElytraModel();
+public class ElytraFeatureRenderer<T extends LivingEntity, M extends EntityModel<T>> extends FeatureRenderer<T, M> {
+	private static final Identifier SKIN = new Identifier("textures/entity/elytra.png");
+	private final ElytraEntityModel<T> elytra = new ElytraEntityModel<>();
 
-	public ElytraFeatureRenderer(LivingEntityRenderer<?> livingEntityRenderer) {
-		this.field_15316 = livingEntityRenderer;
+	public ElytraFeatureRenderer(FeatureRendererContext<T, M> featureRendererContext) {
+		super(featureRendererContext);
 	}
 
-	@Override
-	public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {
-		ItemStack itemStack = entity.getStack(EquipmentSlot.CHEST);
-		if (itemStack.getItem() == Items.ELYTRA) {
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+	public void method_17161(T livingEntity, float f, float g, float h, float i, float j, float k, float l) {
+		ItemStack itemStack = livingEntity.getEquippedStack(EquipmentSlot.field_6174);
+		if (itemStack.getItem() == Items.field_8833) {
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			GlStateManager.enableBlend();
-			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO);
-			if (entity instanceof AbstractClientPlayerEntity) {
-				AbstractClientPlayerEntity abstractClientPlayerEntity = (AbstractClientPlayerEntity)entity;
-				if (abstractClientPlayerEntity.method_12263() && abstractClientPlayerEntity.method_12264() != null) {
-					this.field_15316.bindTexture(abstractClientPlayerEntity.method_12264());
+			GlStateManager.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+			if (livingEntity instanceof AbstractClientPlayerEntity) {
+				AbstractClientPlayerEntity abstractClientPlayerEntity = (AbstractClientPlayerEntity)livingEntity;
+				if (abstractClientPlayerEntity.canRenderElytraTexture() && abstractClientPlayerEntity.getElytraTexture() != null) {
+					this.bindTexture(abstractClientPlayerEntity.getElytraTexture());
 				} else if (abstractClientPlayerEntity.canRenderCapeTexture()
-					&& abstractClientPlayerEntity.getSkinId() != null
-					&& abstractClientPlayerEntity.isPartVisible(PlayerModelPart.CAPE)) {
-					this.field_15316.bindTexture(abstractClientPlayerEntity.getSkinId());
+					&& abstractClientPlayerEntity.getCapeTexture() != null
+					&& abstractClientPlayerEntity.isSkinOverlayVisible(PlayerModelPart.field_7559)) {
+					this.bindTexture(abstractClientPlayerEntity.getCapeTexture());
 				} else {
-					this.field_15316.bindTexture(TEXTURE);
+					this.bindTexture(SKIN);
 				}
 			} else {
-				this.field_15316.bindTexture(TEXTURE);
+				this.bindTexture(SKIN);
 			}
 
 			GlStateManager.pushMatrix();
-			GlStateManager.translate(0.0F, 0.0F, 0.125F);
-			this.model.setAngles(handSwing, handSwingAmount, age, headYaw, headPitch, scale, entity);
-			this.model.render(entity, handSwing, handSwingAmount, age, headYaw, headPitch, scale);
+			GlStateManager.translatef(0.0F, 0.0F, 0.125F);
+			this.elytra.method_17079(livingEntity, f, g, i, j, k, l);
+			this.elytra.method_17078(livingEntity, f, g, i, j, k, l);
 			if (itemStack.hasEnchantments()) {
-				ArmorFeatureRenderer.method_12479(this.field_15316, entity, this.model, handSwing, handSwingAmount, tickDelta, age, headYaw, headPitch, scale);
+				ArmorFeatureRenderer.renderEnchantedGlint(this::bindTexture, livingEntity, this.elytra, f, g, h, i, j, k, l);
 			}
 
 			GlStateManager.disableBlend();
@@ -56,7 +54,7 @@ public class ElytraFeatureRenderer implements FeatureRenderer<LivingEntity> {
 	}
 
 	@Override
-	public boolean combineTextures() {
+	public boolean hasHurtOverlay() {
 		return false;
 	}
 }

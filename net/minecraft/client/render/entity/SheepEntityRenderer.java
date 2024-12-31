@@ -5,15 +5,15 @@ import net.minecraft.client.render.entity.model.SheepEntityModel;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.util.Identifier;
 
-public class SheepEntityRenderer extends MobEntityRenderer<SheepEntity> {
-	private static final Identifier SHEEP_TEX = new Identifier("textures/entity/sheep/sheep.png");
+public class SheepEntityRenderer extends MobEntityRenderer<SheepEntity, SheepEntityModel<SheepEntity>> {
+	private static final Identifier SKIN = new Identifier("textures/entity/sheep/sheep.png");
 
 	public SheepEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new SheepEntityModel(), 0.7F);
+		super(entityRenderDispatcher, new SheepEntityModel<>(), 0.7F);
 		this.addFeature(new SheepWoolFeatureRenderer(this));
 	}
 
-	protected Identifier getTexture(SheepEntity sheepEntity) {
-		return SHEEP_TEX;
+	protected Identifier method_4106(SheepEntity sheepEntity) {
+		return SKIN;
 	}
 }

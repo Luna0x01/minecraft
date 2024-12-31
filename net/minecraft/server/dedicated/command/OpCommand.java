@@ -6,26 +6,26 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
-import net.minecraft.class_3915;
-import net.minecraft.class_3965;
-import net.minecraft.class_4073;
+import net.minecraft.command.arguments.GameProfileArgumentType;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.CommandSource;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 
 public class OpCommand {
-	private static final SimpleCommandExceptionType field_21761 = new SimpleCommandExceptionType(new TranslatableText("commands.op.failed"));
+	private static final SimpleCommandExceptionType ALREADY_OPPED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.op.failed"));
 
-	public static void method_20870(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("op").requires(arg -> arg.method_17575(3)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("op").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
 				.then(
-					CommandManager.method_17530("targets", class_4073.method_17988())
+					CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
 						.suggests(
 							(commandContext, suggestionsBuilder) -> {
-								PlayerManager playerManager = ((class_3915)commandContext.getSource()).method_17473().getPlayerManager();
-								return class_3965.method_17573(
-									playerManager.getPlayers()
+								PlayerManager playerManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager();
+								return CommandSource.suggestMatching(
+									playerManager.getPlayerList()
 										.stream()
 										.filter(serverPlayerEntity -> !playerManager.isOperator(serverPlayerEntity.getGameProfile()))
 										.map(serverPlayerEntity -> serverPlayerEntity.getGameProfile().getName()),
@@ -33,25 +33,25 @@ public class OpCommand {
 								);
 							}
 						)
-						.executes(commandContext -> method_20869((class_3915)commandContext.getSource(), class_4073.method_17991(commandContext, "targets")))
+						.executes(commandContext -> op((ServerCommandSource)commandContext.getSource(), GameProfileArgumentType.getProfileArgument(commandContext, "targets")))
 				)
 		);
 	}
 
-	private static int method_20869(class_3915 arg, Collection<GameProfile> collection) throws CommandSyntaxException {
-		PlayerManager playerManager = arg.method_17473().getPlayerManager();
+	private static int op(ServerCommandSource serverCommandSource, Collection<GameProfile> collection) throws CommandSyntaxException {
+		PlayerManager playerManager = serverCommandSource.getMinecraftServer().getPlayerManager();
 		int i = 0;
 
 		for (GameProfile gameProfile : collection) {
 			if (!playerManager.isOperator(gameProfile)) {
-				playerManager.op(gameProfile);
+				playerManager.addToOperators(gameProfile);
 				i++;
-				arg.method_17459(new TranslatableText("commands.op.success", ((GameProfile)collection.iterator().next()).getName()), true);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.op.success", ((GameProfile)collection.iterator().next()).getName()), true);
 			}
 		}
 
 		if (i == 0) {
-			throw field_21761.create();
+			throw ALREADY_OPPED_EXCEPTION.create();
 		} else {
 			return i;
 		}

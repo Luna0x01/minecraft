@@ -2,6 +2,7 @@ package net.minecraft.util;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,15 +15,15 @@ public class PrintStreamLogger extends PrintStream {
 		this.name = string;
 	}
 
-	public void println(String message) {
-		this.log(message);
+	public void println(@Nullable String string) {
+		this.log(string);
 	}
 
-	public void println(Object message) {
-		this.log(String.valueOf(message));
+	public void println(Object object) {
+		this.log(String.valueOf(object));
 	}
 
-	protected void log(String message) {
-		LOGGER.info("[{}]: {}", this.name, message);
+	protected void log(@Nullable String string) {
+		LOGGER.info("[{}]: {}", this.name, string);
 	}
 }

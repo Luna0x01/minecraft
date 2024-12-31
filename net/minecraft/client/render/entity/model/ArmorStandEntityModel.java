@@ -1,16 +1,15 @@
 package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.gui.screen.options.HandOption;
-import net.minecraft.client.render.model.ModelPart;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.model.Cuboid;
 import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.util.Arm;
 
 public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
-	private final ModelPart rightTorso;
-	private final ModelPart leftTorso;
-	private final ModelPart hip;
-	private final ModelPart plate;
+	private final Cuboid field_3314;
+	private final Cuboid field_3315;
+	private final Cuboid field_3313;
+	private final Cuboid field_3312;
 
 	public ArmorStandEntityModel() {
 		this(0.0F);
@@ -18,99 +17,95 @@ public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
 
 	public ArmorStandEntityModel(float f) {
 		super(f, 64, 64);
-		this.head = new ModelPart(this, 0, 0);
-		this.head.addCuboid(-1.0F, -7.0F, -1.0F, 2, 7, 2, f);
-		this.head.setPivot(0.0F, 0.0F, 0.0F);
-		this.body = new ModelPart(this, 0, 26);
-		this.body.addCuboid(-6.0F, 0.0F, -1.5F, 12, 3, 3, f);
-		this.body.setPivot(0.0F, 0.0F, 0.0F);
-		this.rightArm = new ModelPart(this, 24, 0);
-		this.rightArm.addCuboid(-2.0F, -2.0F, -1.0F, 2, 12, 2, f);
-		this.rightArm.setPivot(-5.0F, 2.0F, 0.0F);
-		this.leftArm = new ModelPart(this, 32, 16);
+		this.head = new Cuboid(this, 0, 0);
+		this.head.addBox(-1.0F, -7.0F, -1.0F, 2, 7, 2, f);
+		this.head.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.body = new Cuboid(this, 0, 26);
+		this.body.addBox(-6.0F, 0.0F, -1.5F, 12, 3, 3, f);
+		this.body.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.rightArm = new Cuboid(this, 24, 0);
+		this.rightArm.addBox(-2.0F, -2.0F, -1.0F, 2, 12, 2, f);
+		this.rightArm.setRotationPoint(-5.0F, 2.0F, 0.0F);
+		this.leftArm = new Cuboid(this, 32, 16);
 		this.leftArm.mirror = true;
-		this.leftArm.addCuboid(0.0F, -2.0F, -1.0F, 2, 12, 2, f);
-		this.leftArm.setPivot(5.0F, 2.0F, 0.0F);
-		this.rightLeg = new ModelPart(this, 8, 0);
-		this.rightLeg.addCuboid(-1.0F, 0.0F, -1.0F, 2, 11, 2, f);
-		this.rightLeg.setPivot(-1.9F, 12.0F, 0.0F);
-		this.leftLeg = new ModelPart(this, 40, 16);
+		this.leftArm.addBox(0.0F, -2.0F, -1.0F, 2, 12, 2, f);
+		this.leftArm.setRotationPoint(5.0F, 2.0F, 0.0F);
+		this.rightLeg = new Cuboid(this, 8, 0);
+		this.rightLeg.addBox(-1.0F, 0.0F, -1.0F, 2, 11, 2, f);
+		this.rightLeg.setRotationPoint(-1.9F, 12.0F, 0.0F);
+		this.leftLeg = new Cuboid(this, 40, 16);
 		this.leftLeg.mirror = true;
-		this.leftLeg.addCuboid(-1.0F, 0.0F, -1.0F, 2, 11, 2, f);
-		this.leftLeg.setPivot(1.9F, 12.0F, 0.0F);
-		this.rightTorso = new ModelPart(this, 16, 0);
-		this.rightTorso.addCuboid(-3.0F, 3.0F, -1.0F, 2, 7, 2, f);
-		this.rightTorso.setPivot(0.0F, 0.0F, 0.0F);
-		this.rightTorso.visible = true;
-		this.leftTorso = new ModelPart(this, 48, 16);
-		this.leftTorso.addCuboid(1.0F, 3.0F, -1.0F, 2, 7, 2, f);
-		this.leftTorso.setPivot(0.0F, 0.0F, 0.0F);
-		this.hip = new ModelPart(this, 0, 48);
-		this.hip.addCuboid(-4.0F, 10.0F, -1.0F, 8, 2, 2, f);
-		this.hip.setPivot(0.0F, 0.0F, 0.0F);
-		this.plate = new ModelPart(this, 0, 32);
-		this.plate.addCuboid(-6.0F, 11.0F, -6.0F, 12, 1, 12, f);
-		this.plate.setPivot(0.0F, 12.0F, 0.0F);
-		this.hat.visible = false;
+		this.leftLeg.addBox(-1.0F, 0.0F, -1.0F, 2, 11, 2, f);
+		this.leftLeg.setRotationPoint(1.9F, 12.0F, 0.0F);
+		this.field_3314 = new Cuboid(this, 16, 0);
+		this.field_3314.addBox(-3.0F, 3.0F, -1.0F, 2, 7, 2, f);
+		this.field_3314.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.field_3314.visible = true;
+		this.field_3315 = new Cuboid(this, 48, 16);
+		this.field_3315.addBox(1.0F, 3.0F, -1.0F, 2, 7, 2, f);
+		this.field_3315.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.field_3313 = new Cuboid(this, 0, 48);
+		this.field_3313.addBox(-4.0F, 10.0F, -1.0F, 8, 2, 2, f);
+		this.field_3313.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.field_3312 = new Cuboid(this, 0, 32);
+		this.field_3312.addBox(-6.0F, 11.0F, -6.0F, 12, 1, 12, f);
+		this.field_3312.setRotationPoint(0.0F, 12.0F, 0.0F);
+		this.headwear.visible = false;
 	}
 
 	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		if (entity instanceof ArmorStandEntity) {
-			ArmorStandEntity armorStandEntity = (ArmorStandEntity)entity;
-			this.leftArm.visible = armorStandEntity.shouldShowArms();
-			this.rightArm.visible = armorStandEntity.shouldShowArms();
-			this.plate.visible = !armorStandEntity.hasNoBasePlate();
-			this.leftLeg.setPivot(1.9F, 12.0F, 0.0F);
-			this.rightLeg.setPivot(-1.9F, 12.0F, 0.0F);
-			this.rightTorso.posX = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getPitch();
-			this.rightTorso.posY = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getYaw();
-			this.rightTorso.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getRoll();
-			this.leftTorso.posX = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getPitch();
-			this.leftTorso.posY = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getYaw();
-			this.leftTorso.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getRoll();
-			this.hip.posX = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getPitch();
-			this.hip.posY = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getYaw();
-			this.hip.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getRoll();
-			this.plate.posX = 0.0F;
-			this.plate.posY = (float) (Math.PI / 180.0) * -entity.yaw;
-			this.plate.posZ = 0.0F;
-		}
+	public void method_17066(ArmorStandEntity armorStandEntity, float f, float g, float h, float i, float j, float k) {
+		super.method_17066(armorStandEntity, f, g, h, i, j, k);
+		this.leftArm.visible = armorStandEntity.shouldShowArms();
+		this.rightArm.visible = armorStandEntity.shouldShowArms();
+		this.field_3312.visible = !armorStandEntity.shouldHideBasePlate();
+		this.leftLeg.setRotationPoint(1.9F, 12.0F, 0.0F);
+		this.rightLeg.setRotationPoint(-1.9F, 12.0F, 0.0F);
+		this.field_3314.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.field_3314.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.field_3314.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.field_3315.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.field_3315.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.field_3315.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.field_3313.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.field_3313.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.field_3313.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.field_3312.pitch = 0.0F;
+		this.field_3312.yaw = (float) (Math.PI / 180.0) * -armorStandEntity.yaw;
+		this.field_3312.roll = 0.0F;
 	}
 
-	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		super.render(entity, handSwing, handSwingAmount, tickDelta, age, headPitch, scale);
+	public void method_17067(ArmorStandEntity armorStandEntity, float f, float g, float h, float i, float j, float k) {
+		super.method_17088(armorStandEntity, f, g, h, i, j, k);
 		GlStateManager.pushMatrix();
-		if (this.child) {
-			float f = 2.0F;
-			GlStateManager.scale(0.5F, 0.5F, 0.5F);
-			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
-			this.rightTorso.render(scale);
-			this.leftTorso.render(scale);
-			this.hip.render(scale);
-			this.plate.render(scale);
+		if (this.isChild) {
+			float l = 2.0F;
+			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
+			GlStateManager.translatef(0.0F, 24.0F * k, 0.0F);
+			this.field_3314.render(k);
+			this.field_3315.render(k);
+			this.field_3313.render(k);
+			this.field_3312.render(k);
 		} else {
-			if (entity.isSneaking()) {
-				GlStateManager.translate(0.0F, 0.2F, 0.0F);
+			if (armorStandEntity.isSneaking()) {
+				GlStateManager.translatef(0.0F, 0.2F, 0.0F);
 			}
 
-			this.rightTorso.render(scale);
-			this.leftTorso.render(scale);
-			this.hip.render(scale);
-			this.plate.render(scale);
+			this.field_3314.render(k);
+			this.field_3315.render(k);
+			this.field_3313.render(k);
+			this.field_3312.render(k);
 		}
 
 		GlStateManager.popMatrix();
 	}
 
 	@Override
-	public void method_12221(float f, HandOption handOption) {
-		ModelPart modelPart = this.method_12223(handOption);
-		boolean bl = modelPart.visible;
-		modelPart.visible = true;
-		super.method_12221(f, handOption);
-		modelPart.visible = bl;
+	public void setArmAngle(float f, Arm arm) {
+		Cuboid cuboid = this.getArm(arm);
+		boolean bl = cuboid.visible;
+		cuboid.visible = true;
+		super.setArmAngle(f, arm);
+		cuboid.visible = bl;
 	}
 }

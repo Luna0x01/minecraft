@@ -1,25 +1,24 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.class_3726;
-import net.minecraft.class_4342;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class MyceliumBlock extends class_3726 {
-	public MyceliumBlock(Block.Builder builder) {
-		super(builder);
+public class MyceliumBlock extends SpreadableBlock {
+	public MyceliumBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		super.randomDisplayTick(state, world, pos, random);
+	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		super.randomDisplayTick(blockState, world, blockPos, random);
 		if (random.nextInt(10) == 0) {
-			world.method_16343(
-				class_4342.field_21358,
-				(double)((float)pos.getX() + random.nextFloat()),
-				(double)((float)pos.getY() + 1.1F),
-				(double)((float)pos.getZ() + random.nextFloat()),
+			world.addParticle(
+				ParticleTypes.field_11219,
+				(double)((float)blockPos.getX() + random.nextFloat()),
+				(double)((float)blockPos.getY() + 1.1F),
+				(double)((float)blockPos.getZ() + random.nextFloat()),
 				0.0,
 				0.0,
 				0.0

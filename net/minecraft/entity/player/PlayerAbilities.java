@@ -1,6 +1,6 @@
 package net.minecraft.entity.player;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 public class PlayerAbilities {
 	public boolean invulnerable;
@@ -8,52 +8,52 @@ public class PlayerAbilities {
 	public boolean allowFlying;
 	public boolean creativeMode;
 	public boolean allowModifyWorld = true;
-	private double field_17089 = 0.05F;
+	private float flySpeed = 0.05F;
 	private float walkSpeed = 0.1F;
 
-	public void serialize(NbtCompound nbt) {
-		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putBoolean("invulnerable", this.invulnerable);
-		nbtCompound.putBoolean("flying", this.flying);
-		nbtCompound.putBoolean("mayfly", this.allowFlying);
-		nbtCompound.putBoolean("instabuild", this.creativeMode);
-		nbtCompound.putBoolean("mayBuild", this.allowModifyWorld);
-		nbtCompound.putFloat("flySpeed", (float)this.field_17089);
-		nbtCompound.putFloat("walkSpeed", this.walkSpeed);
-		nbt.put("abilities", nbtCompound);
+	public void serialize(CompoundTag compoundTag) {
+		CompoundTag compoundTag2 = new CompoundTag();
+		compoundTag2.putBoolean("invulnerable", this.invulnerable);
+		compoundTag2.putBoolean("flying", this.flying);
+		compoundTag2.putBoolean("mayfly", this.allowFlying);
+		compoundTag2.putBoolean("instabuild", this.creativeMode);
+		compoundTag2.putBoolean("mayBuild", this.allowModifyWorld);
+		compoundTag2.putFloat("flySpeed", this.flySpeed);
+		compoundTag2.putFloat("walkSpeed", this.walkSpeed);
+		compoundTag.put("abilities", compoundTag2);
 	}
 
-	public void deserialize(NbtCompound nbt) {
-		if (nbt.contains("abilities", 10)) {
-			NbtCompound nbtCompound = nbt.getCompound("abilities");
-			this.invulnerable = nbtCompound.getBoolean("invulnerable");
-			this.flying = nbtCompound.getBoolean("flying");
-			this.allowFlying = nbtCompound.getBoolean("mayfly");
-			this.creativeMode = nbtCompound.getBoolean("instabuild");
-			if (nbtCompound.contains("flySpeed", 99)) {
-				this.field_17089 = (double)nbtCompound.getFloat("flySpeed");
-				this.walkSpeed = nbtCompound.getFloat("walkSpeed");
+	public void deserialize(CompoundTag compoundTag) {
+		if (compoundTag.containsKey("abilities", 10)) {
+			CompoundTag compoundTag2 = compoundTag.getCompound("abilities");
+			this.invulnerable = compoundTag2.getBoolean("invulnerable");
+			this.flying = compoundTag2.getBoolean("flying");
+			this.allowFlying = compoundTag2.getBoolean("mayfly");
+			this.creativeMode = compoundTag2.getBoolean("instabuild");
+			if (compoundTag2.containsKey("flySpeed", 99)) {
+				this.flySpeed = compoundTag2.getFloat("flySpeed");
+				this.walkSpeed = compoundTag2.getFloat("walkSpeed");
 			}
 
-			if (nbtCompound.contains("mayBuild", 1)) {
-				this.allowModifyWorld = nbtCompound.getBoolean("mayBuild");
+			if (compoundTag2.containsKey("mayBuild", 1)) {
+				this.allowModifyWorld = compoundTag2.getBoolean("mayBuild");
 			}
 		}
 	}
 
 	public float getFlySpeed() {
-		return (float)this.field_17089;
+		return this.flySpeed;
 	}
 
-	public void method_15919(double d) {
-		this.field_17089 = d;
+	public void setFlySpeed(float f) {
+		this.flySpeed = f;
 	}
 
 	public float getWalkSpeed() {
 		return this.walkSpeed;
 	}
 
-	public void setWalkSpeed(float walkSpeed) {
-		this.walkSpeed = walkSpeed;
+	public void setWalkSpeed(float f) {
+		this.walkSpeed = f;
 	}
 }

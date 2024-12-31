@@ -1,47 +1,63 @@
 package net.minecraft.inventory;
 
+import java.util.Set;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.Nameable;
+import net.minecraft.util.Clearable;
 
-public interface Inventory extends Nameable {
+public interface Inventory extends Clearable {
 	int getInvSize();
 
-	boolean isEmpty();
+	boolean isInvEmpty();
 
-	ItemStack getInvStack(int slot);
+	ItemStack getInvStack(int i);
 
-	ItemStack takeInvStack(int slot, int amount);
+	ItemStack takeInvStack(int i, int j);
 
-	ItemStack removeInvStack(int slot);
+	ItemStack removeInvStack(int i);
 
-	void setInvStack(int slot, ItemStack stack);
+	void setInvStack(int i, ItemStack itemStack);
 
-	int getInvMaxStackAmount();
+	default int getInvMaxStackAmount() {
+		return 64;
+	}
 
 	void markDirty();
 
-	boolean canPlayerUseInv(PlayerEntity player);
+	boolean canPlayerUseInv(PlayerEntity playerEntity);
 
-	void onInvOpen(PlayerEntity player);
-
-	void onInvClose(PlayerEntity player);
-
-	boolean isValidInvStack(int slot, ItemStack stack);
-
-	int getProperty(int key);
-
-	void setProperty(int id, int value);
-
-	int getProperties();
-
-	void clear();
-
-	default int method_11259() {
-		return 0;
+	default void onInvOpen(PlayerEntity playerEntity) {
 	}
 
-	default int method_11260() {
-		return 0;
+	default void onInvClose(PlayerEntity playerEntity) {
+	}
+
+	default boolean isValidInvStack(int i, ItemStack itemStack) {
+		return true;
+	}
+
+	default int countInInv(Item item) {
+		int i = 0;
+
+		for (int j = 0; j < this.getInvSize(); j++) {
+			ItemStack itemStack = this.getInvStack(j);
+			if (itemStack.getItem().equals(item)) {
+				i += itemStack.getCount();
+			}
+		}
+
+		return i;
+	}
+
+	default boolean containsAnyInInv(Set<Item> set) {
+		for (int i = 0; i < this.getInvSize(); i++) {
+			ItemStack itemStack = this.getInvStack(i);
+			if (set.contains(itemStack.getItem()) && itemStack.getCount() > 0) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

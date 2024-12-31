@@ -5,11 +5,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.client.TooltipContext;
-import net.minecraft.entity.FireworkRocketEntity;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.entity.FireworkEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -17,7 +17,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class FireworkItem extends Item {
@@ -29,96 +29,92 @@ public class FireworkItem extends Item {
 	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
 		World world = itemUsageContext.getWorld();
 		if (!world.isClient) {
-			BlockPos blockPos = itemUsageContext.getBlockPos();
-			ItemStack itemStack = itemUsageContext.getItemStack();
-			FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(
-				world,
-				(double)((float)blockPos.getX() + itemUsageContext.method_16152()),
-				(double)((float)blockPos.getY() + itemUsageContext.method_16153()),
-				(double)((float)blockPos.getZ() + itemUsageContext.method_16154()),
-				itemStack
-			);
-			world.method_3686(fireworkRocketEntity);
+			ItemStack itemStack = itemUsageContext.getStack();
+			Vec3d vec3d = itemUsageContext.getHitPos();
+			FireworkEntity fireworkEntity = new FireworkEntity(world, vec3d.x, vec3d.y, vec3d.z, itemStack);
+			world.spawnEntity(fireworkEntity);
 			itemStack.decrement(1);
 		}
 
-		return ActionResult.SUCCESS;
+		return ActionResult.field_5812;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		if (player.method_13055()) {
-			ItemStack itemStack = player.getStackInHand(hand);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		if (playerEntity.isFallFlying()) {
+			ItemStack itemStack = playerEntity.getStackInHand(hand);
 			if (!world.isClient) {
-				FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(world, itemStack, player);
-				world.method_3686(fireworkRocketEntity);
-				if (!player.abilities.creativeMode) {
+				world.spawnEntity(new FireworkEntity(world, itemStack, playerEntity));
+				if (!playerEntity.abilities.creativeMode) {
 					itemStack.decrement(1);
 				}
 			}
 
-			return new TypedActionResult<>(ActionResult.SUCCESS, player.getStackInHand(hand));
+			return new TypedActionResult<>(ActionResult.field_5812, playerEntity.getStackInHand(hand));
 		} else {
-			return new TypedActionResult<>(ActionResult.PASS, player.getStackInHand(hand));
+			return new TypedActionResult<>(ActionResult.field_5811, playerEntity.getStackInHand(hand));
 		}
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
-		NbtCompound nbtCompound = stack.getNbtCompound("Fireworks");
-		if (nbtCompound != null) {
-			if (nbtCompound.contains("Flight", 99)) {
-				tooltip.add(
-					new TranslatableText("item.minecraft.firework_rocket.flight").append(" ").append(String.valueOf(nbtCompound.getByte("Flight"))).formatted(Formatting.GRAY)
+	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
+		CompoundTag compoundTag = itemStack.getSubTag("Fireworks");
+		if (compoundTag != null) {
+			if (compoundTag.containsKey("Flight", 99)) {
+				list.add(
+					new TranslatableText("item.minecraft.firework_rocket.flight")
+						.append(" ")
+						.append(String.valueOf(compoundTag.getByte("Flight")))
+						.formatted(Formatting.field_1080)
 				);
 			}
 
-			NbtList nbtList = nbtCompound.getList("Explosions", 10);
-			if (!nbtList.isEmpty()) {
-				for (int i = 0; i < nbtList.size(); i++) {
-					NbtCompound nbtCompound2 = nbtList.getCompound(i);
-					List<Text> list = Lists.newArrayList();
-					FireworkChargeItem.method_16059(nbtCompound2, list);
-					if (!list.isEmpty()) {
-						for (int j = 1; j < list.size(); j++) {
-							list.set(j, new LiteralText("  ").append((Text)list.get(j)).formatted(Formatting.GRAY));
+			ListTag listTag = compoundTag.getList("Explosions", 10);
+			if (!listTag.isEmpty()) {
+				for (int i = 0; i < listTag.size(); i++) {
+					CompoundTag compoundTag2 = listTag.getCompoundTag(i);
+					List<Text> list2 = Lists.newArrayList();
+					FireworkChargeItem.appendFireworkTooltip(compoundTag2, list2);
+					if (!list2.isEmpty()) {
+						for (int j = 1; j < list2.size(); j++) {
+							list2.set(j, new LiteralText("  ").append((Text)list2.get(j)).formatted(Formatting.field_1080));
 						}
 
-						tooltip.addAll(list);
+						list.addAll(list2);
 					}
 				}
 			}
 		}
 	}
 
-	public static enum class_3551 {
-		SMALL_BALL(0, "small_ball"),
-		LARGE_BALL(1, "large_ball"),
-		STAR(2, "star"),
-		CREEPER(3, "creeper"),
-		BURST(4, "burst");
+	public static enum Type {
+		field_7976(0, "small_ball"),
+		field_7977(1, "large_ball"),
+		field_7973(2, "star"),
+		field_7974(3, "creeper"),
+		field_7970(4, "burst");
 
-		private static final FireworkItem.class_3551[] field_17174 = (FireworkItem.class_3551[])Arrays.stream(values())
-			.sorted(Comparator.comparingInt(arg -> arg.field_17175))
-			.toArray(FireworkItem.class_3551[]::new);
-		private final int field_17175;
-		private final String field_17176;
+		private static final FireworkItem.Type[] TYPES = (FireworkItem.Type[])Arrays.stream(values())
+			.sorted(Comparator.comparingInt(type -> type.id))
+			.toArray(FireworkItem.Type[]::new);
+		private final int id;
+		private final String name;
 
-		private class_3551(int j, String string2) {
-			this.field_17175 = j;
-			this.field_17176 = string2;
+		private Type(int j, String string2) {
+			this.id = j;
+			this.name = string2;
 		}
 
-		public int method_16053() {
-			return this.field_17175;
+		public int getId() {
+			return this.id;
 		}
 
-		public String method_16056() {
-			return this.field_17176;
+		public String getName() {
+			return this.name;
 		}
 
-		public static FireworkItem.class_3551 method_16054(int i) {
-			return i >= 0 && i < field_17174.length ? field_17174[i] : SMALL_BALL;
+		public static FireworkItem.Type byId(int i) {
+			return i >= 0 && i < TYPES.length ? TYPES[i] : field_7976;
 		}
 	}
 }

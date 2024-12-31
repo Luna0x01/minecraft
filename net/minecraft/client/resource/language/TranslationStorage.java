@@ -22,12 +22,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class TranslationStorage {
-	private static final Gson field_21046 = new Gson();
-	private static final Logger field_21047 = LogManager.getLogger();
-	private static final Pattern TOKEN_PATTERN = Pattern.compile("%(\\d+\\$)?[\\d\\.]*[df]");
-	Map<String, String> translations = Maps.newHashMap();
+	private static final Gson GSON = new Gson();
+	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Pattern PARAM_PATTERN = Pattern.compile("%(\\d+\\$)?[\\d\\.]*[df]");
+	protected final Map<String, String> translations = Maps.newHashMap();
 
-	public synchronized void method_19557(ResourceManager resourceManager, List<String> list) {
+	public synchronized void load(ResourceManager resourceManager, List<String> list) {
 		this.translations.clear();
 
 		for (String string : list) {
@@ -39,14 +39,14 @@ public class TranslationStorage {
 					this.load(resourceManager.getAllResources(identifier));
 				} catch (FileNotFoundException var9) {
 				} catch (Exception var10) {
-					field_21047.warn("Skipped language file: {}:{} ({})", string3, string2, var10.toString());
+					LOGGER.warn("Skipped language file: {}:{} ({})", string3, string2, var10.toString());
 				}
 			}
 		}
 	}
 
-	private void load(List<Resource> resources) {
-		for (Resource resource : resources) {
+	private void load(List<Resource> list) {
+		for (Resource resource : list) {
 			InputStream inputStream = resource.getInputStream();
 
 			try {
@@ -57,32 +57,32 @@ public class TranslationStorage {
 		}
 	}
 
-	private void load(InputStream stream) {
-		JsonElement jsonElement = (JsonElement)field_21046.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), JsonElement.class);
+	private void load(InputStream inputStream) {
+		JsonElement jsonElement = (JsonElement)GSON.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), JsonElement.class);
 		JsonObject jsonObject = JsonHelper.asObject(jsonElement, "strings");
 
 		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-			String string = TOKEN_PATTERN.matcher(JsonHelper.asString((JsonElement)entry.getValue(), (String)entry.getKey())).replaceAll("%$1s");
+			String string = PARAM_PATTERN.matcher(JsonHelper.asString((JsonElement)entry.getValue(), (String)entry.getKey())).replaceAll("%$1s");
 			this.translations.put(entry.getKey(), string);
 		}
 	}
 
-	private String translate(String key) {
-		String string = (String)this.translations.get(key);
-		return string == null ? key : string;
+	private String get(String string) {
+		String string2 = (String)this.translations.get(string);
+		return string2 == null ? string : string2;
 	}
 
-	public String translateAndFormat(String key, Object[] args) {
-		String string = this.translate(key);
+	public String translate(String string, Object[] objects) {
+		String string2 = this.get(string);
 
 		try {
-			return String.format(string, args);
+			return String.format(string2, objects);
 		} catch (IllegalFormatException var5) {
-			return "Format error: " + string;
+			return "Format error: " + string2;
 		}
 	}
 
-	public boolean method_12501(String string) {
+	public boolean containsKey(String string) {
 		return this.translations.containsKey(string);
 	}
 }

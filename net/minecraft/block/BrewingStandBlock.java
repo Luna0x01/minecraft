@@ -1,75 +1,68 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.class_4342;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BrewingStandBlockEntity;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.container.Container;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateManager;
+import net.minecraft.state.StateFactory;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.states.property.Properties;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
-import net.minecraft.util.shapes.VoxelShapes;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class BrewingStandBlock extends BlockWithEntity {
-	public static final BooleanProperty[] HAS_BOTTLES = new BooleanProperty[]{Properties.HAS_BOTTLE_0, Properties.HAS_BOTTLE_1, Properties.HAS_BOTTLE_2};
+	public static final BooleanProperty[] BOTTLE_PROPERTIES = new BooleanProperty[]{Properties.HAS_BOTTLE_0, Properties.HAS_BOTTLE_1, Properties.HAS_BOTTLE_2};
 	protected static final VoxelShape SHAPE = VoxelShapes.union(
 		Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 2.0, 15.0), Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 14.0, 9.0)
 	);
 
-	public BrewingStandBlock(Block.Builder builder) {
-		super(builder);
+	public BrewingStandBlock(Block.Settings settings) {
+		super(settings);
 		this.setDefaultState(
-			this.stateManager
-				.method_16923()
-				.withProperty(HAS_BOTTLES[0], Boolean.valueOf(false))
-				.withProperty(HAS_BOTTLES[1], Boolean.valueOf(false))
-				.withProperty(HAS_BOTTLES[2], Boolean.valueOf(false))
+			this.stateFactory
+				.getDefaultState()
+				.with(BOTTLE_PROPERTIES[0], Boolean.valueOf(false))
+				.with(BOTTLE_PROPERTIES[1], Boolean.valueOf(false))
+				.with(BOTTLE_PROPERTIES[2], Boolean.valueOf(false))
 		);
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState state) {
-		return BlockRenderType.MODEL;
+	public BlockRenderType getRenderType(BlockState blockState) {
+		return BlockRenderType.field_11458;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
+	public BlockEntity createBlockEntity(BlockView blockView) {
 		return new BrewingStandBlockEntity();
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
 		return SHAPE;
 	}
 
 	@Override
-	public boolean onUse(
-		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
-	) {
+	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				player.openInventory((BrewingStandBlockEntity)blockEntity);
-				player.method_15928(Stats.INTERACT_WITH_BREWINGSTAND);
+				playerEntity.openContainer((BrewingStandBlockEntity)blockEntity);
+				playerEntity.incrementStat(Stats.field_15407);
 			}
 
 			return true;
@@ -77,62 +70,57 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity, ItemStack itemStack) {
 		if (itemStack.hasCustomName()) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				((BrewingStandBlockEntity)blockEntity).method_16791(itemStack.getName());
+				((BrewingStandBlockEntity)blockEntity).setCustomName(itemStack.getName());
 			}
 		}
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		double d = (double)((float)pos.getX() + 0.4F + random.nextFloat() * 0.2F);
-		double e = (double)((float)pos.getY() + 0.7F + random.nextFloat() * 0.3F);
-		double f = (double)((float)pos.getZ() + 0.4F + random.nextFloat() * 0.2F);
-		world.method_16343(class_4342.field_21363, d, e, f, 0.0, 0.0, 0.0);
+	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		double d = (double)((float)blockPos.getX() + 0.4F + random.nextFloat() * 0.2F);
+		double e = (double)((float)blockPos.getY() + 0.7F + random.nextFloat() * 0.3F);
+		double f = (double)((float)blockPos.getZ() + 0.4F + random.nextFloat() * 0.2F);
+		world.addParticle(ParticleTypes.field_11251, d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Override
-	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-		if (state.getBlock() != newState.getBlock()) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+	public void onBlockRemoved(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
+		if (blockState.getBlock() != blockState2.getBlock()) {
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				ItemScatterer.spawn(world, pos, (BrewingStandBlockEntity)blockEntity);
+				ItemScatterer.spawn(world, blockPos, (BrewingStandBlockEntity)blockEntity);
 			}
 
-			super.onStateReplaced(state, world, pos, newState, moved);
+			super.onBlockRemoved(blockState, world, blockPos, blockState2, bl);
 		}
 	}
 
 	@Override
-	public boolean method_11577(BlockState state) {
+	public boolean hasComparatorOutput(BlockState blockState) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-		return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
+	public int getComparatorOutput(BlockState blockState, World world, BlockPos blockPos) {
+		return Container.calculateComparatorOutput(world.getBlockEntity(blockPos));
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.method_16928(HAS_BOTTLES[0], HAS_BOTTLES[1], HAS_BOTTLES[2]);
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(BOTTLE_PROPERTIES[0], BOTTLE_PROPERTIES[1], BOTTLE_PROPERTIES[2]);
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
-	}
-
-	@Override
-	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
 		return false;
 	}
 }

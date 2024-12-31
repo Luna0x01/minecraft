@@ -1,179 +1,147 @@
 package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class OcelotEntityModel extends EntityModel {
-	private final ModelPart field_1496;
-	private final ModelPart field_1497;
-	private final ModelPart field_1498;
-	private final ModelPart field_1499;
-	private final ModelPart field_1500;
-	private final ModelPart field_1501;
-	private final ModelPart field_1502;
-	private final ModelPart field_1503;
-	private int field_1504 = 1;
+public class OcelotEntityModel<T extends Entity> extends EntityModel<T> {
+	protected final Cuboid frontLegLeft;
+	protected final Cuboid frontLegRight;
+	protected final Cuboid backLegLeft;
+	protected final Cuboid backLegRight;
+	protected final Cuboid tail1;
+	protected final Cuboid tail2;
+	protected final Cuboid head;
+	protected final Cuboid body;
+	protected int animationState = 1;
 
-	public OcelotEntityModel() {
-		this.putTexture("head.main", 0, 0);
-		this.putTexture("head.nose", 0, 24);
-		this.putTexture("head.ear1", 0, 10);
-		this.putTexture("head.ear2", 6, 10);
-		this.field_1502 = new ModelPart(this, "head");
-		this.field_1502.addCuboid("main", -2.5F, -2.0F, -3.0F, 5, 4, 5);
-		this.field_1502.addCuboid("nose", -1.5F, 0.0F, -4.0F, 3, 2, 2);
-		this.field_1502.addCuboid("ear1", -2.0F, -3.0F, 0.0F, 1, 1, 2);
-		this.field_1502.addCuboid("ear2", 1.0F, -3.0F, 0.0F, 1, 1, 2);
-		this.field_1502.setPivot(0.0F, 15.0F, -9.0F);
-		this.field_1503 = new ModelPart(this, 20, 0);
-		this.field_1503.addCuboid(-2.0F, 3.0F, -8.0F, 4, 16, 6, 0.0F);
-		this.field_1503.setPivot(0.0F, 12.0F, -10.0F);
-		this.field_1500 = new ModelPart(this, 0, 15);
-		this.field_1500.addCuboid(-0.5F, 0.0F, 0.0F, 1, 8, 1);
-		this.field_1500.posX = 0.9F;
-		this.field_1500.setPivot(0.0F, 15.0F, 8.0F);
-		this.field_1501 = new ModelPart(this, 4, 15);
-		this.field_1501.addCuboid(-0.5F, 0.0F, 0.0F, 1, 8, 1);
-		this.field_1501.setPivot(0.0F, 20.0F, 14.0F);
-		this.field_1496 = new ModelPart(this, 8, 13);
-		this.field_1496.addCuboid(-1.0F, 0.0F, 1.0F, 2, 6, 2);
-		this.field_1496.setPivot(1.1F, 18.0F, 5.0F);
-		this.field_1497 = new ModelPart(this, 8, 13);
-		this.field_1497.addCuboid(-1.0F, 0.0F, 1.0F, 2, 6, 2);
-		this.field_1497.setPivot(-1.1F, 18.0F, 5.0F);
-		this.field_1498 = new ModelPart(this, 40, 0);
-		this.field_1498.addCuboid(-1.0F, 0.0F, 0.0F, 2, 10, 2);
-		this.field_1498.setPivot(1.2F, 13.8F, -5.0F);
-		this.field_1499 = new ModelPart(this, 40, 0);
-		this.field_1499.addCuboid(-1.0F, 0.0F, 0.0F, 2, 10, 2);
-		this.field_1499.setPivot(-1.2F, 13.8F, -5.0F);
+	public OcelotEntityModel(float f) {
+		this.head = new Cuboid(this, "head");
+		this.head.addBox("main", -2.5F, -2.0F, -3.0F, 5, 4, 5, f, 0, 0);
+		this.head.addBox("nose", -1.5F, 0.0F, -4.0F, 3, 2, 2, f, 0, 24);
+		this.head.addBox("ear1", -2.0F, -3.0F, 0.0F, 1, 1, 2, f, 0, 10);
+		this.head.addBox("ear2", 1.0F, -3.0F, 0.0F, 1, 1, 2, f, 6, 10);
+		this.head.setRotationPoint(0.0F, 15.0F, -9.0F);
+		this.body = new Cuboid(this, 20, 0);
+		this.body.addBox(-2.0F, 3.0F, -8.0F, 4, 16, 6, f);
+		this.body.setRotationPoint(0.0F, 12.0F, -10.0F);
+		this.tail1 = new Cuboid(this, 0, 15);
+		this.tail1.addBox(-0.5F, 0.0F, 0.0F, 1, 8, 1, f);
+		this.tail1.pitch = 0.9F;
+		this.tail1.setRotationPoint(0.0F, 15.0F, 8.0F);
+		this.tail2 = new Cuboid(this, 4, 15);
+		this.tail2.addBox(-0.5F, 0.0F, 0.0F, 1, 8, 1, f);
+		this.tail2.setRotationPoint(0.0F, 20.0F, 14.0F);
+		this.frontLegLeft = new Cuboid(this, 8, 13);
+		this.frontLegLeft.addBox(-1.0F, 0.0F, 1.0F, 2, 6, 2, f);
+		this.frontLegLeft.setRotationPoint(1.1F, 18.0F, 5.0F);
+		this.frontLegRight = new Cuboid(this, 8, 13);
+		this.frontLegRight.addBox(-1.0F, 0.0F, 1.0F, 2, 6, 2, f);
+		this.frontLegRight.setRotationPoint(-1.1F, 18.0F, 5.0F);
+		this.backLegLeft = new Cuboid(this, 40, 0);
+		this.backLegLeft.addBox(-1.0F, 0.0F, 0.0F, 2, 10, 2, f);
+		this.backLegLeft.setRotationPoint(1.2F, 14.1F, -5.0F);
+		this.backLegRight = new Cuboid(this, 40, 0);
+		this.backLegRight.addBox(-1.0F, 0.0F, 0.0F, 2, 10, 2, f);
+		this.backLegRight.setRotationPoint(-1.2F, 14.1F, -5.0F);
 	}
 
 	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		if (this.child) {
-			float f = 2.0F;
+	public void render(T entity, float f, float g, float h, float i, float j, float k) {
+		this.setAngles(entity, f, g, h, i, j, k);
+		if (this.isChild) {
+			float l = 2.0F;
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(0.75F, 0.75F, 0.75F);
-			GlStateManager.translate(0.0F, 10.0F * scale, 4.0F * scale);
-			this.field_1502.render(scale);
+			GlStateManager.scalef(0.75F, 0.75F, 0.75F);
+			GlStateManager.translatef(0.0F, 10.0F * k, 4.0F * k);
+			this.head.render(k);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(0.5F, 0.5F, 0.5F);
-			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
-			this.field_1503.render(scale);
-			this.field_1496.render(scale);
-			this.field_1497.render(scale);
-			this.field_1498.render(scale);
-			this.field_1499.render(scale);
-			this.field_1500.render(scale);
-			this.field_1501.render(scale);
+			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
+			GlStateManager.translatef(0.0F, 24.0F * k, 0.0F);
+			this.body.render(k);
+			this.frontLegLeft.render(k);
+			this.frontLegRight.render(k);
+			this.backLegLeft.render(k);
+			this.backLegRight.render(k);
+			this.tail1.render(k);
+			this.tail2.render(k);
 			GlStateManager.popMatrix();
 		} else {
-			this.field_1502.render(scale);
-			this.field_1503.render(scale);
-			this.field_1500.render(scale);
-			this.field_1501.render(scale);
-			this.field_1496.render(scale);
-			this.field_1497.render(scale);
-			this.field_1498.render(scale);
-			this.field_1499.render(scale);
+			this.head.render(k);
+			this.body.render(k);
+			this.tail1.render(k);
+			this.tail2.render(k);
+			this.frontLegLeft.render(k);
+			this.frontLegRight.render(k);
+			this.backLegLeft.render(k);
+			this.backLegRight.render(k);
 		}
 	}
 
 	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.field_1502.posX = headPitch * (float) (Math.PI / 180.0);
-		this.field_1502.posY = age * (float) (Math.PI / 180.0);
-		if (this.field_1504 != 3) {
-			this.field_1503.posX = (float) (Math.PI / 2);
-			if (this.field_1504 == 2) {
-				this.field_1496.posX = MathHelper.cos(handSwing * 0.6662F) * handSwingAmount;
-				this.field_1497.posX = MathHelper.cos(handSwing * 0.6662F + 0.3F) * handSwingAmount;
-				this.field_1498.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI + 0.3F) * handSwingAmount;
-				this.field_1499.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * handSwingAmount;
-				this.field_1501.posX = 1.7278761F + (float) (Math.PI / 10) * MathHelper.cos(handSwing) * handSwingAmount;
+	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+		this.head.pitch = j * (float) (Math.PI / 180.0);
+		this.head.yaw = i * (float) (Math.PI / 180.0);
+		if (this.animationState != 3) {
+			this.body.pitch = (float) (Math.PI / 2);
+			if (this.animationState == 2) {
+				this.frontLegLeft.pitch = MathHelper.cos(f * 0.6662F) * g;
+				this.frontLegRight.pitch = MathHelper.cos(f * 0.6662F + 0.3F) * g;
+				this.backLegLeft.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI + 0.3F) * g;
+				this.backLegRight.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * g;
+				this.tail2.pitch = 1.7278761F + (float) (Math.PI / 10) * MathHelper.cos(f) * g;
 			} else {
-				this.field_1496.posX = MathHelper.cos(handSwing * 0.6662F) * handSwingAmount;
-				this.field_1497.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * handSwingAmount;
-				this.field_1498.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * handSwingAmount;
-				this.field_1499.posX = MathHelper.cos(handSwing * 0.6662F) * handSwingAmount;
-				if (this.field_1504 == 1) {
-					this.field_1501.posX = 1.7278761F + (float) (Math.PI / 4) * MathHelper.cos(handSwing) * handSwingAmount;
+				this.frontLegLeft.pitch = MathHelper.cos(f * 0.6662F) * g;
+				this.frontLegRight.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * g;
+				this.backLegLeft.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * g;
+				this.backLegRight.pitch = MathHelper.cos(f * 0.6662F) * g;
+				if (this.animationState == 1) {
+					this.tail2.pitch = 1.7278761F + (float) (Math.PI / 4) * MathHelper.cos(f) * g;
 				} else {
-					this.field_1501.posX = 1.7278761F + 0.47123894F * MathHelper.cos(handSwing) * handSwingAmount;
+					this.tail2.pitch = 1.7278761F + 0.47123894F * MathHelper.cos(f) * g;
 				}
 			}
 		}
 	}
 
 	@Override
-	public void animateModel(LivingEntity entity, float limbAngle, float limbDistance, float tickDelta) {
-		OcelotEntity ocelotEntity = (OcelotEntity)entity;
-		this.field_1503.pivotY = 12.0F;
-		this.field_1503.pivotZ = -10.0F;
-		this.field_1502.pivotY = 15.0F;
-		this.field_1502.pivotZ = -9.0F;
-		this.field_1500.pivotY = 15.0F;
-		this.field_1500.pivotZ = 8.0F;
-		this.field_1501.pivotY = 20.0F;
-		this.field_1501.pivotZ = 14.0F;
-		this.field_1498.pivotY = 13.8F;
-		this.field_1498.pivotZ = -5.0F;
-		this.field_1499.pivotY = 13.8F;
-		this.field_1499.pivotZ = -5.0F;
-		this.field_1496.pivotY = 18.0F;
-		this.field_1496.pivotZ = 5.0F;
-		this.field_1497.pivotY = 18.0F;
-		this.field_1497.pivotZ = 5.0F;
-		this.field_1500.posX = 0.9F;
-		if (ocelotEntity.isSneaking()) {
-			this.field_1503.pivotY++;
-			this.field_1502.pivotY += 2.0F;
-			this.field_1500.pivotY++;
-			this.field_1501.pivotY += -4.0F;
-			this.field_1501.pivotZ += 2.0F;
-			this.field_1500.posX = (float) (Math.PI / 2);
-			this.field_1501.posX = (float) (Math.PI / 2);
-			this.field_1504 = 0;
-		} else if (ocelotEntity.isSprinting()) {
-			this.field_1501.pivotY = this.field_1500.pivotY;
-			this.field_1501.pivotZ += 2.0F;
-			this.field_1500.posX = (float) (Math.PI / 2);
-			this.field_1501.posX = (float) (Math.PI / 2);
-			this.field_1504 = 2;
-		} else if (ocelotEntity.isSitting()) {
-			this.field_1503.posX = (float) (Math.PI / 4);
-			this.field_1503.pivotY += -4.0F;
-			this.field_1503.pivotZ += 5.0F;
-			this.field_1502.pivotY += -3.3F;
-			this.field_1502.pivotZ++;
-			this.field_1500.pivotY += 8.0F;
-			this.field_1500.pivotZ += -2.0F;
-			this.field_1501.pivotY += 2.0F;
-			this.field_1501.pivotZ += -0.8F;
-			this.field_1500.posX = 1.7278761F;
-			this.field_1501.posX = 2.670354F;
-			this.field_1498.posX = (float) (-Math.PI / 20);
-			this.field_1498.pivotY = 15.8F;
-			this.field_1498.pivotZ = -7.0F;
-			this.field_1499.posX = (float) (-Math.PI / 20);
-			this.field_1499.pivotY = 15.8F;
-			this.field_1499.pivotZ = -7.0F;
-			this.field_1496.posX = (float) (-Math.PI / 2);
-			this.field_1496.pivotY = 21.0F;
-			this.field_1496.pivotZ = 1.0F;
-			this.field_1497.posX = (float) (-Math.PI / 2);
-			this.field_1497.pivotY = 21.0F;
-			this.field_1497.pivotZ = 1.0F;
-			this.field_1504 = 3;
+	public void animateModel(T entity, float f, float g, float h) {
+		this.body.rotationPointY = 12.0F;
+		this.body.rotationPointZ = -10.0F;
+		this.head.rotationPointY = 15.0F;
+		this.head.rotationPointZ = -9.0F;
+		this.tail1.rotationPointY = 15.0F;
+		this.tail1.rotationPointZ = 8.0F;
+		this.tail2.rotationPointY = 20.0F;
+		this.tail2.rotationPointZ = 14.0F;
+		this.backLegLeft.rotationPointY = 14.1F;
+		this.backLegLeft.rotationPointZ = -5.0F;
+		this.backLegRight.rotationPointY = 14.1F;
+		this.backLegRight.rotationPointZ = -5.0F;
+		this.frontLegLeft.rotationPointY = 18.0F;
+		this.frontLegLeft.rotationPointZ = 5.0F;
+		this.frontLegRight.rotationPointY = 18.0F;
+		this.frontLegRight.rotationPointZ = 5.0F;
+		this.tail1.pitch = 0.9F;
+		if (entity.isSneaking()) {
+			this.body.rotationPointY++;
+			this.head.rotationPointY += 2.0F;
+			this.tail1.rotationPointY++;
+			this.tail2.rotationPointY += -4.0F;
+			this.tail2.rotationPointZ += 2.0F;
+			this.tail1.pitch = (float) (Math.PI / 2);
+			this.tail2.pitch = (float) (Math.PI / 2);
+			this.animationState = 0;
+		} else if (entity.isSprinting()) {
+			this.tail2.rotationPointY = this.tail1.rotationPointY;
+			this.tail2.rotationPointZ += 2.0F;
+			this.tail1.pitch = (float) (Math.PI / 2);
+			this.tail2.pitch = (float) (Math.PI / 2);
+			this.animationState = 2;
 		} else {
-			this.field_1504 = 1;
+			this.animationState = 1;
 		}
 	}
 }

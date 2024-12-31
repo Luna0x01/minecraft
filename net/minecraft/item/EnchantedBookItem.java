@@ -2,16 +2,14 @@ package net.minecraft.item;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.client.TooltipContext;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentLevelEntry;
-import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.enchantment.InfoEnchantment;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.text.Text;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
@@ -21,45 +19,37 @@ public class EnchantedBookItem extends Item {
 	}
 
 	@Override
-	public boolean hasEnchantmentGlint(ItemStack stack) {
+	public boolean hasEnchantmentGlint(ItemStack itemStack) {
 		return true;
 	}
 
 	@Override
-	public boolean isEnchantable(ItemStack stack) {
+	public boolean isEnchantable(ItemStack itemStack) {
 		return false;
 	}
 
-	public static NbtList getEnchantmentNbt(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getNbt();
-		return nbtCompound != null ? nbtCompound.getList("StoredEnchantments", 10) : new NbtList();
+	public static ListTag getEnchantmentTag(ItemStack itemStack) {
+		CompoundTag compoundTag = itemStack.getTag();
+		return compoundTag != null ? compoundTag.getList("StoredEnchantments", 10) : new ListTag();
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
-		super.appendTooltips(stack, world, tooltip, tooltipContext);
-		NbtList nbtList = getEnchantmentNbt(stack);
-
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			Enchantment enchantment = Registry.ENCHANTMENT.getByIdentifier(Identifier.fromString(nbtCompound.getString("id")));
-			if (enchantment != null) {
-				tooltip.add(enchantment.method_16257(nbtCompound.getInt("lvl")));
-			}
-		}
+	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
+		super.appendTooltip(itemStack, world, list, tooltipContext);
+		ItemStack.appendEnchantments(list, getEnchantmentTag(itemStack));
 	}
 
-	public static void addEnchantment(ItemStack stack, EnchantmentLevelEntry itemStack) {
-		NbtList nbtList = getEnchantmentNbt(stack);
+	public static void addEnchantment(ItemStack itemStack, InfoEnchantment infoEnchantment) {
+		ListTag listTag = getEnchantmentTag(itemStack);
 		boolean bl = true;
-		Identifier identifier = Registry.ENCHANTMENT.getId(itemStack.enchantment);
+		Identifier identifier = Registry.ENCHANTMENT.getId(infoEnchantment.enchantment);
 
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			Identifier identifier2 = Identifier.fromString(nbtCompound.getString("id"));
+		for (int i = 0; i < listTag.size(); i++) {
+			CompoundTag compoundTag = listTag.getCompoundTag(i);
+			Identifier identifier2 = Identifier.tryParse(compoundTag.getString("id"));
 			if (identifier2 != null && identifier2.equals(identifier)) {
-				if (nbtCompound.getInt("lvl") < itemStack.level) {
-					nbtCompound.putShort("lvl", (short)itemStack.level);
+				if (compoundTag.getInt("lvl") < infoEnchantment.level) {
+					compoundTag.putShort("lvl", (short)infoEnchantment.level);
 				}
 
 				bl = false;
@@ -68,35 +58,35 @@ public class EnchantedBookItem extends Item {
 		}
 
 		if (bl) {
-			NbtCompound nbtCompound2 = new NbtCompound();
-			nbtCompound2.putString("id", String.valueOf(identifier));
-			nbtCompound2.putShort("lvl", (short)itemStack.level);
-			nbtList.add((NbtElement)nbtCompound2);
+			CompoundTag compoundTag2 = new CompoundTag();
+			compoundTag2.putString("id", String.valueOf(identifier));
+			compoundTag2.putShort("lvl", (short)infoEnchantment.level);
+			listTag.add(compoundTag2);
 		}
 
-		stack.getOrCreateNbt().put("StoredEnchantments", nbtList);
+		itemStack.getOrCreateTag().put("StoredEnchantments", listTag);
 	}
 
-	public static ItemStack getAsItemStack(EnchantmentLevelEntry enchantmentLevelEntry) {
-		ItemStack itemStack = new ItemStack(Items.ENCHANTED_BOOK);
-		addEnchantment(itemStack, enchantmentLevelEntry);
+	public static ItemStack forEnchantment(InfoEnchantment infoEnchantment) {
+		ItemStack itemStack = new ItemStack(Items.field_8598);
+		addEnchantment(itemStack, infoEnchantment);
 		return itemStack;
 	}
 
 	@Override
-	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		if (group == ItemGroup.SEARCH) {
+	public void appendStacks(ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		if (itemGroup == ItemGroup.SEARCH) {
 			for (Enchantment enchantment : Registry.ENCHANTMENT) {
-				if (enchantment.target != null) {
+				if (enchantment.type != null) {
 					for (int i = enchantment.getMinimumLevel(); i <= enchantment.getMaximumLevel(); i++) {
-						stacks.add(getAsItemStack(new EnchantmentLevelEntry(enchantment, i)));
+						defaultedList.add(forEnchantment(new InfoEnchantment(enchantment, i)));
 					}
 				}
 			}
-		} else if (group.getEnchantments().length != 0) {
+		} else if (itemGroup.getEnchantments().length != 0) {
 			for (Enchantment enchantment2 : Registry.ENCHANTMENT) {
-				if (group.containsEnchantments(enchantment2.target)) {
-					stacks.add(getAsItemStack(new EnchantmentLevelEntry(enchantment2, enchantment2.getMaximumLevel())));
+				if (itemGroup.containsEnchantments(enchantment2.type)) {
+					defaultedList.add(forEnchantment(new InfoEnchantment(enchantment2, enchantment2.getMaximumLevel())));
 				}
 			}
 		}

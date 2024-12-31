@@ -1,13 +1,14 @@
 package net.minecraft.client.texture;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.TextureUtil;
 
 public abstract class AbstractTexture implements Texture {
 	protected int glId = -1;
 	protected boolean bilinear;
 	protected boolean mipmap;
-	protected boolean lastBilinear;
-	protected boolean lastMipmap;
+	protected boolean oldBilinear;
+	protected boolean oldMipmap;
 
 	public void setFilter(boolean bl, boolean bl2) {
 		this.bilinear = bl;
@@ -22,26 +23,26 @@ public abstract class AbstractTexture implements Texture {
 			j = 9728;
 		}
 
-		GlStateManager.method_12294(3553, 10241, i);
-		GlStateManager.method_12294(3553, 10240, j);
+		GlStateManager.texParameter(3553, 10241, i);
+		GlStateManager.texParameter(3553, 10240, j);
 	}
 
 	@Override
-	public void pushFilter(boolean bilinear, boolean mipmap) {
-		this.lastBilinear = this.bilinear;
-		this.lastMipmap = this.mipmap;
-		this.setFilter(bilinear, mipmap);
+	public void pushFilter(boolean bl, boolean bl2) {
+		this.oldBilinear = this.bilinear;
+		this.oldMipmap = this.mipmap;
+		this.setFilter(bl, bl2);
 	}
 
 	@Override
-	public void pop() {
-		this.setFilter(this.lastBilinear, this.lastMipmap);
+	public void popFilter() {
+		this.setFilter(this.oldBilinear, this.oldMipmap);
 	}
 
 	@Override
 	public int getGlId() {
 		if (this.glId == -1) {
-			this.glId = TextureUtil.getTexLevelParameter();
+			this.glId = TextureUtil.generateTextureId();
 		}
 
 		return this.glId;
@@ -49,7 +50,7 @@ public abstract class AbstractTexture implements Texture {
 
 	public void clearGlId() {
 		if (this.glId != -1) {
-			TextureUtil.deleteTexture(this.glId);
+			TextureUtil.releaseTextureId(this.glId);
 			this.glId = -1;
 		}
 	}

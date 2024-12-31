@@ -1,32 +1,33 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.entity.model.LlamaSpitModel;
+import net.minecraft.client.render.entity.model.LlamaSpitEntityModel;
 import net.minecraft.entity.projectile.LlamaSpitEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 
 public class LlamaSpitEntityRenderer extends EntityRenderer<LlamaSpitEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/llama/spit.png");
-	private final LlamaSpitModel model = new LlamaSpitModel();
+	private static final Identifier SKIN = new Identifier("textures/entity/llama/spit.png");
+	private final LlamaSpitEntityModel<LlamaSpitEntity> model = new LlamaSpitEntityModel<>();
 
 	public LlamaSpitEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void render(LlamaSpitEntity llamaSpitEntity, double d, double e, double f, float g, float h) {
+	public void method_4061(LlamaSpitEntity llamaSpitEntity, double d, double e, double f, float g, float h) {
 		GlStateManager.pushMatrix();
-		GlStateManager.translate((float)d, (float)e + 0.15F, (float)f);
-		GlStateManager.rotate(llamaSpitEntity.prevYaw + (llamaSpitEntity.yaw - llamaSpitEntity.prevYaw) * h - 90.0F, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate(llamaSpitEntity.prevPitch + (llamaSpitEntity.pitch - llamaSpitEntity.prevPitch) * h, 0.0F, 0.0F, 1.0F);
-		this.bindTexture(llamaSpitEntity);
-		if (this.field_13631) {
+		GlStateManager.translatef((float)d, (float)e + 0.15F, (float)f);
+		GlStateManager.rotatef(MathHelper.lerp(h, llamaSpitEntity.prevYaw, llamaSpitEntity.yaw) - 90.0F, 0.0F, 1.0F, 0.0F);
+		GlStateManager.rotatef(MathHelper.lerp(h, llamaSpitEntity.prevPitch, llamaSpitEntity.pitch), 0.0F, 0.0F, 1.0F);
+		this.bindEntityTexture(llamaSpitEntity);
+		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
-			GlStateManager.method_12309(this.method_12454(llamaSpitEntity));
+			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(llamaSpitEntity));
 		}
 
 		this.model.render(llamaSpitEntity, h, 0.0F, -0.1F, 0.0F, 0.0F, 0.0625F);
-		if (this.field_13631) {
-			GlStateManager.method_12315();
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
@@ -34,7 +35,7 @@ public class LlamaSpitEntityRenderer extends EntityRenderer<LlamaSpitEntity> {
 		super.render(llamaSpitEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(LlamaSpitEntity llamaSpitEntity) {
-		return TEXTURE;
+	protected Identifier method_4062(LlamaSpitEntity llamaSpitEntity) {
+		return SKIN;
 	}
 }

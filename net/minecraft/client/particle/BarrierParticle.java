@@ -1,71 +1,33 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.Itemable;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.world.World;
 
-public class BarrierParticle extends Particle {
-	protected BarrierParticle(World world, double d, double e, double f, Itemable itemable) {
-		super(world, d, e, f, 0.0, 0.0, 0.0);
-		this.setTexture(MinecraftClient.getInstance().getHeldItemRenderer().method_19372().method_19155(itemable));
-		this.red = 1.0F;
-		this.green = 1.0F;
-		this.blue = 1.0F;
-		this.velocityX = 0.0;
-		this.velocityY = 0.0;
-		this.velocityZ = 0.0;
+public class BarrierParticle extends SpriteBillboardParticle {
+	private BarrierParticle(World world, double d, double e, double f, ItemConvertible itemConvertible) {
+		super(world, d, e, f);
+		this.setSprite(MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(itemConvertible));
 		this.gravityStrength = 0.0F;
 		this.maxAge = 80;
-		this.field_14950 = false;
+		this.collidesWithWorld = false;
 	}
 
 	@Override
-	public int getLayer() {
-		return 1;
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.TERRAIN_SHEET;
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = this.sprite.getMinU();
-		float l = this.sprite.getMaxU();
-		float m = this.sprite.getMinV();
-		float n = this.sprite.getMaxV();
-		float o = 0.5F;
-		float p = (float)(this.field_13425 + (this.field_13428 - this.field_13425) * (double)tickDelta - field_1722);
-		float q = (float)(this.field_13426 + (this.field_13429 - this.field_13426) * (double)tickDelta - field_1723);
-		float r = (float)(this.field_13427 + (this.field_13430 - this.field_13427) * (double)tickDelta - field_1724);
-		int s = this.method_12243(tickDelta);
-		int t = s >> 16 & 65535;
-		int u = s & 65535;
-		builder.vertex((double)(p - g * 0.5F - j * 0.5F), (double)(q - h * 0.5F), (double)(r - i * 0.5F - k * 0.5F))
-			.texture((double)l, (double)n)
-			.color(this.red, this.green, this.blue, 1.0F)
-			.texture2(t, u)
-			.next();
-		builder.vertex((double)(p - g * 0.5F + j * 0.5F), (double)(q + h * 0.5F), (double)(r - i * 0.5F + k * 0.5F))
-			.texture((double)l, (double)m)
-			.color(this.red, this.green, this.blue, 1.0F)
-			.texture2(t, u)
-			.next();
-		builder.vertex((double)(p + g * 0.5F + j * 0.5F), (double)(q + h * 0.5F), (double)(r + i * 0.5F + k * 0.5F))
-			.texture((double)f, (double)m)
-			.color(this.red, this.green, this.blue, 1.0F)
-			.texture2(t, u)
-			.next();
-		builder.vertex((double)(p + g * 0.5F - j * 0.5F), (double)(q - h * 0.5F), (double)(r + i * 0.5F - k * 0.5F))
-			.texture((double)f, (double)n)
-			.color(this.red, this.green, this.blue, 1.0F)
-			.texture2(t, u)
-			.next();
+	public float getSize(float f) {
+		return 0.5F;
 	}
 
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new BarrierParticle(world, d, e, f, Blocks.BARRIER.getItem());
+	public static class Factory implements ParticleFactory<DefaultParticleType> {
+		public Particle method_3010(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			return new BarrierParticle(world, d, e, f, Blocks.field_10499.asItem());
 		}
 	}
 }

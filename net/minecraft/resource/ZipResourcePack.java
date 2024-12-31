@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import net.minecraft.class_4455;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 
@@ -36,27 +35,27 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 	}
 
 	@Override
-	protected InputStream openFile(String name) throws IOException {
+	protected InputStream openFile(String string) throws IOException {
 		ZipFile zipFile = this.getZipFile();
-		ZipEntry zipEntry = zipFile.getEntry(name);
+		ZipEntry zipEntry = zipFile.getEntry(string);
 		if (zipEntry == null) {
-			throw new ResourceNotFoundException(this.base, name);
+			throw new ResourceNotFoundException(this.base, string);
 		} else {
 			return zipFile.getInputStream(zipEntry);
 		}
 	}
 
 	@Override
-	public boolean containsFile(String name) {
+	public boolean containsFile(String string) {
 		try {
-			return this.getZipFile().getEntry(name) != null;
+			return this.getZipFile().getEntry(string) != null;
 		} catch (IOException var3) {
 			return false;
 		}
 	}
 
 	@Override
-	public Set<String> method_21327(class_4455 arg) {
+	public Set<String> getNamespaces(ResourceType resourceType) {
 		ZipFile zipFile;
 		try {
 			zipFile = this.getZipFile();
@@ -70,7 +69,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 		while (enumeration.hasMoreElements()) {
 			ZipEntry zipEntry = (ZipEntry)enumeration.nextElement();
 			String string = zipEntry.getName();
-			if (string.startsWith(arg.method_21331() + "/")) {
+			if (string.startsWith(resourceType.getName() + "/")) {
 				List<String> list = Lists.newArrayList(TYPE_NAMESPACE_SPLITTER.split(string));
 				if (list.size() > 1) {
 					String string2 = (String)list.get(1);
@@ -99,7 +98,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 	}
 
 	@Override
-	public Collection<Identifier> method_21328(class_4455 arg, String string, int i, Predicate<String> predicate) {
+	public Collection<Identifier> findResources(ResourceType resourceType, String string, int i, Predicate<String> predicate) {
 		ZipFile zipFile;
 		try {
 			zipFile = this.getZipFile();
@@ -109,7 +108,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 
 		Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
 		List<Identifier> list = Lists.newArrayList();
-		String string2 = arg.method_21331() + "/";
+		String string2 = resourceType.getName() + "/";
 
 		while (enumeration.hasMoreElements()) {
 			ZipEntry zipEntry = (ZipEntry)enumeration.nextElement();

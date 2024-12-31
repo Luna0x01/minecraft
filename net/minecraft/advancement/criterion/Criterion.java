@@ -2,49 +2,49 @@ package net.minecraft.advancement.criterion;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
-import net.minecraft.advancement.AdvancementFile;
-import net.minecraft.advancement.SimpleAdvancement;
+import net.minecraft.advancement.Advancement;
+import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.util.Identifier;
 
-public interface Criterion<T extends CriterionInstance> {
-	Identifier getIdentifier();
+public interface Criterion<T extends CriterionConditions> {
+	Identifier getId();
 
-	void method_14973(AdvancementFile file, Criterion.class_3353<T> arg);
+	void beginTrackingCondition(PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<T> conditionsContainer);
 
-	void method_14974(AdvancementFile file, Criterion.class_3353<T> arg);
+	void endTrackingCondition(PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<T> conditionsContainer);
 
-	void removeAdvancementFile(AdvancementFile file);
+	void endTracking(PlayerAdvancementTracker playerAdvancementTracker);
 
-	T fromJson(JsonObject object, JsonDeserializationContext ctx);
+	T conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext);
 
-	public static class class_3353<T extends CriterionInstance> {
-		private final T field_16406;
-		private final SimpleAdvancement advancement;
-		private final String field_16408;
+	public static class ConditionsContainer<T extends CriterionConditions> {
+		private final T conditions;
+		private final Advancement advancement;
+		private final String id;
 
-		public class_3353(T criterionInstance, SimpleAdvancement simpleAdvancement, String string) {
-			this.field_16406 = criterionInstance;
-			this.advancement = simpleAdvancement;
-			this.field_16408 = string;
+		public ConditionsContainer(T criterionConditions, Advancement advancement, String string) {
+			this.conditions = criterionConditions;
+			this.advancement = advancement;
+			this.id = string;
 		}
 
-		public T method_14975() {
-			return this.field_16406;
+		public T getConditions() {
+			return this.conditions;
 		}
 
-		public void method_14976(AdvancementFile file) {
-			file.method_14919(this.advancement, this.field_16408);
+		public void apply(PlayerAdvancementTracker playerAdvancementTracker) {
+			playerAdvancementTracker.grantCriterion(this.advancement, this.id);
 		}
 
-		public boolean equals(Object other) {
-			if (this == other) {
+		public boolean equals(Object object) {
+			if (this == object) {
 				return true;
-			} else if (other != null && this.getClass() == other.getClass()) {
-				Criterion.class_3353<?> lv = (Criterion.class_3353<?>)other;
-				if (!this.field_16406.equals(lv.field_16406)) {
+			} else if (object != null && this.getClass() == object.getClass()) {
+				Criterion.ConditionsContainer<?> conditionsContainer = (Criterion.ConditionsContainer<?>)object;
+				if (!this.conditions.equals(conditionsContainer.conditions)) {
 					return false;
 				} else {
-					return !this.advancement.equals(lv.advancement) ? false : this.field_16408.equals(lv.field_16408);
+					return !this.advancement.equals(conditionsContainer.advancement) ? false : this.id.equals(conditionsContainer.id);
 				}
 			} else {
 				return false;
@@ -52,9 +52,9 @@ public interface Criterion<T extends CriterionInstance> {
 		}
 
 		public int hashCode() {
-			int i = this.field_16406.hashCode();
+			int i = this.conditions.hashCode();
 			i = 31 * i + this.advancement.hashCode();
-			return 31 * i + this.field_16408.hashCode();
+			return 31 * i + this.id.hashCode();
 		}
 	}
 }

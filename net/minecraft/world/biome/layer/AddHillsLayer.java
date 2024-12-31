@@ -1,124 +1,124 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.class_4035;
-import net.minecraft.class_4036;
-import net.minecraft.class_4040;
-import net.minecraft.class_4046;
-import net.minecraft.class_4053;
-import net.minecraft.class_4059;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public enum AddHillsLayer implements class_4053, class_4059 {
-	INSTANCE;
+public enum AddHillsLayer implements MergingLayer, NorthWestCoordinateTransformer {
+	field_16134;
 
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final int field_19635 = Registry.BIOME.getRawId(Biomes.BIRCH_FOREST);
-	private static final int field_19636 = Registry.BIOME.getRawId(Biomes.BIRCH_FOREST_HILLS);
-	private static final int field_19637 = Registry.BIOME.getRawId(Biomes.DESERT);
-	private static final int field_19638 = Registry.BIOME.getRawId(Biomes.DESERT_HILLS);
-	private static final int field_19639 = Registry.BIOME.getRawId(Biomes.EXTREME_HILLS);
-	private static final int field_19640 = Registry.BIOME.getRawId(Biomes.EXTREME_HILLS_WITH_TREES);
-	private static final int field_19641 = Registry.BIOME.getRawId(Biomes.FOREST);
-	private static final int field_19642 = Registry.BIOME.getRawId(Biomes.FOREST_HILLS);
-	private static final int field_19643 = Registry.BIOME.getRawId(Biomes.ICE_FLATS);
-	private static final int field_19644 = Registry.BIOME.getRawId(Biomes.ICE_MOUNTAINS);
-	private static final int field_19645 = Registry.BIOME.getRawId(Biomes.JUNGLE);
-	private static final int field_19646 = Registry.BIOME.getRawId(Biomes.JUNGLE_HILLS);
-	private static final int field_19647 = Registry.BIOME.getRawId(Biomes.MESA);
-	private static final int field_19648 = Registry.BIOME.getRawId(Biomes.WOODED_BADLANDS_PLATEAU);
-	private static final int field_19649 = Registry.BIOME.getRawId(Biomes.PLAINS);
-	private static final int field_19650 = Registry.BIOME.getRawId(Biomes.GIANT_TREE_TAIGA);
-	private static final int field_19651 = Registry.BIOME.getRawId(Biomes.GIANT_TREE_TAIGA_HILLS);
-	private static final int field_19652 = Registry.BIOME.getRawId(Biomes.ROOFED_FOREST);
-	private static final int field_19653 = Registry.BIOME.getRawId(Biomes.SAVANNA);
-	private static final int field_19654 = Registry.BIOME.getRawId(Biomes.SAVANNA_PLATEAU);
-	private static final int field_19655 = Registry.BIOME.getRawId(Biomes.TAIGA);
-	private static final int field_19656 = Registry.BIOME.getRawId(Biomes.TAIGA_COLD);
-	private static final int field_19657 = Registry.BIOME.getRawId(Biomes.TAIGA_COLD_HILLS);
-	private static final int field_19658 = Registry.BIOME.getRawId(Biomes.TAIGA_HILLS);
+	private static final int BIRCH_FOREST_ID = Registry.BIOME.getRawId(Biomes.field_9412);
+	private static final int BIRCH_FOREST_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9421);
+	private static final int DESERT_ID = Registry.BIOME.getRawId(Biomes.field_9424);
+	private static final int DESERT_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9466);
+	private static final int MOUNTAINS_ID = Registry.BIOME.getRawId(Biomes.field_9472);
+	private static final int WOODED_MOUNTAINS_ID = Registry.BIOME.getRawId(Biomes.field_9460);
+	private static final int FOREST_ID = Registry.BIOME.getRawId(Biomes.field_9409);
+	private static final int WOODED_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9459);
+	private static final int SNOWY_TUNDRA_ID = Registry.BIOME.getRawId(Biomes.field_9452);
+	private static final int SNOWY_MOUNTAINS_ID = Registry.BIOME.getRawId(Biomes.field_9444);
+	private static final int JUNGLE_ID = Registry.BIOME.getRawId(Biomes.field_9417);
+	private static final int JUNGLE_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9432);
+	private static final int BAMBOO_JUNGLE_ID = Registry.BIOME.getRawId(Biomes.field_9440);
+	private static final int BAMBOO_JUNGLE_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9468);
+	private static final int BADLANDS_ID = Registry.BIOME.getRawId(Biomes.field_9415);
+	private static final int WOODED_BADLANDS_PLATEAU_ID = Registry.BIOME.getRawId(Biomes.field_9410);
+	private static final int PLAINS_ID = Registry.BIOME.getRawId(Biomes.field_9451);
+	private static final int GIANT_TREE_TAIGA_ID = Registry.BIOME.getRawId(Biomes.field_9477);
+	private static final int GIANT_TREE_TAIGA_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9429);
+	private static final int DARK_FOREST_ID = Registry.BIOME.getRawId(Biomes.field_9475);
+	private static final int SAVANNA_ID = Registry.BIOME.getRawId(Biomes.field_9449);
+	private static final int SAVANNA_PLATEAU_ID = Registry.BIOME.getRawId(Biomes.field_9430);
+	private static final int TAIGA_ID = Registry.BIOME.getRawId(Biomes.field_9420);
+	private static final int SNOWY_TAIGA_ID = Registry.BIOME.getRawId(Biomes.field_9454);
+	private static final int SNOWY_TAIGA_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9425);
+	private static final int TAIGA_HILLS_ID = Registry.BIOME.getRawId(Biomes.field_9428);
 
 	@Override
-	public int method_17888(class_4040 arg, class_4036 arg2, class_4035 arg3, class_4035 arg4, int i, int j) {
-		int k = arg3.method_17837(i + 1, j + 1);
-		int l = arg4.method_17837(i + 1, j + 1);
+	public int sample(LayerRandomnessSource layerRandomnessSource, LayerSampler layerSampler, LayerSampler layerSampler2, int i, int j) {
+		int k = layerSampler.sample(this.transformX(i + 1), this.transformZ(j + 1));
+		int l = layerSampler2.sample(this.transformX(i + 1), this.transformZ(j + 1));
 		if (k > 255) {
 			LOGGER.debug("old! {}", k);
 		}
 
 		int m = (l - 2) % 29;
-		if (!class_4046.method_17863(k) && l >= 2 && m == 1) {
-			Biome biome = Registry.BIOME.getByRawId(k);
+		if (!BiomeLayers.isShallowOcean(k) && l >= 2 && m == 1) {
+			Biome biome = Registry.BIOME.get(k);
 			if (biome == null || !biome.hasParent()) {
-				Biome biome2 = Biome.getBiomeFromList(biome);
+				Biome biome2 = Biome.getParentBiome(biome);
 				return biome2 == null ? k : Registry.BIOME.getRawId(biome2);
 			}
 		}
 
-		if (arg.method_17850(3) == 0 || m == 0) {
+		if (layerRandomnessSource.nextInt(3) == 0 || m == 0) {
 			int n = k;
-			if (k == field_19637) {
-				n = field_19638;
-			} else if (k == field_19641) {
-				n = field_19642;
-			} else if (k == field_19635) {
-				n = field_19636;
-			} else if (k == field_19652) {
-				n = field_19649;
-			} else if (k == field_19655) {
-				n = field_19658;
-			} else if (k == field_19650) {
-				n = field_19651;
-			} else if (k == field_19656) {
-				n = field_19657;
-			} else if (k == field_19649) {
-				n = arg.method_17850(3) == 0 ? field_19642 : field_19641;
-			} else if (k == field_19643) {
-				n = field_19644;
-			} else if (k == field_19645) {
-				n = field_19646;
-			} else if (k == class_4046.field_19609) {
-				n = class_4046.field_19614;
-			} else if (k == class_4046.field_19608) {
-				n = class_4046.field_19613;
-			} else if (k == class_4046.field_19610) {
-				n = class_4046.field_19615;
-			} else if (k == class_4046.field_19611) {
-				n = class_4046.field_19616;
-			} else if (k == field_19639) {
-				n = field_19640;
-			} else if (k == field_19653) {
-				n = field_19654;
-			} else if (class_4046.method_17858(k, field_19648)) {
-				n = field_19647;
-			} else if ((k == class_4046.field_19614 || k == class_4046.field_19613 || k == class_4046.field_19615 || k == class_4046.field_19616)
-				&& arg.method_17850(3) == 0) {
-				n = arg.method_17850(2) == 0 ? field_19649 : field_19641;
+			if (k == DESERT_ID) {
+				n = DESERT_HILLS_ID;
+			} else if (k == FOREST_ID) {
+				n = WOODED_HILLS_ID;
+			} else if (k == BIRCH_FOREST_ID) {
+				n = BIRCH_FOREST_HILLS_ID;
+			} else if (k == DARK_FOREST_ID) {
+				n = PLAINS_ID;
+			} else if (k == TAIGA_ID) {
+				n = TAIGA_HILLS_ID;
+			} else if (k == GIANT_TREE_TAIGA_ID) {
+				n = GIANT_TREE_TAIGA_HILLS_ID;
+			} else if (k == SNOWY_TAIGA_ID) {
+				n = SNOWY_TAIGA_HILLS_ID;
+			} else if (k == PLAINS_ID) {
+				n = layerRandomnessSource.nextInt(3) == 0 ? WOODED_HILLS_ID : FOREST_ID;
+			} else if (k == SNOWY_TUNDRA_ID) {
+				n = SNOWY_MOUNTAINS_ID;
+			} else if (k == JUNGLE_ID) {
+				n = JUNGLE_HILLS_ID;
+			} else if (k == BAMBOO_JUNGLE_ID) {
+				n = BAMBOO_JUNGLE_HILLS_ID;
+			} else if (k == BiomeLayers.OCEAN_ID) {
+				n = BiomeLayers.DEEP_OCEAN_ID;
+			} else if (k == BiomeLayers.LUKEWARM_OCEAN_ID) {
+				n = BiomeLayers.DEEP_LUKEWARM_OCEAN_ID;
+			} else if (k == BiomeLayers.COLD_OCEAN_ID) {
+				n = BiomeLayers.DEEP_COLD_OCEAN_ID;
+			} else if (k == BiomeLayers.FROZEN_OCEAN_ID) {
+				n = BiomeLayers.DEEP_FROZEN_OCEAN_ID;
+			} else if (k == MOUNTAINS_ID) {
+				n = WOODED_MOUNTAINS_ID;
+			} else if (k == SAVANNA_ID) {
+				n = SAVANNA_PLATEAU_ID;
+			} else if (BiomeLayers.areSimilar(k, WOODED_BADLANDS_PLATEAU_ID)) {
+				n = BADLANDS_ID;
+			} else if ((
+					k == BiomeLayers.DEEP_OCEAN_ID || k == BiomeLayers.DEEP_LUKEWARM_OCEAN_ID || k == BiomeLayers.DEEP_COLD_OCEAN_ID || k == BiomeLayers.DEEP_FROZEN_OCEAN_ID
+				)
+				&& layerRandomnessSource.nextInt(3) == 0) {
+				n = layerRandomnessSource.nextInt(2) == 0 ? PLAINS_ID : FOREST_ID;
 			}
 
 			if (m == 0 && n != k) {
-				Biome biome3 = Biome.getBiomeFromList(Registry.BIOME.getByRawId(n));
+				Biome biome3 = Biome.getParentBiome(Registry.BIOME.get(n));
 				n = biome3 == null ? k : Registry.BIOME.getRawId(biome3);
 			}
 
 			if (n != k) {
 				int o = 0;
-				if (class_4046.method_17858(arg3.method_17837(i + 1, j + 0), k)) {
+				if (BiomeLayers.areSimilar(layerSampler.sample(this.transformX(i + 1), this.transformZ(j + 0)), k)) {
 					o++;
 				}
 
-				if (class_4046.method_17858(arg3.method_17837(i + 2, j + 1), k)) {
+				if (BiomeLayers.areSimilar(layerSampler.sample(this.transformX(i + 2), this.transformZ(j + 1)), k)) {
 					o++;
 				}
 
-				if (class_4046.method_17858(arg3.method_17837(i + 0, j + 1), k)) {
+				if (BiomeLayers.areSimilar(layerSampler.sample(this.transformX(i + 0), this.transformZ(j + 1)), k)) {
 					o++;
 				}
 
-				if (class_4046.method_17858(arg3.method_17837(i + 1, j + 2), k)) {
+				if (BiomeLayers.areSimilar(layerSampler.sample(this.transformX(i + 1), this.transformZ(j + 2)), k)) {
 					o++;
 				}
 

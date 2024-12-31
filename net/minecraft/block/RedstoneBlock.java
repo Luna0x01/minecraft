@@ -5,17 +5,17 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 
 public class RedstoneBlock extends Block {
-	public RedstoneBlock(Block.Builder builder) {
-		super(builder);
+	public RedstoneBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public boolean emitsRedstonePower(BlockState state) {
+	public boolean emitsRedstonePower(BlockState blockState) {
 		return true;
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+	public int getWeakRedstonePower(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
 		return 15;
 	}
 }

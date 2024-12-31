@@ -15,7 +15,7 @@ public class BannedPlayerEntry extends BanEntry<GameProfile> {
 	}
 
 	public BannedPlayerEntry(GameProfile gameProfile, @Nullable Date date, @Nullable String string, @Nullable Date date2, @Nullable String string2) {
-		super(gameProfile, date2, string, date2, string2);
+		super(gameProfile, date, string, date2, string2);
 	}
 
 	public BannedPlayerEntry(JsonObject jsonObject) {
@@ -32,14 +32,14 @@ public class BannedPlayerEntry extends BanEntry<GameProfile> {
 	}
 
 	@Override
-	public Text method_21379() {
+	public Text toText() {
 		GameProfile gameProfile = this.getKey();
 		return new LiteralText(gameProfile.getName() != null ? gameProfile.getName() : Objects.toString(gameProfile.getId(), "(Unknown)"));
 	}
 
-	private static GameProfile getProfileFromJson(JsonObject json) {
-		if (json.has("uuid") && json.has("name")) {
-			String string = json.get("uuid").getAsString();
+	private static GameProfile getProfileFromJson(JsonObject jsonObject) {
+		if (jsonObject.has("uuid") && jsonObject.has("name")) {
+			String string = jsonObject.get("uuid").getAsString();
 
 			UUID uUID;
 			try {
@@ -48,7 +48,7 @@ public class BannedPlayerEntry extends BanEntry<GameProfile> {
 				return null;
 			}
 
-			return new GameProfile(uUID, json.get("name").getAsString());
+			return new GameProfile(uUID, jsonObject.get("name").getAsString());
 		} else {
 			return null;
 		}

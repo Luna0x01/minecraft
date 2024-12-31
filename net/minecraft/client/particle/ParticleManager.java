@@ -1,33 +1,46 @@
 package net.minecraft.client.particle;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.mojang.blaze3d.platform.GlStateManager;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import java.util.ArrayDeque;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import net.minecraft.class_4204;
-import net.minecraft.class_4206;
-import net.minecraft.class_4210;
-import net.minecraft.class_4214;
-import net.minecraft.class_4342;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.texture.MissingSprite;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleType;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.crash.CrashCallable;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -35,105 +48,235 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 
-public class ParticleManager {
-	private static final Identifier PARTICLE_TEXTURE = new Identifier("textures/particle/particles.png");
+public class ParticleManager implements ResourceReloadListener {
+	private static final List<ParticleTextureSheet> PARTICLE_TEXTURE_SHEETS = ImmutableList.of(
+		ParticleTextureSheet.TERRAIN_SHEET,
+		ParticleTextureSheet.PARTICLE_SHEET_OPAQUE,
+		ParticleTextureSheet.PARTICLE_SHEET_LIT,
+		ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT,
+		ParticleTextureSheet.CUSTOM
+	);
 	protected World world;
-	private final ArrayDeque<Particle>[][] field_13439 = new ArrayDeque[4][];
-	private final Queue<EmitterParticle> field_13440 = Queues.newArrayDeque();
+	private final Map<ParticleTextureSheet, Queue<Particle>> particles = Maps.newIdentityHashMap();
+	private final Queue<EmitterParticle> newEmitterParticles = Queues.newArrayDeque();
 	private final TextureManager textureManager;
 	private final Random random = new Random();
-	private final Int2ObjectMap<ParticleFactory<?>> field_20632 = new Int2ObjectOpenHashMap();
-	private final Queue<Particle> field_13441 = Queues.newArrayDeque();
+	private final Int2ObjectMap<ParticleFactory<?>> factories = new Int2ObjectOpenHashMap();
+	private final Queue<Particle> newParticles = Queues.newArrayDeque();
+	private final Map<Identifier, ParticleManager.SimpleSpriteProvider> field_18300 = Maps.newHashMap();
+	private final SpriteAtlasTexture particleAtlasTexture = new SpriteAtlasTexture("textures/particle");
 
 	public ParticleManager(World world, TextureManager textureManager) {
+		textureManager.registerTextureUpdateable(SpriteAtlasTexture.PARTICLE_ATLAS_TEX, this.particleAtlasTexture);
 		this.world = world;
 		this.textureManager = textureManager;
-
-		for (int i = 0; i < 4; i++) {
-			this.field_13439[i] = new ArrayDeque[2];
-
-			for (int j = 0; j < 2; j++) {
-				this.field_13439[i][j] = Queues.newArrayDeque();
-			}
-		}
-
 		this.registerDefaultFactories();
 	}
 
 	private void registerDefaultFactories() {
-		this.method_19016(class_4342.field_21375, new SpellParticle.AmbientMobSpellFactory());
-		this.method_19016(class_4342.field_21376, new EmotionParticle.Factory());
-		this.method_19016(class_4342.field_21377, new BarrierParticle.Factory());
-		this.method_19016(class_4342.BLOCK, new BlockDustParticle.Factory());
-		this.method_19016(class_4342.field_21379, new WaterBubbleParticle.Factory());
-		this.method_19016(class_4342.field_21380, new class_4204.class_4205());
-		this.method_19016(class_4342.field_21370, new class_4206.class_4207());
-		this.method_19016(class_4342.field_21381, new CloudParticle.Factory());
-		this.method_19016(class_4342.field_21382, new DamageParticle.CritFactory());
-		this.method_19016(class_4342.field_21371, new class_4214.class_4215());
-		this.method_19016(class_4342.field_21383, new DamageParticle.Factory());
-		this.method_19016(class_4342.field_21384, new DragonBreathParticle.Factory());
-		this.method_19016(class_4342.field_21374, new VillageParticle.class_4212());
-		this.method_19016(class_4342.field_21385, new BlockLeakParticle.LavaDripFactory());
-		this.method_19016(class_4342.field_21386, new BlockLeakParticle.WaterDripFactory());
-		this.method_19016(class_4342.DUST, new RedstoneParticle.Factory());
-		this.method_19016(class_4342.field_21388, new SpellParticle.SpellFactory());
-		this.method_19016(class_4342.field_21389, new ElderGuardianAppearanceParticle.Factory());
-		this.method_19016(class_4342.field_21390, new DamageParticle.CritMagicFactory());
-		this.method_19016(class_4342.field_21391, new EnchantGlyphParticle.Factory());
-		this.method_19016(class_4342.field_21392, new EndRodParticle.Factory());
-		this.method_19016(class_4342.field_21393, new SpellParticle.MobSpellFactory());
-		this.method_19016(class_4342.field_21394, new ExplosionEmitterParticle.Factory());
-		this.method_19016(class_4342.field_21395, new LargeExplosionParticle.Factory());
-		this.method_19016(class_4342.FALLING_DUST, new FallingDustParticle.Factory());
-		this.method_19016(class_4342.field_21397, new FireworksSparkParticle.Factory());
-		this.method_19016(class_4342.field_21398, new FishingParticle.Factory());
-		this.method_19016(class_4342.field_21399, new FlameParticle.Factory());
-		this.method_19016(class_4342.field_21400, new VillageParticle.HappyVillagerFactory());
-		this.method_19016(class_4342.field_21351, new EmotionParticle.HealthFactory());
-		this.method_19016(class_4342.field_21352, new SpellParticle.InstantSpellFactory());
-		this.method_19016(class_4342.ITEM, new SnowballParticle.Factory());
-		this.method_19016(class_4342.field_21354, new SnowballParticle.SlimeFactory());
-		this.method_19016(class_4342.field_21355, new SnowballParticle.SnowballFactory());
-		this.method_19016(class_4342.field_21356, new LargeFireSmokeParticle.Factory());
-		this.method_19016(class_4342.field_21357, new LavaEmberParticle.Factory());
-		this.method_19016(class_4342.field_21358, new VillageParticle.TownAuraFactory());
-		this.method_19016(class_4342.field_21373, new EnchantGlyphParticle.class_4208());
-		this.method_19016(class_4342.field_21359, new NoteParticle.Factory());
-		this.method_19016(class_4342.field_21360, new ExplosionSmokeParticle.Factory());
-		this.method_19016(class_4342.field_21361, new PortalParticle.NetherPortalFactory());
-		this.method_19016(class_4342.field_21362, new RainSplashParticle.Factory());
-		this.method_19016(class_4342.field_21363, new FireSmokeParticle.Factory());
-		this.method_19016(class_4342.field_21364, new SpitParticle.Factory());
-		this.method_19016(class_4342.field_21365, new SweepAttackParticle.Factory());
-		this.method_19016(class_4342.field_21366, new TotemParticle.Factory());
-		this.method_19016(class_4342.field_21372, new class_4210.class_4211());
-		this.method_19016(class_4342.field_21367, new SuspendedParticle.Factory());
-		this.method_19016(class_4342.field_21368, new WaterSplashParticle.Factory());
-		this.method_19016(class_4342.field_21369, new SpellParticle.WitchSpellFactory());
+		this.registerFactory(ParticleTypes.field_11225, SpellParticle.EntityAmbientFactory::new);
+		this.registerFactory(ParticleTypes.field_11231, EmotionParticle.AngryVillagerFactory::new);
+		this.registerFactory(ParticleTypes.field_11235, new BarrierParticle.Factory());
+		this.registerFactory(ParticleTypes.field_11217, new BlockCrackParticle.Factory());
+		this.registerFactory(ParticleTypes.field_11247, BubbleColumnUpParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11238, WaterBubbleParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11241, BubblePopParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_17430, CampfireSmokeParticle.CosySmokeFactory::new);
+		this.registerFactory(ParticleTypes.field_17431, CampfireSmokeParticle.SignalSmokeFactory::new);
+		this.registerFactory(ParticleTypes.field_11204, CloudParticle.CloudFactory::new);
+		this.registerFactory(ParticleTypes.field_17741, SuspendParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11205, DamageParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11243, CurrentDownParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11209, DamageParticle.DefaultFactory::new);
+		this.registerFactory(ParticleTypes.field_11216, DragonBreathParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11222, SuspendParticle.DolphinFactory::new);
+		this.registerFactory(ParticleTypes.field_11223, BlockLeakParticle.DrippingLavaFactory::new);
+		this.registerFactory(ParticleTypes.field_18304, BlockLeakParticle.FallingLavaFactory::new);
+		this.registerFactory(ParticleTypes.field_18305, BlockLeakParticle.LandingLavaFactory::new);
+		this.registerFactory(ParticleTypes.field_11232, BlockLeakParticle.DrippingWaterFactory::new);
+		this.registerFactory(ParticleTypes.field_18306, BlockLeakParticle.FallingWaterFactory::new);
+		this.registerFactory(ParticleTypes.field_11212, RedDustParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11245, SpellParticle.DefaultFactory::new);
+		this.registerFactory(ParticleTypes.field_11250, new ElderGuardianAppearanceParticle.Factory());
+		this.registerFactory(ParticleTypes.field_11208, DamageParticle.EnchantedHitFactory::new);
+		this.registerFactory(ParticleTypes.field_11215, EnchantGlyphParticle.EnchantFactory::new);
+		this.registerFactory(ParticleTypes.field_11207, EndRodParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11226, SpellParticle.EntityFactory::new);
+		this.registerFactory(ParticleTypes.field_11221, new ExplosionEmitterParticle.Factory());
+		this.registerFactory(ParticleTypes.field_11236, ExplosionLargeParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11206, BlockFallingDustParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11248, FireworksSparkParticle.ExplosionFactory::new);
+		this.registerFactory(ParticleTypes.field_11244, FishingParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11240, FlameParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_17909, FireworksSparkParticle.FlashFactory::new);
+		this.registerFactory(ParticleTypes.field_11211, SuspendParticle.HappyVillagerFactory::new);
+		this.registerFactory(ParticleTypes.field_11201, EmotionParticle.HeartFactory::new);
+		this.registerFactory(ParticleTypes.field_11213, SpellParticle.InstantFactory::new);
+		this.registerFactory(ParticleTypes.field_11218, new CrackParticle.ItemFactory());
+		this.registerFactory(ParticleTypes.field_11246, new CrackParticle.SlimeballFactory());
+		this.registerFactory(ParticleTypes.field_11230, new CrackParticle.SnowballFactory());
+		this.registerFactory(ParticleTypes.field_11237, FireSmokeLargeParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11239, LavaEmberParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11219, SuspendParticle.MyceliumFactory::new);
+		this.registerFactory(ParticleTypes.field_11229, EnchantGlyphParticle.NautilusFactory::new);
+		this.registerFactory(ParticleTypes.field_11224, NoteParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11203, ExplosionSmokeParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11214, PortalParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11242, RainSplashParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11251, FireSmokeParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11234, CloudParticle.SneezeFactory::new);
+		this.registerFactory(ParticleTypes.field_11228, SpitParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11227, SweepAttackParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11220, TotemParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11233, SquidInkParticle.Factory::new);
+		this.registerFactory(ParticleTypes.field_11210, WaterSuspendParticle.UnderwaterFactory::new);
+		this.registerFactory(ParticleTypes.field_11202, WaterSplashParticle.SplashFactory::new);
+		this.registerFactory(ParticleTypes.field_11249, SpellParticle.WitchFactory::new);
 	}
 
-	public <T extends ParticleEffect> void method_19016(ParticleType<T> particleType, ParticleFactory<T> particleFactory) {
-		this.field_20632.put(Registry.PARTICLE_TYPE.getRawId(particleType), particleFactory);
+	private <T extends ParticleEffect> void registerFactory(ParticleType<T> particleType, ParticleFactory<T> particleFactory) {
+		this.factories.put(Registry.PARTICLE_TYPE.getRawId(particleType), particleFactory);
 	}
 
-	public void method_9707(Entity entity, ParticleEffect particleEffect) {
-		this.field_13440.add(new EmitterParticle(this.world, entity, particleEffect));
+	private <T extends ParticleEffect> void registerFactory(ParticleType<T> particleType, ParticleManager.class_4091<T> arg) {
+		ParticleManager.SimpleSpriteProvider simpleSpriteProvider = new ParticleManager.SimpleSpriteProvider();
+		this.field_18300.put(Registry.PARTICLE_TYPE.getId(particleType), simpleSpriteProvider);
+		this.factories.put(Registry.PARTICLE_TYPE.getRawId(particleType), arg.create(simpleSpriteProvider));
 	}
 
-	public void method_13843(Entity entity, ParticleEffect particleEffect, int i) {
-		this.field_13440.add(new EmitterParticle(this.world, entity, particleEffect, i));
+	@Override
+	public CompletableFuture<Void> reload(
+		ResourceReloadListener.Synchronizer synchronizer,
+		ResourceManager resourceManager,
+		Profiler profiler,
+		Profiler profiler2,
+		Executor executor,
+		Executor executor2
+	) {
+		Map<Identifier, List<Identifier>> map = Maps.newConcurrentMap();
+		CompletableFuture<?>[] completableFutures = (CompletableFuture<?>[])Registry.PARTICLE_TYPE
+			.getIds()
+			.stream()
+			.map(identifier -> CompletableFuture.runAsync(() -> this.method_18836(resourceManager, identifier, map), executor))
+			.toArray(CompletableFuture[]::new);
+		return CompletableFuture.allOf(completableFutures)
+			.thenApplyAsync(void_ -> {
+				profiler.startTick();
+				profiler.push("stitching");
+				Set<Identifier> set = (Set<Identifier>)map.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+				SpriteAtlasTexture.Data data = this.particleAtlasTexture.stitch(resourceManager, set, profiler);
+				profiler.pop();
+				profiler.endTick();
+				return data;
+			}, executor)
+			.thenCompose(synchronizer::whenPrepared)
+			.thenAcceptAsync(
+				data -> {
+					profiler2.startTick();
+					profiler2.push("upload");
+					this.particleAtlasTexture.upload(data);
+					profiler2.swap("bindSpriteSets");
+					Sprite sprite = this.particleAtlasTexture.getSprite(MissingSprite.getMissingSpriteId());
+					map.forEach(
+						(identifier, list) -> {
+							ImmutableList<Sprite> immutableList = list.isEmpty()
+								? ImmutableList.of(sprite)
+								: (ImmutableList)list.stream().map(this.particleAtlasTexture::getSprite).collect(ImmutableList.toImmutableList());
+							((ParticleManager.SimpleSpriteProvider)this.field_18300.get(identifier)).setSprites(immutableList);
+						}
+					);
+					profiler2.pop();
+					profiler2.endTick();
+				},
+				executor2
+			);
+	}
+
+	public void clearAtlas() {
+		this.particleAtlasTexture.clear();
+	}
+
+	private void method_18836(ResourceManager resourceManager, Identifier identifier, Map<Identifier, List<Identifier>> map) {
+		Identifier identifier2 = new Identifier(identifier.getNamespace(), "particles/" + identifier.getPath() + ".json");
+
+		try {
+			Resource resource = resourceManager.getResource(identifier2);
+			Throwable var6 = null;
+
+			try {
+				Reader reader = new InputStreamReader(resource.getInputStream(), Charsets.UTF_8);
+				Throwable var8 = null;
+
+				try {
+					ParticleTextureData particleTextureData = ParticleTextureData.load(JsonHelper.deserialize(reader));
+					List<Identifier> list = particleTextureData.getTextureList();
+					boolean bl = this.field_18300.containsKey(identifier);
+					if (list == null) {
+						if (bl) {
+							throw new IllegalStateException("Missing texture list for particle " + identifier);
+						}
+					} else {
+						if (!bl) {
+							throw new IllegalStateException("Redundant texture list for particle " + identifier);
+						}
+
+						map.put(identifier, list);
+					}
+				} catch (Throwable var35) {
+					var8 = var35;
+					throw var35;
+				} finally {
+					if (reader != null) {
+						if (var8 != null) {
+							try {
+								reader.close();
+							} catch (Throwable var34) {
+								var8.addSuppressed(var34);
+							}
+						} else {
+							reader.close();
+						}
+					}
+				}
+			} catch (Throwable var37) {
+				var6 = var37;
+				throw var37;
+			} finally {
+				if (resource != null) {
+					if (var6 != null) {
+						try {
+							resource.close();
+						} catch (Throwable var33) {
+							var6.addSuppressed(var33);
+						}
+					} else {
+						resource.close();
+					}
+				}
+			}
+		} catch (IOException var39) {
+			throw new IllegalStateException("Failed to load description for particle " + identifier, var39);
+		}
+	}
+
+	public void addEmitter(Entity entity, ParticleEffect particleEffect) {
+		this.newEmitterParticles.add(new EmitterParticle(this.world, entity, particleEffect));
+	}
+
+	public void addEmitter(Entity entity, ParticleEffect particleEffect, int i) {
+		this.newEmitterParticles.add(new EmitterParticle(this.world, entity, particleEffect, i));
 	}
 
 	@Nullable
-	public Particle method_19015(ParticleEffect particleEffect, double d, double e, double f, double g, double h, double i) {
-		Particle particle = this.method_19018(particleEffect, d, e, f, g, h, i);
+	public Particle addParticle(ParticleEffect particleEffect, double d, double e, double f, double g, double h, double i) {
+		Particle particle = this.createParticle(particleEffect, d, e, f, g, h, i);
 		if (particle != null) {
-			this.method_12256(particle);
+			this.addParticle(particle);
 			return particle;
 		} else {
 			return null;
@@ -141,67 +284,51 @@ public class ParticleManager {
 	}
 
 	@Nullable
-	private <T extends ParticleEffect> Particle method_19018(T particleEffect, double d, double e, double f, double g, double h, double i) {
-		ParticleFactory<T> particleFactory = (ParticleFactory<T>)this.field_20632
-			.get(Registry.PARTICLE_TYPE.getRawId((ParticleType<? extends ParticleEffect>)particleEffect.particleType()));
-		return particleFactory == null ? null : particleFactory.method_19020(particleEffect, this.world, d, e, f, g, h, i);
+	private <T extends ParticleEffect> Particle createParticle(T particleEffect, double d, double e, double f, double g, double h, double i) {
+		ParticleFactory<T> particleFactory = (ParticleFactory<T>)this.factories
+			.get(Registry.PARTICLE_TYPE.getRawId((ParticleType<? extends ParticleEffect>)particleEffect.getType()));
+		return particleFactory == null ? null : particleFactory.createParticle(particleEffect, this.world, d, e, f, g, h, i);
 	}
 
-	public void method_12256(Particle particle) {
-		this.field_13441.add(particle);
+	public void addParticle(Particle particle) {
+		this.newParticles.add(particle);
 	}
 
 	public void tick() {
-		for (int i = 0; i < 4; i++) {
-			this.method_12255(i);
-		}
-
-		if (!this.field_13440.isEmpty()) {
+		this.particles.forEach((particleTextureSheet, queue) -> {
+			this.world.getProfiler().push(particleTextureSheet.toString());
+			this.tickParticles(queue);
+			this.world.getProfiler().pop();
+		});
+		if (!this.newEmitterParticles.isEmpty()) {
 			List<EmitterParticle> list = Lists.newArrayList();
 
-			for (EmitterParticle emitterParticle : this.field_13440) {
-				emitterParticle.method_12241();
-				if (!emitterParticle.method_12253()) {
+			for (EmitterParticle emitterParticle : this.newEmitterParticles) {
+				emitterParticle.tick();
+				if (!emitterParticle.isAlive()) {
 					list.add(emitterParticle);
 				}
 			}
 
-			this.field_13440.removeAll(list);
+			this.newEmitterParticles.removeAll(list);
 		}
 
-		if (!this.field_13441.isEmpty()) {
-			for (Particle particle = (Particle)this.field_13441.poll(); particle != null; particle = (Particle)this.field_13441.poll()) {
-				int j = particle.getLayer();
-				int k = particle.method_12248() ? 0 : 1;
-				if (this.field_13439[j][k].size() >= 16384) {
-					this.field_13439[j][k].removeFirst();
-				}
-
-				this.field_13439[j][k].add(particle);
+		Particle particle;
+		if (!this.newParticles.isEmpty()) {
+			while ((particle = (Particle)this.newParticles.poll()) != null) {
+				((Queue)this.particles.computeIfAbsent(particle.getType(), particleTextureSheet -> EvictingQueue.create(16384))).add(particle);
 			}
 		}
 	}
 
-	private void method_12255(int i) {
-		this.world.profiler.push(String.valueOf(i));
-
-		for (int j = 0; j < 2; j++) {
-			this.world.profiler.push(String.valueOf(j));
-			this.method_12257(this.field_13439[i][j]);
-			this.world.profiler.pop();
-		}
-
-		this.world.profiler.pop();
-	}
-
-	private void method_12257(Queue<Particle> queue) {
-		if (!queue.isEmpty()) {
-			Iterator<Particle> iterator = queue.iterator();
+	private void tickParticles(Collection<Particle> collection) {
+		if (!collection.isEmpty()) {
+			Iterator<Particle> iterator = collection.iterator();
 
 			while (iterator.hasNext()) {
 				Particle particle = (Particle)iterator.next();
 				this.tickParticle(particle);
-				if (!particle.method_12253()) {
+				if (!particle.isAlive()) {
 					iterator.remove();
 				}
 			}
@@ -210,87 +337,47 @@ public class ParticleManager {
 
 	private void tickParticle(Particle particle) {
 		try {
-			particle.method_12241();
-		} catch (Throwable var6) {
-			CrashReport crashReport = CrashReport.create(var6, "Ticking Particle");
+			particle.tick();
+		} catch (Throwable var5) {
+			CrashReport crashReport = CrashReport.create(var5, "Ticking Particle");
 			CrashReportSection crashReportSection = crashReport.addElement("Particle being ticked");
-			int i = particle.getLayer();
 			crashReportSection.add("Particle", particle::toString);
-			crashReportSection.add("Particle Type", (CrashCallable<String>)(() -> {
-				if (i == 0) {
-					return "MISC_TEXTURE";
-				} else if (i == 1) {
-					return "TERRAIN_TEXTURE";
-				} else {
-					return i == 3 ? "ENTITY_PARTICLE_TEXTURE" : "Unknown - " + i;
-				}
-			}));
+			crashReportSection.add("Particle Type", particle.getType()::toString);
 			throw new CrashException(crashReport);
 		}
 	}
 
-	public void renderParticles(Entity entity, float tickDelta) {
-		float f = Camera.getRotationX();
-		float g = Camera.getRotationZ();
-		float h = Camera.getRotationYZ();
-		float i = Camera.getRotationXY();
-		float j = Camera.getRotationXZ();
-		Particle.field_1722 = entity.prevTickX + (entity.x - entity.prevTickX) * (double)tickDelta;
-		Particle.field_1723 = entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta;
-		Particle.field_1724 = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)tickDelta;
-		Particle.field_14949 = entity.getRotationVector(tickDelta);
-		GlStateManager.enableBlend();
-		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
-		GlStateManager.alphaFunc(516, 0.003921569F);
+	public void renderParticles(Camera camera, float f) {
+		float g = MathHelper.cos(camera.getYaw() * (float) (Math.PI / 180.0));
+		float h = MathHelper.sin(camera.getYaw() * (float) (Math.PI / 180.0));
+		float i = -h * MathHelper.sin(camera.getPitch() * (float) (Math.PI / 180.0));
+		float j = g * MathHelper.sin(camera.getPitch() * (float) (Math.PI / 180.0));
+		float k = MathHelper.cos(camera.getPitch() * (float) (Math.PI / 180.0));
+		Particle.cameraX = camera.getPos().x;
+		Particle.cameraY = camera.getPos().y;
+		Particle.cameraZ = camera.getPos().z;
 
-		for (int k = 0; k < 3; k++) {
-			for (int l = 0; l < 2; l++) {
-				if (!this.field_13439[k][l].isEmpty()) {
-					switch (l) {
-						case 0:
-							GlStateManager.depthMask(false);
-							break;
-						case 1:
-							GlStateManager.depthMask(true);
+		for (ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
+			Iterable<Particle> iterable = (Iterable<Particle>)this.particles.get(particleTextureSheet);
+			if (iterable != null) {
+				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				Tessellator tessellator = Tessellator.getInstance();
+				BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+				particleTextureSheet.begin(bufferBuilder, this.textureManager);
+
+				for (Particle particle : iterable) {
+					try {
+						particle.buildGeometry(bufferBuilder, camera, f, g, k, h, i, j);
+					} catch (Throwable var18) {
+						CrashReport crashReport = CrashReport.create(var18, "Rendering Particle");
+						CrashReportSection crashReportSection = crashReport.addElement("Particle being rendered");
+						crashReportSection.add("Particle", particle::toString);
+						crashReportSection.add("Particle Type", particleTextureSheet::toString);
+						throw new CrashException(crashReport);
 					}
-
-					switch (k) {
-						case 0:
-						default:
-							this.textureManager.bindTexture(PARTICLE_TEXTURE);
-							break;
-						case 1:
-							this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-					}
-
-					GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-					Tessellator tessellator = Tessellator.getInstance();
-					BufferBuilder bufferBuilder = tessellator.getBuffer();
-					bufferBuilder.begin(7, VertexFormats.PARTICLE);
-
-					for (Particle particle : this.field_13439[k][l]) {
-						try {
-							particle.draw(bufferBuilder, entity, tickDelta, f, j, g, h, i);
-						} catch (Throwable var18) {
-							CrashReport crashReport = CrashReport.create(var18, "Rendering Particle");
-							CrashReportSection crashReportSection = crashReport.addElement("Particle being rendered");
-							int m = k;
-							crashReportSection.add("Particle", particle::toString);
-							crashReportSection.add("Particle Type", (CrashCallable<String>)(() -> {
-								if (m == 0) {
-									return "MISC_TEXTURE";
-								} else if (m == 1) {
-									return "TERRAIN_TEXTURE";
-								} else {
-									return m == 3 ? "ENTITY_PARTICLE_TEXTURE" : "Unknown - " + m;
-								}
-							}));
-							throw new CrashException(crashReport);
-						}
-					}
-
-					tessellator.draw();
 				}
+
+				particleTextureSheet.draw(tessellator);
 			}
 		}
 
@@ -299,45 +386,15 @@ public class ParticleManager {
 		GlStateManager.alphaFunc(516, 0.1F);
 	}
 
-	public void method_1299(Entity entity, float tickDelta) {
-		float f = Camera.getRotationX();
-		float g = Camera.getRotationZ();
-		float h = Camera.getRotationYZ();
-		float i = Camera.getRotationXY();
-		float j = Camera.getRotationXZ();
-		Particle.field_1722 = entity.prevTickX + (entity.x - entity.prevTickX) * (double)tickDelta;
-		Particle.field_1723 = entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta;
-		Particle.field_1724 = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)tickDelta;
-		Particle.field_14949 = entity.getRotationVector(tickDelta);
-
-		for (int k = 0; k < 2; k++) {
-			Queue<Particle> queue = this.field_13439[3][k];
-			if (!queue.isEmpty()) {
-				Tessellator tessellator = Tessellator.getInstance();
-				BufferBuilder bufferBuilder = tessellator.getBuffer();
-
-				for (Particle particle : queue) {
-					particle.draw(bufferBuilder, entity, tickDelta, f, j, g, h, i);
-				}
-			}
-		}
-	}
-
 	public void setWorld(@Nullable World world) {
 		this.world = world;
-
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 2; j++) {
-				this.field_13439[i][j].clear();
-			}
-		}
-
-		this.field_13440.clear();
+		this.particles.clear();
+		this.newEmitterParticles.clear();
 	}
 
-	public void addBlockBreakParticles(BlockPos pos, BlockState state) {
-		if (!state.isAir()) {
-			VoxelShape voxelShape = state.getOutlineShape(this.world, pos);
+	public void addBlockBreakParticles(BlockPos blockPos, BlockState blockState) {
+		if (!blockState.isAir()) {
+			VoxelShape voxelShape = blockState.getOutlineShape(this.world, blockPos);
 			double d = 0.25;
 			voxelShape.forEachBox(
 				(dx, e, f, g, h, i) -> {
@@ -357,9 +414,11 @@ public class ParticleManager {
 								double v = s * j + dx;
 								double w = t * k + e;
 								double x = u * l + f;
-								this.method_12256(
-									new BlockDustParticle(this.world, (double)pos.getX() + v, (double)pos.getY() + w, (double)pos.getZ() + x, s - 0.5, t - 0.5, u - 0.5, state)
-										.method_12260(pos)
+								this.addParticle(
+									new BlockCrackParticle(
+											this.world, (double)blockPos.getX() + v, (double)blockPos.getY() + w, (double)blockPos.getZ() + x, s - 0.5, t - 0.5, u - 0.5, blockState
+										)
+										.setBlockPos(blockPos)
 								);
 							}
 						}
@@ -369,54 +428,72 @@ public class ParticleManager {
 		}
 	}
 
-	public void addBlockBreakingParticles(BlockPos pos, Direction direction) {
-		BlockState blockState = this.world.getBlockState(pos);
-		if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
-			int i = pos.getX();
-			int j = pos.getY();
-			int k = pos.getZ();
+	public void addBlockBreakingParticles(BlockPos blockPos, Direction direction) {
+		BlockState blockState = this.world.getBlockState(blockPos);
+		if (blockState.getRenderType() != BlockRenderType.field_11455) {
+			int i = blockPos.getX();
+			int j = blockPos.getY();
+			int k = blockPos.getZ();
 			float f = 0.1F;
-			Box box = blockState.getOutlineShape(this.world, pos).getBoundingBox();
+			Box box = blockState.getOutlineShape(this.world, blockPos).getBoundingBox();
 			double d = (double)i + this.random.nextDouble() * (box.maxX - box.minX - 0.2F) + 0.1F + box.minX;
 			double e = (double)j + this.random.nextDouble() * (box.maxY - box.minY - 0.2F) + 0.1F + box.minY;
 			double g = (double)k + this.random.nextDouble() * (box.maxZ - box.minZ - 0.2F) + 0.1F + box.minZ;
-			if (direction == Direction.DOWN) {
+			if (direction == Direction.field_11033) {
 				e = (double)j + box.minY - 0.1F;
 			}
 
-			if (direction == Direction.UP) {
+			if (direction == Direction.field_11036) {
 				e = (double)j + box.maxY + 0.1F;
 			}
 
-			if (direction == Direction.NORTH) {
+			if (direction == Direction.field_11043) {
 				g = (double)k + box.minZ - 0.1F;
 			}
 
-			if (direction == Direction.SOUTH) {
+			if (direction == Direction.field_11035) {
 				g = (double)k + box.maxZ + 0.1F;
 			}
 
-			if (direction == Direction.WEST) {
+			if (direction == Direction.field_11039) {
 				d = (double)i + box.minX - 0.1F;
 			}
 
-			if (direction == Direction.EAST) {
+			if (direction == Direction.field_11034) {
 				d = (double)i + box.maxX + 0.1F;
 			}
 
-			this.method_12256(new BlockDustParticle(this.world, d, e, g, 0.0, 0.0, 0.0, blockState).method_12260(pos).method_12249(0.2F).scale(0.6F));
+			this.addParticle(new BlockCrackParticle(this.world, d, e, g, 0.0, 0.0, 0.0, blockState).setBlockPos(blockPos).move(0.2F).method_3087(0.6F));
 		}
 	}
 
 	public String getDebugString() {
-		int i = 0;
+		return String.valueOf(this.particles.values().stream().mapToInt(Collection::size).sum());
+	}
 
-		for (int j = 0; j < 4; j++) {
-			for (int k = 0; k < 2; k++) {
-				i += this.field_13439[j][k].size();
-			}
+	class SimpleSpriteProvider implements SpriteProvider {
+		private List<Sprite> sprites;
+
+		private SimpleSpriteProvider() {
 		}
 
-		return String.valueOf(i);
+		@Override
+		public Sprite getSprite(int i, int j) {
+			return (Sprite)this.sprites.get(i * (this.sprites.size() - 1) / j);
+		}
+
+		@Override
+		public Sprite getSprite(Random random) {
+			return (Sprite)this.sprites.get(random.nextInt(this.sprites.size()));
+		}
+
+		public void setSprites(List<Sprite> list) {
+			this.sprites = ImmutableList.copyOf(list);
+		}
+	}
+
+	@FunctionalInterface
+	interface class_4091<T extends ParticleEffect> {
+		ParticleFactory<T> create(SpriteProvider spriteProvider);
 	}
 }

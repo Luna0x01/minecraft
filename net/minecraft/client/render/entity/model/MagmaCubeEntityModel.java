@@ -1,16 +1,15 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.render.model.ModelPart;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MagmaCubeEntity;
+import net.minecraft.client.model.Cuboid;
+import net.minecraft.entity.mob.SlimeEntity;
+import net.minecraft.util.math.MathHelper;
 
-public class MagmaCubeEntityModel extends EntityModel {
-	private final ModelPart[] field_1486 = new ModelPart[8];
-	private final ModelPart field_1487;
+public class MagmaCubeEntityModel<T extends SlimeEntity> extends EntityModel<T> {
+	private final Cuboid[] field_3427 = new Cuboid[8];
+	private final Cuboid field_3428;
 
 	public MagmaCubeEntityModel() {
-		for (int i = 0; i < this.field_1486.length; i++) {
+		for (int i = 0; i < this.field_3427.length; i++) {
 			int j = 0;
 			int k = i;
 			if (i == 2) {
@@ -21,34 +20,31 @@ public class MagmaCubeEntityModel extends EntityModel {
 				k = 19;
 			}
 
-			this.field_1486[i] = new ModelPart(this, j, k);
-			this.field_1486[i].addCuboid(-4.0F, (float)(16 + i), -4.0F, 8, 1, 8);
+			this.field_3427[i] = new Cuboid(this, j, k);
+			this.field_3427[i].addBox(-4.0F, (float)(16 + i), -4.0F, 8, 1, 8);
 		}
 
-		this.field_1487 = new ModelPart(this, 0, 16);
-		this.field_1487.addCuboid(-2.0F, 18.0F, -2.0F, 4, 4, 4);
+		this.field_3428 = new Cuboid(this, 0, 16);
+		this.field_3428.addBox(-2.0F, 18.0F, -2.0F, 4, 4, 4);
 	}
 
-	@Override
-	public void animateModel(LivingEntity entity, float limbAngle, float limbDistance, float tickDelta) {
-		MagmaCubeEntity magmaCubeEntity = (MagmaCubeEntity)entity;
-		float f = magmaCubeEntity.lastStretch + (magmaCubeEntity.stretch - magmaCubeEntity.lastStretch) * tickDelta;
-		if (f < 0.0F) {
-			f = 0.0F;
+	public void method_17098(T slimeEntity, float f, float g, float h) {
+		float i = MathHelper.lerp(h, slimeEntity.lastStretch, slimeEntity.stretch);
+		if (i < 0.0F) {
+			i = 0.0F;
 		}
 
-		for (int i = 0; i < this.field_1486.length; i++) {
-			this.field_1486[i].pivotY = (float)(-(4 - i)) * f * 1.7F;
+		for (int j = 0; j < this.field_3427.length; j++) {
+			this.field_3427[j].rotationPointY = (float)(-(4 - j)) * i * 1.7F;
 		}
 	}
 
-	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_1487.render(scale);
+	public void method_17099(T slimeEntity, float f, float g, float h, float i, float j, float k) {
+		this.setAngles(slimeEntity, f, g, h, i, j, k);
+		this.field_3428.render(k);
 
-		for (ModelPart modelPart : this.field_1486) {
-			modelPart.render(scale);
+		for (Cuboid cuboid : this.field_3427) {
+			cuboid.render(k);
 		}
 	}
 }

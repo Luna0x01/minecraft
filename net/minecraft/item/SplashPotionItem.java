@@ -1,9 +1,9 @@
 package net.minecraft.item;
 
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.thrown.PotionEntity;
-import net.minecraft.sound.Sounds;
+import net.minecraft.entity.thrown.ThrownPotionEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -16,17 +16,20 @@ public class SplashPotionItem extends PotionItem {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		ItemStack itemStack2 = player.abilities.creativeMode ? itemStack.copy() : itemStack.split(1);
-		world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_SPLASH_POTION_THROW, SoundCategory.PLAYERS, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		ItemStack itemStack2 = playerEntity.abilities.creativeMode ? itemStack.copy() : itemStack.split(1);
+		world.playSound(
+			null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_14910, SoundCategory.PLAYERS, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+		);
 		if (!world.isClient) {
-			PotionEntity potionEntity = new PotionEntity(world, player, itemStack2);
-			potionEntity.setProperties(player, player.pitch, player.yaw, -20.0F, 0.5F, 1.0F);
-			world.method_3686(potionEntity);
+			ThrownPotionEntity thrownPotionEntity = new ThrownPotionEntity(world, playerEntity);
+			thrownPotionEntity.setItemStack(itemStack2);
+			thrownPotionEntity.setProperties(playerEntity, playerEntity.pitch, playerEntity.yaw, -20.0F, 0.5F, 1.0F);
+			world.spawnEntity(thrownPotionEntity);
 		}
 
-		player.method_15932(Stats.USED.method_21429(this));
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+		playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 	}
 }

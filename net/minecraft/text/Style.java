@@ -5,17 +5,17 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.JsonHelper;
 
 public class Style {
 	private Style parent;
-	private Formatting formatting;
+	private Formatting color;
 	private Boolean bold;
 	private Boolean italic;
 	private Boolean underline;
@@ -75,32 +75,32 @@ public class Style {
 		}
 
 		@Override
-		public Style setFormatting(Formatting formatting) {
+		public Style setColor(Formatting formatting) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public Style setBold(Boolean bold) {
+		public Style setBold(Boolean boolean_) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public Style setItalic(Boolean italic) {
+		public Style setItalic(Boolean boolean_) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public Style setStrikethrough(Boolean strikethrough) {
+		public Style setStrikethrough(Boolean boolean_) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public Style setUnderline(Boolean underline) {
+		public Style setUnderline(Boolean boolean_) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public Style setObfuscated(Boolean obfuscated) {
+		public Style setObfuscated(Boolean boolean_) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -115,7 +115,7 @@ public class Style {
 		}
 
 		@Override
-		public Style setParent(Style parent) {
+		public Style setParent(Style style) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -142,7 +142,7 @@ public class Style {
 
 	@Nullable
 	public Formatting getColor() {
-		return this.formatting == null ? this.getParent().getColor() : this.formatting;
+		return this.color == null ? this.getParent().getColor() : this.color;
 	}
 
 	public boolean isBold() {
@@ -171,7 +171,7 @@ public class Style {
 			&& this.strikethrough == null
 			&& this.underline == null
 			&& this.obfuscated == null
-			&& this.formatting == null
+			&& this.color == null
 			&& this.clickEvent == null
 			&& this.hoverEvent == null
 			&& this.insertion == null;
@@ -192,33 +192,33 @@ public class Style {
 		return this.insertion == null ? this.getParent().getInsertion() : this.insertion;
 	}
 
-	public Style setFormatting(Formatting formatting) {
-		this.formatting = formatting;
+	public Style setColor(Formatting formatting) {
+		this.color = formatting;
 		return this;
 	}
 
-	public Style setBold(Boolean bold) {
-		this.bold = bold;
+	public Style setBold(Boolean boolean_) {
+		this.bold = boolean_;
 		return this;
 	}
 
-	public Style setItalic(Boolean italic) {
-		this.italic = italic;
+	public Style setItalic(Boolean boolean_) {
+		this.italic = boolean_;
 		return this;
 	}
 
-	public Style setStrikethrough(Boolean strikethrough) {
-		this.strikethrough = strikethrough;
+	public Style setStrikethrough(Boolean boolean_) {
+		this.strikethrough = boolean_;
 		return this;
 	}
 
-	public Style setUnderline(Boolean underline) {
-		this.underline = underline;
+	public Style setUnderline(Boolean boolean_) {
+		this.underline = boolean_;
 		return this;
 	}
 
-	public Style setObfuscated(Boolean obfuscated) {
-		this.obfuscated = obfuscated;
+	public Style setObfuscated(Boolean boolean_) {
+		this.obfuscated = boolean_;
 		return this;
 	}
 
@@ -232,13 +232,13 @@ public class Style {
 		return this;
 	}
 
-	public Style setInsertion(String insertion) {
-		this.insertion = insertion;
+	public Style setInsertion(String string) {
+		this.insertion = string;
 		return this;
 	}
 
-	public Style setParent(Style parent) {
-		this.parent = parent;
+	public Style setParent(Style style) {
+		this.parent = style;
 		return this;
 	}
 
@@ -252,23 +252,23 @@ public class Style {
 			}
 
 			if (this.isBold()) {
-				stringBuilder.append(Formatting.BOLD);
+				stringBuilder.append(Formatting.field_1067);
 			}
 
 			if (this.isItalic()) {
-				stringBuilder.append(Formatting.ITALIC);
+				stringBuilder.append(Formatting.field_1056);
 			}
 
 			if (this.isUnderlined()) {
-				stringBuilder.append(Formatting.UNDERLINE);
+				stringBuilder.append(Formatting.field_1073);
 			}
 
 			if (this.isObfuscated()) {
-				stringBuilder.append(Formatting.OBFUSCATED);
+				stringBuilder.append(Formatting.field_1051);
 			}
 
 			if (this.isStrikethrough()) {
-				stringBuilder.append(Formatting.STRIKETHROUGH);
+				stringBuilder.append(Formatting.field_1055);
 			}
 
 			return stringBuilder.toString();
@@ -283,7 +283,7 @@ public class Style {
 		return "Style{hasParent="
 			+ (this.parent != null)
 			+ ", color="
-			+ this.formatting
+			+ this.color
 			+ ", bold="
 			+ this.bold
 			+ ", italic="
@@ -322,7 +322,7 @@ public class Style {
 
 	public int hashCode() {
 		return Objects.hash(
-			new Object[]{this.formatting, this.bold, this.italic, this.underline, this.strikethrough, this.obfuscated, this.clickEvent, this.hoverEvent, this.insertion}
+			new Object[]{this.color, this.bold, this.italic, this.underline, this.strikethrough, this.obfuscated, this.clickEvent, this.hoverEvent, this.insertion}
 		);
 	}
 
@@ -333,7 +333,7 @@ public class Style {
 		style.strikethrough = this.strikethrough;
 		style.underline = this.underline;
 		style.obfuscated = this.obfuscated;
-		style.formatting = this.formatting;
+		style.color = this.color;
 		style.clickEvent = this.clickEvent;
 		style.hoverEvent = this.hoverEvent;
 		style.parent = this.parent;
@@ -348,7 +348,7 @@ public class Style {
 		style.setStrikethrough(this.isStrikethrough());
 		style.setUnderline(this.isUnderlined());
 		style.setObfuscated(this.isObfuscated());
-		style.setFormatting(this.getColor());
+		style.setColor(this.getColor());
 		style.setClickEvent(this.getClickEvent());
 		style.setHoverEvent(this.getHoverEvent());
 		style.setInsertion(this.getInsertion());
@@ -357,7 +357,7 @@ public class Style {
 
 	public static class Serializer implements JsonDeserializer<Style>, JsonSerializer<Style> {
 		@Nullable
-		public Style deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public Style method_10991(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonObject()) {
 				Style style = new Style();
 				JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -385,7 +385,7 @@ public class Style {
 					}
 
 					if (jsonObject.has("color")) {
-						style.formatting = (Formatting)jsonDeserializationContext.deserialize(jsonObject.get("color"), Formatting.class);
+						style.color = (Formatting)jsonDeserializationContext.deserialize(jsonObject.get("color"), Formatting.class);
 					}
 
 					if (jsonObject.has("insertion")) {
@@ -393,27 +393,22 @@ public class Style {
 					}
 
 					if (jsonObject.has("clickEvent")) {
-						JsonObject jsonObject2 = jsonObject.getAsJsonObject("clickEvent");
-						if (jsonObject2 != null) {
-							JsonPrimitive jsonPrimitive = jsonObject2.getAsJsonPrimitive("action");
-							ClickEvent.Action action = jsonPrimitive == null ? null : ClickEvent.Action.byName(jsonPrimitive.getAsString());
-							JsonPrimitive jsonPrimitive2 = jsonObject2.getAsJsonPrimitive("value");
-							String string = jsonPrimitive2 == null ? null : jsonPrimitive2.getAsString();
-							if (action != null && string != null && action.isUserDefinable()) {
-								style.clickEvent = new ClickEvent(action, string);
-							}
+						JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "clickEvent");
+						String string = JsonHelper.getString(jsonObject2, "action", null);
+						ClickEvent.Action action = string == null ? null : ClickEvent.Action.byName(string);
+						String string2 = JsonHelper.getString(jsonObject2, "value", null);
+						if (action != null && string2 != null && action.isUserDefinable()) {
+							style.clickEvent = new ClickEvent(action, string2);
 						}
 					}
 
 					if (jsonObject.has("hoverEvent")) {
-						JsonObject jsonObject3 = jsonObject.getAsJsonObject("hoverEvent");
-						if (jsonObject3 != null) {
-							JsonPrimitive jsonPrimitive3 = jsonObject3.getAsJsonPrimitive("action");
-							HoverEvent.Action action2 = jsonPrimitive3 == null ? null : HoverEvent.Action.byName(jsonPrimitive3.getAsString());
-							Text text = (Text)jsonDeserializationContext.deserialize(jsonObject3.get("value"), Text.class);
-							if (action2 != null && text != null && action2.isUserDefinable()) {
-								style.hoverEvent = new HoverEvent(action2, text);
-							}
+						JsonObject jsonObject3 = JsonHelper.getObject(jsonObject, "hoverEvent");
+						String string3 = JsonHelper.getString(jsonObject3, "action", null);
+						HoverEvent.Action action2 = string3 == null ? null : HoverEvent.Action.byName(string3);
+						Text text = (Text)jsonDeserializationContext.deserialize(jsonObject3.get("value"), Text.class);
+						if (action2 != null && text != null && action2.isUserDefinable()) {
+							style.hoverEvent = new HoverEvent(action2, text);
 						}
 					}
 
@@ -425,7 +420,7 @@ public class Style {
 		}
 
 		@Nullable
-		public JsonElement serialize(Style style, Type type, JsonSerializationContext jsonSerializationContext) {
+		public JsonElement method_10990(Style style, Type type, JsonSerializationContext jsonSerializationContext) {
 			if (style.isEmpty()) {
 				return null;
 			} else {
@@ -450,8 +445,8 @@ public class Style {
 					jsonObject.addProperty("obfuscated", style.obfuscated);
 				}
 
-				if (style.formatting != null) {
-					jsonObject.add("color", jsonSerializationContext.serialize(style.formatting));
+				if (style.color != null) {
+					jsonObject.add("color", jsonSerializationContext.serialize(style.color));
 				}
 
 				if (style.insertion != null) {

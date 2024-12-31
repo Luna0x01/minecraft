@@ -1,76 +1,88 @@
 package net.minecraft.sound;
 
 public class BlockSoundGroup {
-	public static final BlockSoundGroup field_12759 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_WOOD_BREAK, Sounds.BLOCK_WOOD_STEP, Sounds.BLOCK_WOOD_PLACE, Sounds.BLOCK_WOOD_HIT, Sounds.BLOCK_WOOD_FALL
+	public static final BlockSoundGroup WOOD = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15215, SoundEvents.field_15053, SoundEvents.field_14718, SoundEvents.field_14808, SoundEvents.field_14607
 	);
-	public static final BlockSoundGroup field_12760 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_GRAVEL_BREAK, Sounds.BLOCK_GRAVEL_STEP, Sounds.BLOCK_GRAVEL_PLACE, Sounds.BLOCK_GRAVEL_HIT, Sounds.BLOCK_GRAVEL_FALL
+	public static final BlockSoundGroup GRAVEL = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15211, SoundEvents.field_14798, SoundEvents.field_14609, SoundEvents.field_14697, SoundEvents.field_15156
 	);
-	public static final BlockSoundGroup field_12761 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_GRASS_BREAK, Sounds.BLOCK_GRASS_STEP, Sounds.BLOCK_GRASS_PLACE, Sounds.BLOCK_GRASS_HIT, Sounds.BLOCK_GRASS_FALL
+	public static final BlockSoundGroup GRASS = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15037, SoundEvents.field_14573, SoundEvents.field_14653, SoundEvents.field_14720, SoundEvents.field_14965
 	);
 	public static final BlockSoundGroup STONE = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_STONE_BREAK, Sounds.BLOCK_STONE_STEP, Sounds.BLOCK_STONE_PLACE, Sounds.BLOCK_STONE_HIT, Sounds.BLOCK_STONE_FALL
+		1.0F, 1.0F, SoundEvents.field_15026, SoundEvents.field_14921, SoundEvents.field_14574, SoundEvents.field_14658, SoundEvents.field_14723
 	);
-	public static final BlockSoundGroup field_12763 = new BlockSoundGroup(
-		1.0F, 1.5F, Sounds.BLOCK_METAL_BREAK, Sounds.BLOCK_METAL_STEP, Sounds.BLOCK_METAL_PLACE, Sounds.BLOCK_METAL_HIT, Sounds.BLOCK_METAL_FALL
+	public static final BlockSoundGroup METAL = new BlockSoundGroup(
+		1.0F, 1.5F, SoundEvents.field_15044, SoundEvents.field_14924, SoundEvents.field_15167, SoundEvents.field_14557, SoundEvents.field_15142
 	);
-	public static final BlockSoundGroup field_12764 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_GLASS_BREAK, Sounds.BLOCK_GLASS_STEP, Sounds.BLOCK_GLASS_PLACE, Sounds.BLOCK_GLASS_HIT, Sounds.BLOCK_GLASS_FALL
+	public static final BlockSoundGroup GLASS = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15081, SoundEvents.field_14769, SoundEvents.field_14843, SoundEvents.field_14583, SoundEvents.field_14666
 	);
-	public static final BlockSoundGroup field_12765 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_WOOL_BREAK, Sounds.BLOCK_WOOL_STEP, Sounds.BLOCK_WOOL_PLACE, Sounds.BLOCK_WOOL_HIT, Sounds.BLOCK_WOOL_FALL
+	public static final BlockSoundGroup WOOL = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_14983, SoundEvents.field_15181, SoundEvents.field_15226, SoundEvents.field_14628, SoundEvents.field_15048
 	);
-	public static final BlockSoundGroup field_12766 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_SAND_BREAK, Sounds.BLOCK_SAND_STEP, Sounds.BLOCK_SAND_PLACE, Sounds.BLOCK_SAND_HIT, Sounds.BLOCK_SAND_FALL
+	public static final BlockSoundGroup SAND = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15074, SoundEvents.field_14677, SoundEvents.field_15144, SoundEvents.field_15221, SoundEvents.field_14943
 	);
-	public static final BlockSoundGroup field_12767 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_SNOW_BREAK, Sounds.BLOCK_SNOW_STEP, Sounds.BLOCK_SNOW_PLACE, Sounds.BLOCK_SNOW_HIT, Sounds.BLOCK_SNOW_FALL
+	public static final BlockSoundGroup SNOW = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15165, SoundEvents.field_15060, SoundEvents.field_14945, SoundEvents.field_15040, SoundEvents.field_15092
 	);
-	public static final BlockSoundGroup field_12768 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_LADDER_BREAK, Sounds.BLOCK_LADDER_STEP, Sounds.BLOCK_LADDER_PLACE, Sounds.BLOCK_LADDER_HIT, Sounds.BLOCK_LADDER_FALL
+	public static final BlockSoundGroup LADDER = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_14546, SoundEvents.field_14948, SoundEvents.field_14853, SoundEvents.field_14775, SoundEvents.field_14646
 	);
-	public static final BlockSoundGroup field_12769 = new BlockSoundGroup(
-		0.3F, 1.0F, Sounds.BLOCK_ANVIL_BREAK, Sounds.BLOCK_ANVIL_STEP, Sounds.BLOCK_ANVIL_PLACE, Sounds.BLOCK_ANVIL_HIT, Sounds.BLOCK_ANVIL_FALL
+	public static final BlockSoundGroup ANVIL = new BlockSoundGroup(
+		0.3F, 1.0F, SoundEvents.field_14542, SoundEvents.field_14695, SoundEvents.field_14785, SoundEvents.field_14927, SoundEvents.field_14727
 	);
-	public static final BlockSoundGroup field_12770 = new BlockSoundGroup(
-		1.0F,
-		1.0F,
-		Sounds.BLOCK_SLIME_BLOCK_BREAK,
-		Sounds.BLOCK_SLIME_BLOCK_STEP,
-		Sounds.BLOCK_SLIME_BLOCK_PLACE,
-		Sounds.BLOCK_SLIME_BLOCK_HIT,
-		Sounds.BLOCK_SLIME_BLOCK_FALL
+	public static final BlockSoundGroup SLIME = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15194, SoundEvents.field_15180, SoundEvents.field_14788, SoundEvents.field_14640, SoundEvents.field_14560
 	);
-	public static final BlockSoundGroup field_18497 = new BlockSoundGroup(
-		1.0F, 1.0F, Sounds.BLOCK_WET_GRASS_BREAK, Sounds.BLOCK_WET_GRASS_STEP, Sounds.BLOCK_WET_GRASS_PLACE, Sounds.BLOCK_WET_GRASS_HIT, Sounds.BLOCK_WET_GRASS_FALL
+	public static final BlockSoundGroup WET_GRASS = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15120, SoundEvents.field_14774, SoundEvents.field_15025, SoundEvents.field_14953, SoundEvents.field_15207
 	);
-	public static final BlockSoundGroup field_18498 = new BlockSoundGroup(
-		1.0F,
-		1.0F,
-		Sounds.BLOCK_CORAL_BLOCK_BREAK,
-		Sounds.BLOCK_CORAL_BLOCK_STEP,
-		Sounds.BLOCK_CORAL_BLOCK_PLACE,
-		Sounds.BLOCK_CORAL_BLOCK_HIT,
-		Sounds.BLOCK_CORAL_BLOCK_FALL
+	public static final BlockSoundGroup CORAL = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_14804, SoundEvents.field_14935, SoundEvents.field_15087, SoundEvents.field_14672, SoundEvents.field_14551
+	);
+	public static final BlockSoundGroup BAMBOO = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_14740, SoundEvents.field_14635, SoundEvents.field_14719, SoundEvents.field_14811, SoundEvents.field_14906
+	);
+	public static final BlockSoundGroup BAMBOO_SAPLING = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_14629, SoundEvents.field_14635, SoundEvents.field_15125, SoundEvents.field_15227, SoundEvents.field_14906
+	);
+	public static final BlockSoundGroup SCAFFOLDING = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_16509, SoundEvents.field_16508, SoundEvents.field_16507, SoundEvents.field_16506, SoundEvents.field_16510
+	);
+	public static final BlockSoundGroup SWEET_BERRY_BUSH = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_17615, SoundEvents.field_14573, SoundEvents.field_17616, SoundEvents.field_14720, SoundEvents.field_14965
+	);
+	public static final BlockSoundGroup CROP = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_17610, SoundEvents.field_14573, SoundEvents.field_17611, SoundEvents.field_14720, SoundEvents.field_14965
+	);
+	public static final BlockSoundGroup STEM = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_15215, SoundEvents.field_15053, SoundEvents.field_17611, SoundEvents.field_14808, SoundEvents.field_14607
+	);
+	public static final BlockSoundGroup NETHER_WART = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_17612, SoundEvents.field_14921, SoundEvents.field_17613, SoundEvents.field_14658, SoundEvents.field_14723
+	);
+	public static final BlockSoundGroup LANTERN = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_17745, SoundEvents.field_17744, SoundEvents.field_17743, SoundEvents.field_17742, SoundEvents.field_17746
 	);
 	public final float volume;
 	public final float pitch;
-	private final Sound field_12771;
-	private final Sound field_506;
-	private final Sound field_12772;
-	private final Sound field_12773;
-	private final Sound field_12774;
+	private final SoundEvent breakSound;
+	private final SoundEvent stepSound;
+	private final SoundEvent placeSound;
+	private final SoundEvent hitSound;
+	private final SoundEvent fallSound;
 
-	public BlockSoundGroup(float f, float g, Sound sound, Sound sound2, Sound sound3, Sound sound4, Sound sound5) {
+	public BlockSoundGroup(float f, float g, SoundEvent soundEvent, SoundEvent soundEvent2, SoundEvent soundEvent3, SoundEvent soundEvent4, SoundEvent soundEvent5) {
 		this.volume = f;
 		this.pitch = g;
-		this.field_12771 = sound;
-		this.field_506 = sound2;
-		this.field_12772 = sound3;
-		this.field_12773 = sound4;
-		this.field_12774 = sound5;
+		this.breakSound = soundEvent;
+		this.stepSound = soundEvent2;
+		this.placeSound = soundEvent3;
+		this.hitSound = soundEvent4;
+		this.fallSound = soundEvent5;
 	}
 
 	public float getVolume() {
@@ -81,23 +93,23 @@ public class BlockSoundGroup {
 		return this.pitch;
 	}
 
-	public Sound method_11629() {
-		return this.field_12771;
+	public SoundEvent getBreakSound() {
+		return this.breakSound;
 	}
 
-	public Sound getStepSound() {
-		return this.field_506;
+	public SoundEvent getStepSound() {
+		return this.stepSound;
 	}
 
-	public Sound method_4194() {
-		return this.field_12772;
+	public SoundEvent getPlaceSound() {
+		return this.placeSound;
 	}
 
-	public Sound method_11630() {
-		return this.field_12773;
+	public SoundEvent getHitSound() {
+		return this.hitSound;
 	}
 
-	public Sound method_487() {
-		return this.field_12774;
+	public SoundEvent getFallSound() {
+		return this.fallSound;
 	}
 }

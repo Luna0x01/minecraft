@@ -3,23 +3,26 @@ package net.minecraft.text;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import net.minecraft.entity.Entity;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.util.Language;
 
-public class TranslatableText extends BaseText {
-	private static final Language FALLBACK_LANGUAGE = new Language();
+public class TranslatableText extends BaseText implements ParsableText {
+	private static final Language EMPTY_LANGUAGE = new Language();
 	private static final Language LANGUAGE = Language.getInstance();
 	private final String key;
 	private final Object[] args;
 	private final Object lock = new Object();
 	private long languageReloadTimestamp = -1L;
-	@VisibleForTesting
-	List<Text> translations = Lists.newArrayList();
+	protected final List<Text> translations = Lists.newArrayList();
 	public static final Pattern ARG_FORMAT = Pattern.compile("%(?:(\\d+)\\$)?([A-Za-z%]|$)");
 
 	public TranslatableText(String string, Object... objects) {
@@ -29,7 +32,7 @@ public class TranslatableText extends BaseText {
 		for (int i = 0; i < objects.length; i++) {
 			Object object = objects[i];
 			if (object instanceof Text) {
-				Text text = ((Text)object).method_20177();
+				Text text = ((Text)object).deepCopy();
 				this.args[i] = text;
 				text.getStyle().setParent(this.getStyle());
 			} else if (object == null) {
@@ -56,15 +59,15 @@ public class TranslatableText extends BaseText {
 			this.translations.clear();
 
 			try {
-				this.setTranslation(FALLBACK_LANGUAGE.translate(this.key));
+				this.setTranslation(EMPTY_LANGUAGE.translate(this.key));
 			} catch (TranslationException var5) {
 				throw var6;
 			}
 		}
 	}
 
-	protected void setTranslation(String translation) {
-		Matcher matcher = ARG_FORMAT.matcher(translation);
+	protected void setTranslation(String string) {
+		Matcher matcher = ARG_FORMAT.matcher(string);
 
 		try {
 			int i = 0;
@@ -74,24 +77,24 @@ public class TranslatableText extends BaseText {
 				int k = matcher.start();
 				int l = matcher.end();
 				if (k > j) {
-					Text text = new LiteralText(String.format(translation.substring(j, k)));
+					Text text = new LiteralText(String.format(string.substring(j, k)));
 					text.getStyle().setParent(this.getStyle());
 					this.translations.add(text);
 				}
 
-				String string = matcher.group(2);
-				String string2 = translation.substring(k, l);
-				if ("%".equals(string) && "%%".equals(string2)) {
+				String string2 = matcher.group(2);
+				String string3 = string.substring(k, l);
+				if ("%".equals(string2) && "%%".equals(string3)) {
 					Text text2 = new LiteralText("%");
 					text2.getStyle().setParent(this.getStyle());
 					this.translations.add(text2);
 				} else {
-					if (!"s".equals(string)) {
-						throw new TranslationException(this, "Unsupported format: '" + string2 + "'");
+					if (!"s".equals(string2)) {
+						throw new TranslationException(this, "Unsupported format: '" + string3 + "'");
 					}
 
-					String string3 = matcher.group(1);
-					int m = string3 != null ? Integer.parseInt(string3) - 1 : i++;
+					String string4 = matcher.group(1);
+					int m = string4 != null ? Integer.parseInt(string4) - 1 : i++;
 					if (m < this.args.length) {
 						this.translations.add(this.getArg(m));
 					}
@@ -100,8 +103,8 @@ public class TranslatableText extends BaseText {
 				j = l;
 			}
 
-			if (j < translation.length()) {
-				Text text3 = new LiteralText(String.format(translation.substring(j)));
+			if (j < string.length()) {
+				Text text3 = new LiteralText(String.format(string.substring(j)));
 				text3.getStyle().setParent(this.getStyle());
 				this.translations.add(text3);
 			}
@@ -110,11 +113,11 @@ public class TranslatableText extends BaseText {
 		}
 	}
 
-	private Text getArg(int index) {
-		if (index >= this.args.length) {
-			throw new TranslationException(this, index);
+	private Text getArg(int i) {
+		if (i >= this.args.length) {
+			throw new TranslationException(this, i);
 		} else {
-			Object object = this.args[index];
+			Object object = this.args[i];
 			Text text;
 			if (object instanceof Text) {
 				text = (Text)object;
@@ -153,25 +156,41 @@ public class TranslatableText extends BaseText {
 	}
 
 	@Override
-	public String computeValue() {
+	public String asString() {
 		this.updateTranslations();
 		StringBuilder stringBuilder = new StringBuilder();
 
 		for (Text text : this.translations) {
-			stringBuilder.append(text.computeValue());
+			stringBuilder.append(text.asString());
 		}
 
 		return stringBuilder.toString();
 	}
 
-	public TranslatableText copy() {
+	public TranslatableText method_11020() {
 		Object[] objects = new Object[this.args.length];
 
 		for (int i = 0; i < this.args.length; i++) {
 			if (this.args[i] instanceof Text) {
-				objects[i] = ((Text)this.args[i]).method_20177();
+				objects[i] = ((Text)this.args[i]).deepCopy();
 			} else {
 				objects[i] = this.args[i];
+			}
+		}
+
+		return new TranslatableText(this.key, objects);
+	}
+
+	@Override
+	public Text parse(@Nullable ServerCommandSource serverCommandSource, @Nullable Entity entity, int i) throws CommandSyntaxException {
+		Object[] objects = new Object[this.args.length];
+
+		for (int j = 0; j < objects.length; j++) {
+			Object object = this.args[j];
+			if (object instanceof Text) {
+				objects[j] = Texts.parse(serverCommandSource, (Text)object, entity, i);
+			} else {
+				objects[j] = object;
 			}
 		}
 

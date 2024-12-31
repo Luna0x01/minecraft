@@ -8,17 +8,18 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 
 public class BlockPattern {
-	private final Predicate<CachedBlockPosition>[][][] field_18696;
+	private final Predicate<CachedBlockPosition>[][][] pattern;
 	private final int depth;
 	private final int height;
 	private final int width;
 
 	public BlockPattern(Predicate<CachedBlockPosition>[][][] predicates) {
-		this.field_18696 = predicates;
+		this.pattern = predicates;
 		this.depth = predicates.length;
 		if (this.depth > 0) {
 			this.height = predicates[0].length;
@@ -33,7 +34,7 @@ public class BlockPattern {
 		}
 	}
 
-	public int method_11746() {
+	public int getDepth() {
 		return this.depth;
 	}
 
@@ -46,23 +47,25 @@ public class BlockPattern {
 	}
 
 	@Nullable
-	private BlockPattern.Result testTransform(BlockPos pos, Direction forwards, Direction up, LoadingCache<BlockPos, CachedBlockPosition> cache) {
+	private BlockPattern.Result testTransform(
+		BlockPos blockPos, Direction direction, Direction direction2, LoadingCache<BlockPos, CachedBlockPosition> loadingCache
+	) {
 		for (int i = 0; i < this.width; i++) {
 			for (int j = 0; j < this.height; j++) {
 				for (int k = 0; k < this.depth; k++) {
-					if (!this.field_18696[k][j][i].test(cache.getUnchecked(translate(pos, forwards, up, i, j, k)))) {
+					if (!this.pattern[k][j][i].test(loadingCache.getUnchecked(translate(blockPos, direction, direction2, i, j, k)))) {
 						return null;
 					}
 				}
 			}
 		}
 
-		return new BlockPattern.Result(pos, forwards, up, cache, this.width, this.height, this.depth);
+		return new BlockPattern.Result(blockPos, direction, direction2, loadingCache, this.width, this.height, this.depth);
 	}
 
 	@Nullable
-	public BlockPattern.Result method_16938(RenderBlockView renderBlockView, BlockPos blockPos) {
-		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = method_16939(renderBlockView, false);
+	public BlockPattern.Result searchAround(ViewableWorld viewableWorld, BlockPos blockPos) {
+		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = makeCache(viewableWorld, false);
 		int i = Math.max(Math.max(this.width, this.height), this.depth);
 
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos, blockPos.add(i - 1, i - 1, i - 1))) {
@@ -81,19 +84,19 @@ public class BlockPattern {
 		return null;
 	}
 
-	public static LoadingCache<BlockPos, CachedBlockPosition> method_16939(RenderBlockView renderBlockView, boolean bl) {
-		return CacheBuilder.newBuilder().build(new BlockPattern.BlockStateCacheLoader(renderBlockView, bl));
+	public static LoadingCache<BlockPos, CachedBlockPosition> makeCache(ViewableWorld viewableWorld, boolean bl) {
+		return CacheBuilder.newBuilder().build(new BlockPattern.BlockStateCacheLoader(viewableWorld, bl));
 	}
 
-	protected static BlockPos translate(BlockPos pos, Direction forwards, Direction up, int offsetLeft, int offsetDown, int offsetForwards) {
-		if (forwards != up && forwards != up.getOpposite()) {
-			Vec3i vec3i = new Vec3i(forwards.getOffsetX(), forwards.getOffsetY(), forwards.getOffsetZ());
-			Vec3i vec3i2 = new Vec3i(up.getOffsetX(), up.getOffsetY(), up.getOffsetZ());
+	protected static BlockPos translate(BlockPos blockPos, Direction direction, Direction direction2, int i, int j, int k) {
+		if (direction != direction2 && direction != direction2.getOpposite()) {
+			Vec3i vec3i = new Vec3i(direction.getOffsetX(), direction.getOffsetY(), direction.getOffsetZ());
+			Vec3i vec3i2 = new Vec3i(direction2.getOffsetX(), direction2.getOffsetY(), direction2.getOffsetZ());
 			Vec3i vec3i3 = vec3i.crossProduct(vec3i2);
-			return pos.add(
-				vec3i2.getX() * -offsetDown + vec3i3.getX() * offsetLeft + vec3i.getX() * offsetForwards,
-				vec3i2.getY() * -offsetDown + vec3i3.getY() * offsetLeft + vec3i.getY() * offsetForwards,
-				vec3i2.getZ() * -offsetDown + vec3i3.getZ() * offsetLeft + vec3i.getZ() * offsetForwards
+			return blockPos.add(
+				vec3i2.getX() * -j + vec3i3.getX() * i + vec3i.getX() * k,
+				vec3i2.getY() * -j + vec3i3.getY() * i + vec3i.getY() * k,
+				vec3i2.getZ() * -j + vec3i3.getZ() * i + vec3i.getZ() * k
 			);
 		} else {
 			throw new IllegalArgumentException("Invalid forwards & up combination");
@@ -101,22 +104,22 @@ public class BlockPattern {
 	}
 
 	static class BlockStateCacheLoader extends CacheLoader<BlockPos, CachedBlockPosition> {
-		private final RenderBlockView field_18697;
+		private final ViewableWorld world;
 		private final boolean forceLoad;
 
-		public BlockStateCacheLoader(RenderBlockView renderBlockView, boolean bl) {
-			this.field_18697 = renderBlockView;
+		public BlockStateCacheLoader(ViewableWorld viewableWorld, boolean bl) {
+			this.world = viewableWorld;
 			this.forceLoad = bl;
 		}
 
-		public CachedBlockPosition load(BlockPos blockPos) throws Exception {
-			return new CachedBlockPosition(this.field_18697, blockPos, this.forceLoad);
+		public CachedBlockPosition method_11714(BlockPos blockPos) throws Exception {
+			return new CachedBlockPosition(this.world, blockPos, this.forceLoad);
 		}
 	}
 
 	public static class Result {
 		private final BlockPos frontTopLeft;
-		private final Direction forward;
+		private final Direction forwards;
 		private final Direction up;
 		private final LoadingCache<BlockPos, CachedBlockPosition> cache;
 		private final int width;
@@ -125,7 +128,7 @@ public class BlockPattern {
 
 		public Result(BlockPos blockPos, Direction direction, Direction direction2, LoadingCache<BlockPos, CachedBlockPosition> loadingCache, int i, int j, int k) {
 			this.frontTopLeft = blockPos;
-			this.forward = direction;
+			this.forwards = direction;
 			this.up = direction2;
 			this.cache = loadingCache;
 			this.width = i;
@@ -138,7 +141,7 @@ public class BlockPattern {
 		}
 
 		public Direction getForwards() {
-			return this.forward;
+			return this.forwards;
 		}
 
 		public Direction getUp() {
@@ -153,13 +156,64 @@ public class BlockPattern {
 			return this.height;
 		}
 
-		public CachedBlockPosition translate(int offsetLeft, int offsetDown, int offsetForwards) {
-			return (CachedBlockPosition)this.cache
-				.getUnchecked(BlockPattern.translate(this.frontTopLeft, this.getForwards(), this.getUp(), offsetLeft, offsetDown, offsetForwards));
+		public CachedBlockPosition translate(int i, int j, int k) {
+			return (CachedBlockPosition)this.cache.getUnchecked(BlockPattern.translate(this.frontTopLeft, this.getForwards(), this.getUp(), i, j, k));
 		}
 
 		public String toString() {
-			return MoreObjects.toStringHelper(this).add("up", this.up).add("forwards", this.forward).add("frontTopLeft", this.frontTopLeft).toString();
+			return MoreObjects.toStringHelper(this).add("up", this.up).add("forwards", this.forwards).add("frontTopLeft", this.frontTopLeft).toString();
+		}
+
+		public BlockPattern.TeleportTarget method_18478(Direction direction, BlockPos blockPos, double d, Vec3d vec3d, double e) {
+			Direction direction2 = this.getForwards();
+			Direction direction3 = direction2.rotateYClockwise();
+			double f = (double)(this.getFrontTopLeft().getY() + 1) - d * (double)this.getHeight();
+			double g;
+			double h;
+			if (direction3 == Direction.field_11043) {
+				g = (double)blockPos.getX() + 0.5;
+				h = (double)(this.getFrontTopLeft().getZ() + 1) - (1.0 - e) * (double)this.getWidth();
+			} else if (direction3 == Direction.field_11035) {
+				g = (double)blockPos.getX() + 0.5;
+				h = (double)this.getFrontTopLeft().getZ() + (1.0 - e) * (double)this.getWidth();
+			} else if (direction3 == Direction.field_11039) {
+				g = (double)(this.getFrontTopLeft().getX() + 1) - (1.0 - e) * (double)this.getWidth();
+				h = (double)blockPos.getZ() + 0.5;
+			} else {
+				g = (double)this.getFrontTopLeft().getX() + (1.0 - e) * (double)this.getWidth();
+				h = (double)blockPos.getZ() + 0.5;
+			}
+
+			double o;
+			double p;
+			if (direction2.getOpposite() == direction) {
+				o = vec3d.x;
+				p = vec3d.z;
+			} else if (direction2.getOpposite() == direction.getOpposite()) {
+				o = -vec3d.x;
+				p = -vec3d.z;
+			} else if (direction2.getOpposite() == direction.rotateYClockwise()) {
+				o = -vec3d.z;
+				p = vec3d.x;
+			} else {
+				o = vec3d.z;
+				p = -vec3d.x;
+			}
+
+			int w = (direction2.getHorizontal() - direction.getOpposite().getHorizontal()) * 90;
+			return new BlockPattern.TeleportTarget(new Vec3d(g, f, h), new Vec3d(o, vec3d.y, p), w);
+		}
+	}
+
+	public static class TeleportTarget {
+		public final Vec3d pos;
+		public final Vec3d velocity;
+		public final int yaw;
+
+		public TeleportTarget(Vec3d vec3d, Vec3d vec3d2, int i) {
+			this.pos = vec3d;
+			this.velocity = vec3d2;
+			this.yaw = i;
 		}
 	}
 }

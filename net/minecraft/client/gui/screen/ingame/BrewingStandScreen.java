@@ -1,61 +1,57 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.container.BrewingStandContainer;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.screen.BrewingScreenHandler;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-public class BrewingStandScreen extends HandledScreen {
+public class BrewingStandScreen extends AbstractContainerScreen<BrewingStandContainer> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/brewing_stand.png");
-	private static final int[] field_13330 = new int[]{29, 24, 20, 16, 11, 6, 0};
-	private final PlayerInventory inventory;
-	private final Inventory brewingInventory;
+	private static final int[] field_2824 = new int[]{29, 24, 20, 16, 11, 6, 0};
 
-	public BrewingStandScreen(PlayerInventory playerInventory, Inventory inventory) {
-		super(new BrewingScreenHandler(playerInventory, inventory));
-		this.inventory = playerInventory;
-		this.brewingInventory = inventory;
+	public BrewingStandScreen(BrewingStandContainer brewingStandContainer, PlayerInventory playerInventory, Text text) {
+		super(brewingStandContainer, playerInventory, text);
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		super.render(mouseX, mouseY, tickDelta);
-		this.renderTooltip(mouseX, mouseY);
+		super.render(i, j, f);
+		this.drawMouseoverTooltip(i, j);
 	}
 
 	@Override
-	protected void drawForeground(int mouseX, int mouseY) {
-		String string = this.brewingInventory.getName().asFormattedString();
-		this.textRenderer.method_18355(string, (float)(this.backgroundWidth / 2 - this.textRenderer.getStringWidth(string) / 2), 6.0F, 4210752);
-		this.textRenderer.method_18355(this.inventory.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
+	protected void drawForeground(int i, int j) {
+		this.font
+			.draw(this.title.asFormattedString(), (float)(this.containerWidth / 2 - this.font.getStringWidth(this.title.asFormattedString()) / 2), 6.0F, 4210752);
+		this.font.draw(this.playerInventory.getDisplayName().asFormattedString(), 8.0F, (float)(this.containerHeight - 96 + 2), 4210752);
 	}
 
 	@Override
-	protected void drawBackground(float delta, int mouseX, int mouseY) {
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
-		int i = (this.width - this.backgroundWidth) / 2;
-		int j = (this.height - this.backgroundHeight) / 2;
-		this.drawTexture(i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
-		int k = this.brewingInventory.getProperty(1);
-		int l = MathHelper.clamp((18 * k + 20 - 1) / 20, 0, 18);
-		if (l > 0) {
-			this.drawTexture(i + 60, j + 44, 176, 29, l, 4);
+	protected void drawBackground(float f, int i, int j) {
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		this.minecraft.getTextureManager().bindTexture(TEXTURE);
+		int k = (this.width - this.containerWidth) / 2;
+		int l = (this.height - this.containerHeight) / 2;
+		this.blit(k, l, 0, 0, this.containerWidth, this.containerHeight);
+		int m = this.container.getFuel();
+		int n = MathHelper.clamp((18 * m + 20 - 1) / 20, 0, 18);
+		if (n > 0) {
+			this.blit(k + 60, l + 44, 176, 29, n, 4);
 		}
 
-		int m = this.brewingInventory.getProperty(0);
-		if (m > 0) {
-			int n = (int)(28.0F * (1.0F - (float)m / 400.0F));
-			if (n > 0) {
-				this.drawTexture(i + 97, j + 16, 176, 0, 9, n);
+		int o = this.container.getBrewTime();
+		if (o > 0) {
+			int p = (int)(28.0F * (1.0F - (float)o / 400.0F));
+			if (p > 0) {
+				this.blit(k + 97, l + 16, 176, 0, 9, p);
 			}
 
-			n = field_13330[m / 2 % 7];
-			if (n > 0) {
-				this.drawTexture(i + 63, j + 14 + 29 - n, 185, 29 - n, 12, n);
+			p = field_2824[o / 2 % 7];
+			if (p > 0) {
+				this.blit(k + 63, l + 14 + 29 - p, 185, 29 - p, 12, p);
 			}
 		}
 	}

@@ -7,85 +7,86 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Collection;
 import java.util.Locale;
-import net.minecraft.class_3915;
-import net.minecraft.class_4009;
-import net.minecraft.class_4062;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
+import net.minecraft.client.network.packet.TitleS2CPacket;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.arguments.TextArgumentType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.ChatSerializer;
 
 public class TitleCommand {
-	public static void method_21140(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("title").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("title").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
-					((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.method_17530(
-												"targets", class_4062.method_17904()
+					((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument(
+												"targets", EntityArgumentType.players()
 											)
 											.then(
-												CommandManager.method_17529("clear")
-													.executes(commandContext -> method_21137((class_3915)commandContext.getSource(), class_4062.method_17907(commandContext, "targets")))
+												CommandManager.literal("clear")
+													.executes(
+														commandContext -> executeClear((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getPlayers(commandContext, "targets"))
+													)
 											))
 										.then(
-											CommandManager.method_17529("reset")
-												.executes(commandContext -> method_21142((class_3915)commandContext.getSource(), class_4062.method_17907(commandContext, "targets")))
+											CommandManager.literal("reset")
+												.executes(commandContext -> executeReset((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getPlayers(commandContext, "targets")))
 										))
 									.then(
-										CommandManager.method_17529("title")
+										CommandManager.literal("title")
 											.then(
-												CommandManager.method_17530("title", class_4009.method_17711())
+												CommandManager.argument("title", TextArgumentType.text())
 													.executes(
-														commandContext -> method_21139(
-																(class_3915)commandContext.getSource(),
-																class_4062.method_17907(commandContext, "targets"),
-																class_4009.method_17713(commandContext, "title"),
-																TitleS2CPacket.Action.TITLE
+														commandContext -> executeTitle(
+																(ServerCommandSource)commandContext.getSource(),
+																EntityArgumentType.getPlayers(commandContext, "targets"),
+																TextArgumentType.getTextArgument(commandContext, "title"),
+																TitleS2CPacket.Action.field_12630
 															)
 													)
 											)
 									))
 								.then(
-									CommandManager.method_17529("subtitle")
+									CommandManager.literal("subtitle")
 										.then(
-											CommandManager.method_17530("title", class_4009.method_17711())
+											CommandManager.argument("title", TextArgumentType.text())
 												.executes(
-													commandContext -> method_21139(
-															(class_3915)commandContext.getSource(),
-															class_4062.method_17907(commandContext, "targets"),
-															class_4009.method_17713(commandContext, "title"),
-															TitleS2CPacket.Action.SUBTITLE
+													commandContext -> executeTitle(
+															(ServerCommandSource)commandContext.getSource(),
+															EntityArgumentType.getPlayers(commandContext, "targets"),
+															TextArgumentType.getTextArgument(commandContext, "title"),
+															TitleS2CPacket.Action.field_12632
 														)
 												)
 										)
 								))
 							.then(
-								CommandManager.method_17529("actionbar")
+								CommandManager.literal("actionbar")
 									.then(
-										CommandManager.method_17530("title", class_4009.method_17711())
+										CommandManager.argument("title", TextArgumentType.text())
 											.executes(
-												commandContext -> method_21139(
-														(class_3915)commandContext.getSource(),
-														class_4062.method_17907(commandContext, "targets"),
-														class_4009.method_17713(commandContext, "title"),
-														TitleS2CPacket.Action.ACTIONBAR
+												commandContext -> executeTitle(
+														(ServerCommandSource)commandContext.getSource(),
+														EntityArgumentType.getPlayers(commandContext, "targets"),
+														TextArgumentType.getTextArgument(commandContext, "title"),
+														TitleS2CPacket.Action.field_12627
 													)
 											)
 									)
 							))
 						.then(
-							CommandManager.method_17529("times")
+							CommandManager.literal("times")
 								.then(
-									CommandManager.method_17530("fadeIn", IntegerArgumentType.integer(0))
+									CommandManager.argument("fadeIn", IntegerArgumentType.integer(0))
 										.then(
-											CommandManager.method_17530("stay", IntegerArgumentType.integer(0))
+											CommandManager.argument("stay", IntegerArgumentType.integer(0))
 												.then(
-													CommandManager.method_17530("fadeOut", IntegerArgumentType.integer(0))
+													CommandManager.argument("fadeOut", IntegerArgumentType.integer(0))
 														.executes(
-															commandContext -> method_21138(
-																	(class_3915)commandContext.getSource(),
-																	class_4062.method_17907(commandContext, "targets"),
+															commandContext -> executeTimes(
+																	(ServerCommandSource)commandContext.getSource(),
+																	EntityArgumentType.getPlayers(commandContext, "targets"),
 																	IntegerArgumentType.getInteger(commandContext, "fadeIn"),
 																	IntegerArgumentType.getInteger(commandContext, "stay"),
 																	IntegerArgumentType.getInteger(commandContext, "fadeOut")
@@ -99,58 +100,64 @@ public class TitleCommand {
 		);
 	}
 
-	private static int method_21137(class_3915 arg, Collection<ServerPlayerEntity> collection) {
-		TitleS2CPacket titleS2CPacket = new TitleS2CPacket(TitleS2CPacket.Action.CLEAR, null);
+	private static int executeClear(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection) {
+		TitleS2CPacket titleS2CPacket = new TitleS2CPacket(TitleS2CPacket.Action.field_12633, null);
 
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
 			serverPlayerEntity.networkHandler.sendPacket(titleS2CPacket);
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(new TranslatableText("commands.title.cleared.single", ((ServerPlayerEntity)collection.iterator().next()).getName()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.title.cleared.single", ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
+			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.title.cleared.multiple", collection.size()), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.title.cleared.multiple", collection.size()), true);
 		}
 
 		return collection.size();
 	}
 
-	private static int method_21142(class_3915 arg, Collection<ServerPlayerEntity> collection) {
-		TitleS2CPacket titleS2CPacket = new TitleS2CPacket(TitleS2CPacket.Action.RESET, null);
+	private static int executeReset(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection) {
+		TitleS2CPacket titleS2CPacket = new TitleS2CPacket(TitleS2CPacket.Action.field_12628, null);
 
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
 			serverPlayerEntity.networkHandler.sendPacket(titleS2CPacket);
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(new TranslatableText("commands.title.reset.single", ((ServerPlayerEntity)collection.iterator().next()).getName()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.title.reset.single", ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
+			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.title.reset.multiple", collection.size()), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.title.reset.multiple", collection.size()), true);
 		}
 
 		return collection.size();
 	}
 
-	private static int method_21139(class_3915 arg, Collection<ServerPlayerEntity> collection, Text text, TitleS2CPacket.Action action) throws CommandSyntaxException {
+	private static int executeTitle(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, Text text, TitleS2CPacket.Action action) throws CommandSyntaxException {
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			serverPlayerEntity.networkHandler.sendPacket(new TitleS2CPacket(action, ChatSerializer.method_20185(arg, text, serverPlayerEntity)));
+			serverPlayerEntity.networkHandler.sendPacket(new TitleS2CPacket(action, Texts.parse(serverCommandSource, text, serverPlayerEntity, 0)));
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
+			serverCommandSource.sendFeedback(
 				new TranslatableText(
-					"commands.title.show." + action.name().toLowerCase(Locale.ROOT) + ".single", ((ServerPlayerEntity)collection.iterator().next()).getName()
+					"commands.title.show." + action.name().toLowerCase(Locale.ROOT) + ".single", ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()
 				),
 				true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.title.show." + action.name().toLowerCase(Locale.ROOT) + ".multiple", collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.title.show." + action.name().toLowerCase(Locale.ROOT) + ".multiple", collection.size()), true
+			);
 		}
 
 		return collection.size();
 	}
 
-	private static int method_21138(class_3915 arg, Collection<ServerPlayerEntity> collection, int i, int j, int k) {
+	private static int executeTimes(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, int i, int j, int k) {
 		TitleS2CPacket titleS2CPacket = new TitleS2CPacket(i, j, k);
 
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
@@ -158,9 +165,11 @@ public class TitleCommand {
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(new TranslatableText("commands.title.times.single", ((ServerPlayerEntity)collection.iterator().next()).getName()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.title.times.single", ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
+			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.title.times.multiple", collection.size()), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.title.times.multiple", collection.size()), true);
 		}
 
 		return collection.size();

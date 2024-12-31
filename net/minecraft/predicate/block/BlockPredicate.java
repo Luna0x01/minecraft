@@ -12,11 +12,11 @@ public class BlockPredicate implements Predicate<BlockState> {
 		this.block = block;
 	}
 
-	public static BlockPredicate create(Block block) {
+	public static BlockPredicate make(Block block) {
 		return new BlockPredicate(block);
 	}
 
-	public boolean test(@Nullable BlockState blockState) {
+	public boolean method_11765(@Nullable BlockState blockState) {
 		return blockState != null && blockState.getBlock() == this.block;
 	}
 }

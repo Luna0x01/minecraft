@@ -3,11 +3,11 @@ package net.minecraft.world;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.annotation.Nullable;
-import net.minecraft.class_3893;
-import net.minecraft.class_3915;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -18,59 +18,59 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.Vec3d;
 
-public abstract class CommandBlockExecutor implements class_3893 {
+public abstract class CommandBlockExecutor implements CommandOutput {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
-	private long field_15705 = -1L;
-	private boolean field_15706 = true;
+	private long lastExecution = -1L;
+	private boolean updateLastExecution = true;
 	private int successCount;
 	private boolean trackOutput = true;
 	private Text lastOutput;
 	private String command = "";
-	private Text field_17484 = new LiteralText("@");
+	private Text customName = new LiteralText("@");
 
 	public int getSuccessCount() {
 		return this.successCount;
 	}
 
-	public void setSuccessCount(int successCount) {
-		this.successCount = successCount;
+	public void setSuccessCount(int i) {
+		this.successCount = i;
 	}
 
 	public Text getLastOutput() {
 		return (Text)(this.lastOutput == null ? new LiteralText("") : this.lastOutput);
 	}
 
-	public NbtCompound toNbt(NbtCompound nbt) {
-		nbt.putString("Command", this.command);
-		nbt.putInt("SuccessCount", this.successCount);
-		nbt.putString("CustomName", Text.Serializer.serialize(this.field_17484));
-		nbt.putBoolean("TrackOutput", this.trackOutput);
+	public CompoundTag serialize(CompoundTag compoundTag) {
+		compoundTag.putString("Command", this.command);
+		compoundTag.putInt("SuccessCount", this.successCount);
+		compoundTag.putString("CustomName", Text.Serializer.toJson(this.customName));
+		compoundTag.putBoolean("TrackOutput", this.trackOutput);
 		if (this.lastOutput != null && this.trackOutput) {
-			nbt.putString("LastOutput", Text.Serializer.serialize(this.lastOutput));
+			compoundTag.putString("LastOutput", Text.Serializer.toJson(this.lastOutput));
 		}
 
-		nbt.putBoolean("UpdateLastExecution", this.field_15706);
-		if (this.field_15706 && this.field_15705 > 0L) {
-			nbt.putLong("LastExecution", this.field_15705);
+		compoundTag.putBoolean("UpdateLastExecution", this.updateLastExecution);
+		if (this.updateLastExecution && this.lastExecution > 0L) {
+			compoundTag.putLong("LastExecution", this.lastExecution);
 		}
 
-		return nbt;
+		return compoundTag;
 	}
 
-	public void fromNbt(NbtCompound nbt) {
-		this.command = nbt.getString("Command");
-		this.successCount = nbt.getInt("SuccessCount");
-		if (nbt.contains("CustomName", 8)) {
-			this.field_17484 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
+	public void deserialize(CompoundTag compoundTag) {
+		this.command = compoundTag.getString("Command");
+		this.successCount = compoundTag.getInt("SuccessCount");
+		if (compoundTag.containsKey("CustomName", 8)) {
+			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
 		}
 
-		if (nbt.contains("TrackOutput", 1)) {
-			this.trackOutput = nbt.getBoolean("TrackOutput");
+		if (compoundTag.containsKey("TrackOutput", 1)) {
+			this.trackOutput = compoundTag.getBoolean("TrackOutput");
 		}
 
-		if (nbt.contains("LastOutput", 8) && this.trackOutput) {
+		if (compoundTag.containsKey("LastOutput", 8) && this.trackOutput) {
 			try {
-				this.lastOutput = Text.Serializer.deserializeText(nbt.getString("LastOutput"));
+				this.lastOutput = Text.Serializer.fromJson(compoundTag.getString("LastOutput"));
 			} catch (Throwable var3) {
 				this.lastOutput = new LiteralText(var3.getMessage());
 			}
@@ -78,19 +78,19 @@ public abstract class CommandBlockExecutor implements class_3893 {
 			this.lastOutput = null;
 		}
 
-		if (nbt.contains("UpdateLastExecution")) {
-			this.field_15706 = nbt.getBoolean("UpdateLastExecution");
+		if (compoundTag.containsKey("UpdateLastExecution")) {
+			this.updateLastExecution = compoundTag.getBoolean("UpdateLastExecution");
 		}
 
-		if (this.field_15706 && nbt.contains("LastExecution")) {
-			this.field_15705 = nbt.getLong("LastExecution");
+		if (this.updateLastExecution && compoundTag.containsKey("LastExecution")) {
+			this.lastExecution = compoundTag.getLong("LastExecution");
 		} else {
-			this.field_15705 = -1L;
+			this.lastExecution = -1L;
 		}
 	}
 
-	public void setCommand(String command) {
-		this.command = command;
+	public void setCommand(String string) {
+		this.command = string;
 		this.successCount = 0;
 	}
 
@@ -99,7 +99,7 @@ public abstract class CommandBlockExecutor implements class_3893 {
 	}
 
 	public boolean execute(World world) {
-		if (world.isClient || world.getLastUpdateTime() == this.field_15705) {
+		if (world.isClient || world.getTime() == this.lastExecution) {
 			return false;
 		} else if ("Searge".equalsIgnoreCase(this.command)) {
 			this.lastOutput = new LiteralText("#itzlipofutzli");
@@ -107,95 +107,95 @@ public abstract class CommandBlockExecutor implements class_3893 {
 			return true;
 		} else {
 			this.successCount = 0;
-			MinecraftServer minecraftServer = this.method_16273().getServer();
+			MinecraftServer minecraftServer = this.getWorld().getServer();
 			if (minecraftServer != null && minecraftServer.hasGameDir() && minecraftServer.areCommandBlocksEnabled() && !ChatUtil.isEmpty(this.command)) {
 				try {
 					this.lastOutput = null;
-					class_3915 lv = this.method_16276().method_17455((commandContext, bl, i) -> {
+					ServerCommandSource serverCommandSource = this.getSource().withConsumer((commandContext, bl, i) -> {
 						if (bl) {
 							this.successCount++;
 						}
 					});
-					minecraftServer.method_2971().method_17519(lv, this.command);
+					minecraftServer.getCommandManager().execute(serverCommandSource, this.command);
 				} catch (Throwable var6) {
 					CrashReport crashReport = CrashReport.create(var6, "Executing command block");
 					CrashReportSection crashReportSection = crashReport.addElement("Command to be executed");
 					crashReportSection.add("Command", this::getCommand);
-					crashReportSection.add("Name", (CrashCallable<String>)(() -> this.method_16277().getString()));
+					crashReportSection.add("Name", (CrashCallable<String>)(() -> this.getCustomName().getString()));
 					throw new CrashException(crashReport);
 				}
 			}
 
-			if (this.field_15706) {
-				this.field_15705 = world.getLastUpdateTime();
+			if (this.updateLastExecution) {
+				this.lastExecution = world.getTime();
 			} else {
-				this.field_15705 = -1L;
+				this.lastExecution = -1L;
 			}
 
 			return true;
 		}
 	}
 
-	public Text method_16277() {
-		return this.field_17484;
+	public Text getCustomName() {
+		return this.customName;
 	}
 
-	public void method_16272(Text text) {
-		this.field_17484 = text;
+	public void setCustomName(Text text) {
+		this.customName = text;
 	}
 
 	@Override
-	public void method_5505(Text text) {
+	public void sendMessage(Text text) {
 		if (this.trackOutput) {
 			this.lastOutput = new LiteralText("[" + DATE_FORMAT.format(new Date()) + "] ").append(text);
 			this.markDirty();
 		}
 	}
 
-	public abstract ServerWorld method_16273();
+	public abstract ServerWorld getWorld();
 
 	public abstract void markDirty();
 
-	public void setLastOutput(@Nullable Text lastOutput) {
-		this.lastOutput = lastOutput;
+	public void setLastOutput(@Nullable Text text) {
+		this.lastOutput = text;
 	}
 
-	public void setTrackOutput(boolean trackOutput) {
-		this.trackOutput = trackOutput;
+	public void shouldTrackOutput(boolean bl) {
+		this.trackOutput = bl;
 	}
 
 	public boolean isTrackingOutput() {
 		return this.trackOutput;
 	}
 
-	public boolean interact(PlayerEntity player) {
-		if (!player.method_15936()) {
+	public boolean interact(PlayerEntity playerEntity) {
+		if (!playerEntity.isCreativeLevelTwoOp()) {
 			return false;
 		} else {
-			if (player.method_5506().isClient) {
-				player.openCommandBlockScreen(this);
+			if (playerEntity.getEntityWorld().isClient) {
+				playerEntity.openCommandBlockMinecartScreen(this);
 			}
 
 			return true;
 		}
 	}
 
-	public abstract Vec3d method_16274();
+	public abstract Vec3d getPos();
 
-	public abstract class_3915 method_16276();
+	public abstract ServerCommandSource getSource();
 
 	@Override
-	public boolean method_17413() {
-		return this.method_16273().getGameRules().getBoolean("sendCommandFeedback") && this.trackOutput;
+	public boolean sendCommandFeedback() {
+		return this.getWorld().getGameRules().getBoolean(GameRules.field_19400) && this.trackOutput;
 	}
 
 	@Override
-	public boolean method_17414() {
+	public boolean shouldTrackOutput() {
 		return this.trackOutput;
 	}
 
 	@Override
-	public boolean method_17412() {
-		return this.method_16273().getGameRules().getBoolean("commandBlockOutput");
+	public boolean shouldBroadcastConsoleToOps() {
+		return this.getWorld().getGameRules().getBoolean(GameRules.field_19394);
 	}
 }

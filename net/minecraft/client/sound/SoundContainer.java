@@ -4,4 +4,6 @@ public interface SoundContainer<T> {
 	int getWeight();
 
 	T getSound();
+
+	void preload(SoundSystem soundSystem);
 }

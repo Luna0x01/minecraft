@@ -11,55 +11,57 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
 import java.util.List;
-import net.minecraft.class_3915;
-import net.minecraft.class_4062;
-import net.minecraft.class_4202;
-import net.minecraft.class_4252;
-import net.minecraft.class_4310;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.command.arguments.BlockPosArgumentType;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.arguments.ItemSlotArgumentType;
+import net.minecraft.command.arguments.ItemStackArgumentType;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
 public class ReplaceItemCommand {
-	private static final SimpleCommandExceptionType field_21771 = new SimpleCommandExceptionType(new TranslatableText("commands.replaceitem.block.failed"));
-	private static final DynamicCommandExceptionType field_21772 = new DynamicCommandExceptionType(
+	public static final SimpleCommandExceptionType BLOCK_FAILED_EXCEPTION = new SimpleCommandExceptionType(
+		new TranslatableText("commands.replaceitem.block.failed")
+	);
+	public static final DynamicCommandExceptionType SLOT_INAPPLICABLE_EXCEPTION = new DynamicCommandExceptionType(
 		object -> new TranslatableText("commands.replaceitem.slot.inapplicable", object)
 	);
-	private static final Dynamic2CommandExceptionType field_21773 = new Dynamic2CommandExceptionType(
+	public static final Dynamic2CommandExceptionType ENTITY_FAILED_EXCEPTION = new Dynamic2CommandExceptionType(
 		(object, object2) -> new TranslatableText("commands.replaceitem.entity.failed", object, object2)
 	);
 
-	public static void method_20924(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("replaceitem").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("replaceitem")
+						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.then(
-						CommandManager.method_17529("block")
+						CommandManager.literal("block")
 							.then(
-								CommandManager.method_17530("pos", class_4252.method_19358())
+								CommandManager.argument("pos", BlockPosArgumentType.blockPos())
 									.then(
-										CommandManager.method_17530("slot", class_4202.method_18948())
+										CommandManager.argument("slot", ItemSlotArgumentType.itemSlot())
 											.then(
-												((RequiredArgumentBuilder)CommandManager.method_17530("item", class_4310.method_19698())
+												((RequiredArgumentBuilder)CommandManager.argument("item", ItemStackArgumentType.itemStack())
 														.executes(
-															commandContext -> method_20922(
-																	(class_3915)commandContext.getSource(),
-																	class_4252.method_19360(commandContext, "pos"),
-																	class_4202.method_18950(commandContext, "slot"),
-																	class_4310.method_19700(commandContext, "item").method_19702(1, false)
+															commandContext -> executeBlock(
+																	(ServerCommandSource)commandContext.getSource(),
+																	BlockPosArgumentType.getLoadedBlockPos(commandContext, "pos"),
+																	ItemSlotArgumentType.getItemSlot(commandContext, "slot"),
+																	ItemStackArgumentType.getItemStackArgument(commandContext, "item").createStack(1, false)
 																)
 														))
 													.then(
-														CommandManager.method_17530("count", IntegerArgumentType.integer(1, 64))
+														CommandManager.argument("count", IntegerArgumentType.integer(1, 64))
 															.executes(
-																commandContext -> method_20922(
-																		(class_3915)commandContext.getSource(),
-																		class_4252.method_19360(commandContext, "pos"),
-																		class_4202.method_18950(commandContext, "slot"),
-																		class_4310.method_19700(commandContext, "item").method_19702(IntegerArgumentType.getInteger(commandContext, "count"), true)
+																commandContext -> executeBlock(
+																		(ServerCommandSource)commandContext.getSource(),
+																		BlockPosArgumentType.getLoadedBlockPos(commandContext, "pos"),
+																		ItemSlotArgumentType.getItemSlot(commandContext, "slot"),
+																		ItemStackArgumentType.getItemStackArgument(commandContext, "item").createStack(IntegerArgumentType.getInteger(commandContext, "count"), true)
 																	)
 															)
 													)
@@ -68,29 +70,29 @@ public class ReplaceItemCommand {
 							)
 					))
 				.then(
-					CommandManager.method_17529("entity")
+					CommandManager.literal("entity")
 						.then(
-							CommandManager.method_17530("targets", class_4062.method_17899())
+							CommandManager.argument("targets", EntityArgumentType.entities())
 								.then(
-									CommandManager.method_17530("slot", class_4202.method_18948())
+									CommandManager.argument("slot", ItemSlotArgumentType.itemSlot())
 										.then(
-											((RequiredArgumentBuilder)CommandManager.method_17530("item", class_4310.method_19698())
+											((RequiredArgumentBuilder)CommandManager.argument("item", ItemStackArgumentType.itemStack())
 													.executes(
-														commandContext -> method_20923(
-																(class_3915)commandContext.getSource(),
-																class_4062.method_17901(commandContext, "targets"),
-																class_4202.method_18950(commandContext, "slot"),
-																class_4310.method_19700(commandContext, "item").method_19702(1, false)
+														commandContext -> executeEntity(
+																(ServerCommandSource)commandContext.getSource(),
+																EntityArgumentType.getEntities(commandContext, "targets"),
+																ItemSlotArgumentType.getItemSlot(commandContext, "slot"),
+																ItemStackArgumentType.getItemStackArgument(commandContext, "item").createStack(1, false)
 															)
 													))
 												.then(
-													CommandManager.method_17530("count", IntegerArgumentType.integer(1, 64))
+													CommandManager.argument("count", IntegerArgumentType.integer(1, 64))
 														.executes(
-															commandContext -> method_20923(
-																	(class_3915)commandContext.getSource(),
-																	class_4062.method_17901(commandContext, "targets"),
-																	class_4202.method_18950(commandContext, "slot"),
-																	class_4310.method_19700(commandContext, "item").method_19702(IntegerArgumentType.getInteger(commandContext, "count"), true)
+															commandContext -> executeEntity(
+																	(ServerCommandSource)commandContext.getSource(),
+																	EntityArgumentType.getEntities(commandContext, "targets"),
+																	ItemSlotArgumentType.getItemSlot(commandContext, "slot"),
+																	ItemStackArgumentType.getItemStackArgument(commandContext, "item").createStack(IntegerArgumentType.getInteger(commandContext, "count"), true)
 																)
 														)
 												)
@@ -101,49 +103,49 @@ public class ReplaceItemCommand {
 		);
 	}
 
-	private static int method_20922(class_3915 arg, BlockPos blockPos, int i, ItemStack itemStack) throws CommandSyntaxException {
-		BlockEntity blockEntity = arg.method_17468().getBlockEntity(blockPos);
+	private static int executeBlock(ServerCommandSource serverCommandSource, BlockPos blockPos, int i, ItemStack itemStack) throws CommandSyntaxException {
+		BlockEntity blockEntity = serverCommandSource.getWorld().getBlockEntity(blockPos);
 		if (!(blockEntity instanceof Inventory)) {
-			throw field_21771.create();
+			throw BLOCK_FAILED_EXCEPTION.create();
 		} else {
 			Inventory inventory = (Inventory)blockEntity;
 			if (i >= 0 && i < inventory.getInvSize()) {
 				inventory.setInvStack(i, itemStack);
-				arg.method_17459(
+				serverCommandSource.sendFeedback(
 					new TranslatableText("commands.replaceitem.block.success", blockPos.getX(), blockPos.getY(), blockPos.getZ(), itemStack.toHoverableText()), true
 				);
 				return 1;
 			} else {
-				throw field_21772.create(i);
+				throw SLOT_INAPPLICABLE_EXCEPTION.create(i);
 			}
 		}
 	}
 
-	private static int method_20923(class_3915 arg, Collection<? extends Entity> collection, int i, ItemStack itemStack) throws CommandSyntaxException {
+	private static int executeEntity(ServerCommandSource serverCommandSource, Collection<? extends Entity> collection, int i, ItemStack itemStack) throws CommandSyntaxException {
 		List<Entity> list = Lists.newArrayListWithCapacity(collection.size());
 
 		for (Entity entity : collection) {
 			if (entity instanceof ServerPlayerEntity) {
-				((ServerPlayerEntity)entity).playerScreenHandler.sendContentUpdates();
+				((ServerPlayerEntity)entity).playerContainer.sendContentUpdates();
 			}
 
 			if (entity.equip(i, itemStack.copy())) {
 				list.add(entity);
 				if (entity instanceof ServerPlayerEntity) {
-					((ServerPlayerEntity)entity).playerScreenHandler.sendContentUpdates();
+					((ServerPlayerEntity)entity).playerContainer.sendContentUpdates();
 				}
 			}
 		}
 
 		if (list.isEmpty()) {
-			throw field_21773.create(itemStack.toHoverableText(), i);
+			throw ENTITY_FAILED_EXCEPTION.create(itemStack.toHoverableText(), i);
 		} else {
 			if (list.size() == 1) {
-				arg.method_17459(
-					new TranslatableText("commands.replaceitem.entity.success.single", ((Entity)list.iterator().next()).getName(), itemStack.toHoverableText()), true
+				serverCommandSource.sendFeedback(
+					new TranslatableText("commands.replaceitem.entity.success.single", ((Entity)list.iterator().next()).getDisplayName(), itemStack.toHoverableText()), true
 				);
 			} else {
-				arg.method_17459(new TranslatableText("commands.replaceitem.entity.success.multiple", list.size(), itemStack.toHoverableText()), true);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.replaceitem.entity.success.multiple", list.size(), itemStack.toHoverableText()), true);
 			}
 
 			return list.size();

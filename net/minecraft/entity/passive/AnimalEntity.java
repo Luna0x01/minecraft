@@ -1,37 +1,35 @@
 package net.minecraft.entity.passive;
 
+import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.class_4342;
-import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityCategoryProvider;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
-public abstract class AnimalEntity extends PassiveEntity implements EntityCategoryProvider {
-	protected Block field_11973 = Blocks.GRASS_BLOCK;
+public abstract class AnimalEntity extends PassiveEntity {
 	private int loveTicks;
-	private UUID field_16550;
+	private UUID lovingPlayer;
 
-	protected AnimalEntity(EntityType<?> entityType, World world) {
+	protected AnimalEntity(EntityType<? extends AnimalEntity> entityType, World world) {
 		super(entityType, world);
 	}
 
 	@Override
 	protected void mobTick() {
-		if (this.age() != 0) {
+		if (this.getBreedingAge() != 0) {
 			this.loveTicks = 0;
 		}
 
@@ -41,7 +39,7 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	@Override
 	public void tickMovement() {
 		super.tickMovement();
-		if (this.age() != 0) {
+		if (this.getBreedingAge() != 0) {
 			this.loveTicks = 0;
 		}
 
@@ -52,11 +50,11 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 				double e = this.random.nextGaussian() * 0.02;
 				double f = this.random.nextGaussian() * 0.02;
 				this.world
-					.method_16343(
-						class_4342.field_21351,
-						this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
-						this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
-						this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
+					.addParticle(
+						ParticleTypes.field_11201,
+						this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
+						this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
+						this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
 						d,
 						e,
 						f
@@ -66,26 +64,26 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
-	public boolean damage(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
+	public boolean damage(DamageSource damageSource, float f) {
+		if (this.isInvulnerableTo(damageSource)) {
 			return false;
 		} else {
 			this.loveTicks = 0;
-			return super.damage(source, amount);
+			return super.damage(damageSource, f);
 		}
 	}
 
 	@Override
-	public float method_15657(BlockPos blockPos, RenderBlockView renderBlockView) {
-		return renderBlockView.getBlockState(blockPos.down()).getBlock() == this.field_11973 ? 10.0F : renderBlockView.method_16356(blockPos) - 0.5F;
+	public float getPathfindingFavor(BlockPos blockPos, ViewableWorld viewableWorld) {
+		return viewableWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10219 ? 10.0F : viewableWorld.getBrightness(blockPos) - 0.5F;
 	}
 
 	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("InLove", this.loveTicks);
-		if (this.field_16550 != null) {
-			nbt.putUuid("LoveCause", this.field_16550);
+	public void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		compoundTag.putInt("InLove", this.loveTicks);
+		if (this.lovingPlayer != null) {
+			compoundTag.putUuid("LoveCause", this.lovingPlayer);
 		}
 	}
 
@@ -95,19 +93,14 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.loveTicks = nbt.getInt("InLove");
-		this.field_16550 = nbt.containsUuid("LoveCause") ? nbt.getUuid("LoveCause") : null;
+	public void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		this.loveTicks = compoundTag.getInt("InLove");
+		this.lovingPlayer = compoundTag.hasUuid("LoveCause") ? compoundTag.getUuid("LoveCause") : null;
 	}
 
-	@Override
-	public boolean method_15652(IWorld iWorld, boolean bl) {
-		int i = MathHelper.floor(this.x);
-		int j = MathHelper.floor(this.getBoundingBox().minY);
-		int k = MathHelper.floor(this.z);
-		BlockPos blockPos = new BlockPos(i, j, k);
-		return iWorld.getBlockState(blockPos.down()).getBlock() == this.field_11973 && iWorld.method_16379(blockPos, 0) > 8 && super.method_15652(iWorld, bl);
+	public static boolean method_20663(EntityType<? extends AnimalEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		return iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10219 && iWorld.getLightLevel(blockPos, 0) > 8;
 	}
 
 	@Override
@@ -116,24 +109,24 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
-	public boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn(double d) {
 		return false;
 	}
 
 	@Override
-	protected int getXpToDrop(PlayerEntity player) {
+	protected int getCurrentExperience(PlayerEntity playerEntity) {
 		return 1 + this.world.random.nextInt(3);
 	}
 
-	public boolean isBreedingItem(ItemStack stack) {
-		return stack.getItem() == Items.WHEAT;
+	public boolean isBreedingItem(ItemStack itemStack) {
+		return itemStack.getItem() == Items.field_8861;
 	}
 
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (this.isBreedingItem(itemStack)) {
-			if (this.age() == 0 && this.method_15741()) {
+			if (this.getBreedingAge() == 0 && this.canEat()) {
 				this.eat(playerEntity, itemStack);
 				this.lovePlayer(playerEntity);
 				return true;
@@ -141,7 +134,7 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 
 			if (this.isBaby()) {
 				this.eat(playerEntity, itemStack);
-				this.method_10925((int)((float)(-this.age() / 20) * 0.1F), true);
+				this.growUp((int)((float)(-this.getBreedingAge() / 20) * 0.1F), true);
 				return true;
 			}
 		}
@@ -149,35 +142,35 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		return super.interactMob(playerEntity, hand);
 	}
 
-	protected void eat(PlayerEntity player, ItemStack stack) {
-		if (!player.abilities.creativeMode) {
-			stack.decrement(1);
+	protected void eat(PlayerEntity playerEntity, ItemStack itemStack) {
+		if (!playerEntity.abilities.creativeMode) {
+			itemStack.decrement(1);
 		}
 	}
 
-	public boolean method_15741() {
+	public boolean canEat() {
 		return this.loveTicks <= 0;
 	}
 
-	public void lovePlayer(@Nullable PlayerEntity player) {
+	public void lovePlayer(@Nullable PlayerEntity playerEntity) {
 		this.loveTicks = 600;
-		if (player != null) {
-			this.field_16550 = player.getUuid();
+		if (playerEntity != null) {
+			this.lovingPlayer = playerEntity.getUuid();
 		}
 
 		this.world.sendEntityStatus(this, (byte)18);
 	}
 
-	public void method_15740(int i) {
+	public void setLoveTicks(int i) {
 		this.loveTicks = i;
 	}
 
 	@Nullable
-	public ServerPlayerEntity method_15103() {
-		if (this.field_16550 == null) {
+	public ServerPlayerEntity getLovingPlayer() {
+		if (this.lovingPlayer == null) {
 			return null;
 		} else {
-			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.field_16550);
+			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.lovingPlayer);
 			return playerEntity instanceof ServerPlayerEntity ? (ServerPlayerEntity)playerEntity : null;
 		}
 	}
@@ -190,34 +183,34 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		this.loveTicks = 0;
 	}
 
-	public boolean canBreedWith(AnimalEntity other) {
-		if (other == this) {
+	public boolean canBreedWith(AnimalEntity animalEntity) {
+		if (animalEntity == this) {
 			return false;
 		} else {
-			return other.getClass() != this.getClass() ? false : this.isInLove() && other.isInLove();
+			return animalEntity.getClass() != this.getClass() ? false : this.isInLove() && animalEntity.isInLove();
 		}
 	}
 
 	@Override
-	public void handleStatus(byte status) {
-		if (status == 18) {
+	public void handleStatus(byte b) {
+		if (b == 18) {
 			for (int i = 0; i < 7; i++) {
 				double d = this.random.nextGaussian() * 0.02;
 				double e = this.random.nextGaussian() * 0.02;
 				double f = this.random.nextGaussian() * 0.02;
 				this.world
-					.method_16343(
-						class_4342.field_21351,
-						this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
-						this.y + 0.5 + (double)(this.random.nextFloat() * this.height),
-						this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
+					.addParticle(
+						ParticleTypes.field_11201,
+						this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
+						this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
+						this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
 						d,
 						e,
 						f
 					);
 			}
 		} else {
-			super.handleStatus(status);
+			super.handleStatus(b);
 		}
 	}
 }

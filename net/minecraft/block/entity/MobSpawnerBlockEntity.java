@@ -3,17 +3,19 @@ package net.minecraft.block.entity;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.MobSpawnerEntry;
+import net.minecraft.world.MobSpawnerLogic;
 import net.minecraft.world.World;
 
 public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
-	private final SpawnerBlockEntityBehavior behaviorHandler = new SpawnerBlockEntityBehavior() {
+	private final MobSpawnerLogic logic = new MobSpawnerLogic() {
 		@Override
-		public void sendStatus(int status) {
-			MobSpawnerBlockEntity.this.world.addBlockAction(MobSpawnerBlockEntity.this.pos, Blocks.SPAWNER, status, 0);
+		public void sendStatus(int i) {
+			MobSpawnerBlockEntity.this.world.addBlockAction(MobSpawnerBlockEntity.this.pos, Blocks.field_10260, i, 0);
 		}
 
 		@Override
@@ -27,61 +29,61 @@ public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 		}
 
 		@Override
-		public void setSpawnData(SpawnerBlockEntityBehaviorEntry data) {
-			super.setSpawnData(data);
+		public void setSpawnEntry(MobSpawnerEntry mobSpawnerEntry) {
+			super.setSpawnEntry(mobSpawnerEntry);
 			if (this.getWorld() != null) {
 				BlockState blockState = this.getWorld().getBlockState(this.getPos());
-				this.getWorld().method_11481(MobSpawnerBlockEntity.this.pos, blockState, blockState, 4);
+				this.getWorld().updateListeners(MobSpawnerBlockEntity.this.pos, blockState, blockState, 4);
 			}
 		}
 	};
 
 	public MobSpawnerBlockEntity() {
-		super(BlockEntityType.MOB_SPAWNER);
+		super(BlockEntityType.field_11889);
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		super.fromNbt(nbt);
-		this.behaviorHandler.deserialize(nbt);
+	public void fromTag(CompoundTag compoundTag) {
+		super.fromTag(compoundTag);
+		this.logic.deserialize(compoundTag);
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
-		this.behaviorHandler.toTag(nbt);
-		return nbt;
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
+		this.logic.serialize(compoundTag);
+		return compoundTag;
 	}
 
 	@Override
 	public void tick() {
-		this.behaviorHandler.tick();
+		this.logic.update();
 	}
 
 	@Nullable
 	@Override
-	public BlockEntityUpdateS2CPacket getUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 1, this.getUpdatePacketContent());
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 1, this.toInitialChunkDataTag());
 	}
 
 	@Override
-	public NbtCompound getUpdatePacketContent() {
-		NbtCompound nbtCompound = this.toNbt(new NbtCompound());
-		nbtCompound.remove("SpawnPotentials");
-		return nbtCompound;
+	public CompoundTag toInitialChunkDataTag() {
+		CompoundTag compoundTag = this.toTag(new CompoundTag());
+		compoundTag.remove("SpawnPotentials");
+		return compoundTag;
 	}
 
 	@Override
-	public boolean onBlockAction(int code, int data) {
-		return this.behaviorHandler.handleStatus(code) ? true : super.onBlockAction(code, data);
+	public boolean onBlockAction(int i, int j) {
+		return this.logic.method_8275(i) ? true : super.onBlockAction(i, j);
 	}
 
 	@Override
-	public boolean shouldNotCopyNbtFromItem() {
+	public boolean shouldNotCopyTagFromItem() {
 		return true;
 	}
 
-	public SpawnerBlockEntityBehavior getLogic() {
-		return this.behaviorHandler;
+	public MobSpawnerLogic getLogic() {
+		return this.logic;
 	}
 }

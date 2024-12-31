@@ -1,70 +1,80 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.Random;
-import net.minecraft.class_3798;
-import net.minecraft.class_3844;
-import net.minecraft.class_3850;
+import java.util.function.Function;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
-public class NetherSpringFeature extends class_3844<class_3850> {
-	private static final BlockState field_19207 = Blocks.NETHERRACK.getDefaultState();
+public class NetherSpringFeature extends Feature<NetherSpringFeatureConfig> {
+	private static final BlockState NETHERRACK = Blocks.field_10515.getDefaultState();
 
-	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3850 arg) {
-		if (iWorld.getBlockState(blockPos.up()) != field_19207) {
+	public NetherSpringFeature(Function<Dynamic<?>, ? extends NetherSpringFeatureConfig> function) {
+		super(function);
+	}
+
+	public boolean method_13555(
+		IWorld iWorld,
+		ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator,
+		Random random,
+		BlockPos blockPos,
+		NetherSpringFeatureConfig netherSpringFeatureConfig
+	) {
+		if (iWorld.getBlockState(blockPos.up()) != NETHERRACK) {
 			return false;
-		} else if (!iWorld.getBlockState(blockPos).isAir() && iWorld.getBlockState(blockPos) != field_19207) {
+		} else if (!iWorld.getBlockState(blockPos).isAir() && iWorld.getBlockState(blockPos) != NETHERRACK) {
 			return false;
 		} else {
 			int i = 0;
-			if (iWorld.getBlockState(blockPos.west()) == field_19207) {
+			if (iWorld.getBlockState(blockPos.west()) == NETHERRACK) {
 				i++;
 			}
 
-			if (iWorld.getBlockState(blockPos.east()) == field_19207) {
+			if (iWorld.getBlockState(blockPos.east()) == NETHERRACK) {
 				i++;
 			}
 
-			if (iWorld.getBlockState(blockPos.north()) == field_19207) {
+			if (iWorld.getBlockState(blockPos.north()) == NETHERRACK) {
 				i++;
 			}
 
-			if (iWorld.getBlockState(blockPos.south()) == field_19207) {
+			if (iWorld.getBlockState(blockPos.south()) == NETHERRACK) {
 				i++;
 			}
 
-			if (iWorld.getBlockState(blockPos.down()) == field_19207) {
+			if (iWorld.getBlockState(blockPos.down()) == NETHERRACK) {
 				i++;
 			}
 
 			int j = 0;
-			if (iWorld.method_8579(blockPos.west())) {
+			if (iWorld.isAir(blockPos.west())) {
 				j++;
 			}
 
-			if (iWorld.method_8579(blockPos.east())) {
+			if (iWorld.isAir(blockPos.east())) {
 				j++;
 			}
 
-			if (iWorld.method_8579(blockPos.north())) {
+			if (iWorld.isAir(blockPos.north())) {
 				j++;
 			}
 
-			if (iWorld.method_8579(blockPos.south())) {
+			if (iWorld.isAir(blockPos.south())) {
 				j++;
 			}
 
-			if (iWorld.method_8579(blockPos.down())) {
+			if (iWorld.isAir(blockPos.down())) {
 				j++;
 			}
 
-			if (!arg.field_19206 && i == 4 && j == 1 || i == 5) {
-				iWorld.setBlockState(blockPos, Blocks.LAVA.getDefaultState(), 2);
-				iWorld.method_16340().schedule(blockPos, Fluids.LAVA, 0);
+			if (!netherSpringFeatureConfig.insideRock && i == 4 && j == 1 || i == 5) {
+				iWorld.setBlockState(blockPos, Blocks.field_10164.getDefaultState(), 2);
+				iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.LAVA, 0);
 			}
 
 			return true;

@@ -1,56 +1,55 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.world.World;
 
-public class PortalParticle extends Particle {
-	private final float prevScale;
+public class PortalParticle extends SpriteBillboardParticle {
 	private final double startX;
 	private final double startY;
 	private final double startZ;
 
-	protected PortalParticle(World world, double d, double e, double f, double g, double h, double i) {
-		super(world, d, e, f, g, h, i);
+	private PortalParticle(World world, double d, double e, double f, double g, double h, double i) {
+		super(world, d, e, f);
 		this.velocityX = g;
 		this.velocityY = h;
 		this.velocityZ = i;
-		this.field_13428 = d;
-		this.field_13429 = e;
-		this.field_13430 = f;
-		this.startX = this.field_13428;
-		this.startY = this.field_13429;
-		this.startZ = this.field_13430;
-		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
-		this.scale = this.field_13438.nextFloat() * 0.2F + 0.5F;
-		this.prevScale = this.scale;
-		this.red = j * 0.9F;
-		this.green = j * 0.3F;
-		this.blue = j;
+		this.x = d;
+		this.y = e;
+		this.z = f;
+		this.startX = this.x;
+		this.startY = this.y;
+		this.startZ = this.z;
+		this.scale = 0.1F * (this.random.nextFloat() * 0.2F + 0.5F);
+		float j = this.random.nextFloat() * 0.6F + 0.4F;
+		this.colorRed = j * 0.9F;
+		this.colorGreen = j * 0.3F;
+		this.colorBlue = j;
 		this.maxAge = (int)(Math.random() * 10.0) + 40;
-		this.setMiscTexture((int)(Math.random() * 8.0));
 	}
 
 	@Override
-	public void method_12242(double d, double e, double f) {
-		this.method_12246(this.method_12254().offset(d, e, f));
-		this.method_12252();
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge;
-		f = 1.0F - f;
-		f *= f;
-		f = 1.0F - f;
-		this.scale = this.prevScale * f;
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
+	public void move(double d, double e, double f) {
+		this.setBoundingBox(this.getBoundingBox().offset(d, e, f));
+		this.repositionFromBoundingBox();
 	}
 
 	@Override
-	public int method_12243(float f) {
-		int i = super.method_12243(f);
+	public float getSize(float f) {
+		float g = ((float)this.age + f) / (float)this.maxAge;
+		g = 1.0F - g;
+		g *= g;
+		g = 1.0F - g;
+		return this.scale * g;
+	}
+
+	@Override
+	public int getColorMultiplier(float f) {
+		int i = super.getColorMultiplier(f);
 		float g = (float)this.age / (float)this.maxAge;
 		g *= g;
 		g *= g;
@@ -65,24 +64,33 @@ public class PortalParticle extends Particle {
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
-		float f = (float)this.age / (float)this.maxAge;
-		float var3 = -f + f * f * 2.0F;
-		float var4 = 1.0F - var3;
-		this.field_13428 = this.startX + this.velocityX * (double)var4;
-		this.field_13429 = this.startY + this.velocityY * (double)var4 + (double)(1.0F - f);
-		this.field_13430 = this.startZ + this.velocityZ * (double)var4;
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
+			this.markDead();
+		} else {
+			float f = (float)this.age / (float)this.maxAge;
+			float var3 = -f + f * f * 2.0F;
+			float var4 = 1.0F - var3;
+			this.x = this.startX + this.velocityX * (double)var4;
+			this.y = this.startY + this.velocityY * (double)var4 + (double)(1.0F - f);
+			this.z = this.startZ + this.velocityZ * (double)var4;
 		}
 	}
 
-	public static class NetherPortalFactory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new PortalParticle(world, d, e, f, g, h, i);
+	public static class Factory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17865;
+
+		public Factory(SpriteProvider spriteProvider) {
+			this.field_17865 = spriteProvider;
+		}
+
+		public Particle method_3094(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			PortalParticle portalParticle = new PortalParticle(world, d, e, f, g, h, i);
+			portalParticle.setSprite(this.field_17865);
+			return portalParticle;
 		}
 	}
 }

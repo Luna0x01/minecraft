@@ -11,21 +11,21 @@ import net.minecraft.util.math.Vec3d;
 
 public class EntityDamageSource extends DamageSource {
 	@Nullable
-	protected Entity source;
-	private boolean thorns;
+	protected final Entity source;
+	private boolean field_5880;
 
 	public EntityDamageSource(String string, @Nullable Entity entity) {
 		super(string);
 		this.source = entity;
 	}
 
-	public EntityDamageSource setThorns() {
-		this.thorns = true;
+	public EntityDamageSource method_5550() {
+		this.field_5880 = true;
 		return this;
 	}
 
-	public boolean isThorns() {
-		return this.thorns;
+	public boolean method_5549() {
+		return this.field_5880;
 	}
 
 	@Nullable
@@ -35,12 +35,12 @@ public class EntityDamageSource extends DamageSource {
 	}
 
 	@Override
-	public Text getDeathMessage(LivingEntity entity) {
+	public Text getDeathMessage(LivingEntity livingEntity) {
 		ItemStack itemStack = this.source instanceof LivingEntity ? ((LivingEntity)this.source).getMainHandStack() : ItemStack.EMPTY;
 		String string = "death.attack." + this.name;
 		return !itemStack.isEmpty() && itemStack.hasCustomName()
-			? new TranslatableText(string + ".item", entity.getName(), this.source.getName(), itemStack.toHoverableText())
-			: new TranslatableText(string, entity.getName(), this.source.getName());
+			? new TranslatableText(string + ".item", livingEntity.getDisplayName(), this.source.getDisplayName(), itemStack.toHoverableText())
+			: new TranslatableText(string, livingEntity.getDisplayName(), this.source.getDisplayName());
 	}
 
 	@Override
@@ -50,7 +50,7 @@ public class EntityDamageSource extends DamageSource {
 
 	@Nullable
 	@Override
-	public Vec3d getPosition() {
+	public Vec3d method_5510() {
 		return new Vec3d(this.source.x, this.source.y, this.source.z);
 	}
 }

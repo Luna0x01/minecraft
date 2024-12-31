@@ -1,27 +1,27 @@
 package net.minecraft.world.dimension;
 
 import javax.annotation.Nullable;
-import net.minecraft.class_3807;
 import net.minecraft.block.Blocks;
-import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.biome.BiomeSourceType;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.source.BiomeSourceType;
 import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.gen.chunk.CavesChunkGeneratorConfig;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 
 public class TheNetherDimension extends Dimension {
-	@Override
-	public void init() {
+	public TheNetherDimension(World world, DimensionType dimensionType) {
+		super(world, dimensionType);
 		this.waterVaporizes = true;
-		this.hasNoSkylight = true;
-		this.field_18953 = false;
+		this.isNether = true;
 	}
 
 	@Override
-	public Vec3d getFogColor(float skyAngle, float tickDelta) {
+	public Vec3d getFogColor(float f, float g) {
 		return new Vec3d(0.2F, 0.03F, 0.03F);
 	}
 
@@ -36,11 +36,34 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public ChunkGenerator<?> method_17193() {
-		class_3807 lv = ChunkGeneratorType.CAVES.method_17040();
-		lv.method_17212(Blocks.NETHERRACK.getDefaultState());
-		lv.method_17213(Blocks.LAVA.getDefaultState());
-		return ChunkGeneratorType.CAVES.create(this.world, BiomeSourceType.FIXED.method_16484(BiomeSourceType.FIXED.method_16486().method_16498(Biomes.NETHER)), lv);
+	public ChunkGenerator<?> createChunkGenerator() {
+		CavesChunkGeneratorConfig cavesChunkGeneratorConfig = ChunkGeneratorType.field_12765.createSettings();
+		cavesChunkGeneratorConfig.setDefaultBlock(Blocks.field_10515.getDefaultState());
+		cavesChunkGeneratorConfig.setDefaultFluid(Blocks.field_10164.getDefaultState());
+		return ChunkGeneratorType.field_12765
+			.create(this.world, BiomeSourceType.FIXED.applyConfig(BiomeSourceType.FIXED.getConfig().setBiome(Biomes.field_9461)), cavesChunkGeneratorConfig);
+	}
+
+	@Override
+	public boolean hasVisibleSky() {
+		return false;
+	}
+
+	@Nullable
+	@Override
+	public BlockPos getSpawningBlockInChunk(ChunkPos chunkPos, boolean bl) {
+		return null;
+	}
+
+	@Nullable
+	@Override
+	public BlockPos getTopSpawningBlockPosition(int i, int j, boolean bl) {
+		return null;
+	}
+
+	@Override
+	public float getSkyAngle(long l, float f) {
+		return 0.5F;
 	}
 
 	@Override
@@ -48,30 +71,8 @@ public class TheNetherDimension extends Dimension {
 		return false;
 	}
 
-	@Nullable
 	@Override
-	public BlockPos method_17191(ChunkPos chunkPos, boolean bl) {
-		return null;
-	}
-
-	@Nullable
-	@Override
-	public BlockPos method_17190(int i, int j, boolean bl) {
-		return null;
-	}
-
-	@Override
-	public float getSkyAngle(long timeOfDay, float tickDelta) {
-		return 0.5F;
-	}
-
-	@Override
-	public boolean containsWorldSpawn() {
-		return false;
-	}
-
-	@Override
-	public boolean isFogThick(int x, int z) {
+	public boolean shouldRenderFog(int i, int j) {
 		return true;
 	}
 
@@ -91,7 +92,7 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public DimensionType method_11789() {
-		return DimensionType.THE_NETHER;
+	public DimensionType getType() {
+		return DimensionType.field_13076;
 	}
 }

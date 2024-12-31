@@ -9,21 +9,21 @@ import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 
 public class DyeItem extends Item {
-	private static final Map<DyeColor, DyeItem> field_17167 = Maps.newEnumMap(DyeColor.class);
-	private final DyeColor field_17168;
+	private static final Map<DyeColor, DyeItem> DYES = Maps.newEnumMap(DyeColor.class);
+	private final DyeColor color;
 
 	public DyeItem(DyeColor dyeColor, Item.Settings settings) {
 		super(settings);
-		this.field_17168 = dyeColor;
-		field_17167.put(dyeColor, this);
+		this.color = dyeColor;
+		DYES.put(dyeColor, this);
 	}
 
 	@Override
-	public boolean method_3353(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
+	public boolean useOnEntity(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
 		if (livingEntity instanceof SheepEntity) {
 			SheepEntity sheepEntity = (SheepEntity)livingEntity;
-			if (!sheepEntity.isSheared() && sheepEntity.getColor() != this.field_17168) {
-				sheepEntity.setColor(this.field_17168);
+			if (sheepEntity.isAlive() && !sheepEntity.isSheared() && sheepEntity.getColor() != this.color) {
+				sheepEntity.setColor(this.color);
 				itemStack.decrement(1);
 			}
 
@@ -33,11 +33,11 @@ public class DyeItem extends Item {
 		}
 	}
 
-	public DyeColor method_16047() {
-		return this.field_17168;
+	public DyeColor getColor() {
+		return this.color;
 	}
 
-	public static DyeItem method_16046(DyeColor dyeColor) {
-		return (DyeItem)field_17167.get(dyeColor);
+	public static DyeItem byColor(DyeColor dyeColor) {
+		return (DyeItem)DYES.get(dyeColor);
 	}
 }

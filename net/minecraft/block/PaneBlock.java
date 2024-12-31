@@ -1,36 +1,34 @@
 package net.minecraft.block;
 
-import net.minecraft.class_3703;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateManager;
+import net.minecraft.state.StateFactory;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 
-public class PaneBlock extends class_3703 {
-	protected PaneBlock(Block.Builder builder) {
-		super(1.0F, 1.0F, 16.0F, 16.0F, 16.0F, builder);
+public class PaneBlock extends HorizontalConnectedBlock {
+	protected PaneBlock(Block.Settings settings) {
+		super(1.0F, 1.0F, 16.0F, 16.0F, 16.0F, settings);
 		this.setDefaultState(
-			this.stateManager
-				.method_16923()
-				.withProperty(field_18265, Boolean.valueOf(false))
-				.withProperty(field_18266, Boolean.valueOf(false))
-				.withProperty(field_18267, Boolean.valueOf(false))
-				.withProperty(field_18268, Boolean.valueOf(false))
-				.withProperty(field_18269, Boolean.valueOf(false))
+			this.stateFactory
+				.getDefaultState()
+				.with(NORTH, Boolean.valueOf(false))
+				.with(EAST, Boolean.valueOf(false))
+				.with(SOUTH, Boolean.valueOf(false))
+				.with(WEST, Boolean.valueOf(false))
+				.with(WATERLOGGED, Boolean.valueOf(false))
 		);
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext context) {
-		BlockView blockView = context.getWorld();
-		BlockPos blockPos = context.getBlockPos();
-		FluidState fluidState = context.getWorld().getFluidState(context.getBlockPos());
+	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+		BlockView blockView = itemPlacementContext.getWorld();
+		BlockPos blockPos = itemPlacementContext.getBlockPos();
+		FluidState fluidState = itemPlacementContext.getWorld().getFluidState(itemPlacementContext.getBlockPos());
 		BlockPos blockPos2 = blockPos.north();
 		BlockPos blockPos3 = blockPos.south();
 		BlockPos blockPos4 = blockPos.west();
@@ -40,88 +38,57 @@ public class PaneBlock extends class_3703 {
 		BlockState blockState3 = blockView.getBlockState(blockPos4);
 		BlockState blockState4 = blockView.getBlockState(blockPos5);
 		return this.getDefaultState()
-			.withProperty(field_18265, Boolean.valueOf(this.method_16688(blockState, blockState.getRenderLayer(blockView, blockPos2, Direction.SOUTH))))
-			.withProperty(field_18267, Boolean.valueOf(this.method_16688(blockState2, blockState2.getRenderLayer(blockView, blockPos3, Direction.NORTH))))
-			.withProperty(field_18268, Boolean.valueOf(this.method_16688(blockState3, blockState3.getRenderLayer(blockView, blockPos4, Direction.EAST))))
-			.withProperty(field_18266, Boolean.valueOf(this.method_16688(blockState4, blockState4.getRenderLayer(blockView, blockPos5, Direction.WEST))))
-			.withProperty(field_18269, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
+			.with(NORTH, Boolean.valueOf(this.connectsTo(blockState, blockState.isSideSolidFullSquare(blockView, blockPos2, Direction.field_11035))))
+			.with(SOUTH, Boolean.valueOf(this.connectsTo(blockState2, blockState2.isSideSolidFullSquare(blockView, blockPos3, Direction.field_11043))))
+			.with(WEST, Boolean.valueOf(this.connectsTo(blockState3, blockState3.isSideSolidFullSquare(blockView, blockPos4, Direction.field_11034))))
+			.with(EAST, Boolean.valueOf(this.connectsTo(blockState4, blockState4.isSideSolidFullSquare(blockView, blockPos5, Direction.field_11039))))
+			.with(WATERLOGGED, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		if ((Boolean)state.getProperty(field_18269)) {
-			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		if ((Boolean)blockState.get(WATERLOGGED)) {
+			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
 		}
 
 		return direction.getAxis().isHorizontal()
-			? state.withProperty(
-				(Property)field_18270.get(direction),
-				Boolean.valueOf(this.method_16688(neighborState, neighborState.getRenderLayer(world, neighborPos, direction.getOpposite())))
+			? blockState.with(
+				(Property)FACING_PROPERTIES.get(direction),
+				Boolean.valueOf(this.connectsTo(blockState2, blockState2.isSideSolidFullSquare(iWorld, blockPos2, direction.getOpposite())))
 			)
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public boolean method_16573(BlockState blockState, BlockState blockState2, Direction direction) {
+	public boolean isSideInvisible(BlockState blockState, BlockState blockState2, Direction direction) {
 		if (blockState2.getBlock() == this) {
 			if (!direction.getAxis().isHorizontal()) {
 				return true;
 			}
 
-			if ((Boolean)blockState.getProperty((Property)field_18270.get(direction))
-				&& (Boolean)blockState2.getProperty((Property)field_18270.get(direction.getOpposite()))) {
+			if ((Boolean)blockState.get((Property)FACING_PROPERTIES.get(direction))
+				&& (Boolean)blockState2.get((Property)FACING_PROPERTIES.get(direction.getOpposite()))) {
 				return true;
 			}
 		}
 
-		return super.method_16573(blockState, blockState2, direction);
+		return super.isSideInvisible(blockState, blockState2, direction);
 	}
 
-	public final boolean method_16688(BlockState blockState, BlockRenderLayer blockRenderLayer) {
+	public final boolean connectsTo(BlockState blockState, boolean bl) {
 		Block block = blockState.getBlock();
-		return !method_14348(block) && blockRenderLayer == BlockRenderLayer.SOLID || blockRenderLayer == BlockRenderLayer.MIDDLE_POLE_THIN;
-	}
-
-	public static boolean method_14348(Block block) {
-		return block instanceof ShulkerBoxBlock
-			|| block instanceof LeavesBlock
-			|| block == Blocks.BEACON
-			|| block == Blocks.CAULDRON
-			|| block == Blocks.GLOWSTONE
-			|| block == Blocks.ICE
-			|| block == Blocks.SEA_LANTERN
-			|| block == Blocks.PISTON
-			|| block == Blocks.STICKY_PISTON
-			|| block == Blocks.PISTON_HEAD
-			|| block == Blocks.MELON_BLOCK
-			|| block == Blocks.PUMPKIN
-			|| block == Blocks.CARVED_PUMPKIN
-			|| block == Blocks.JACK_O_LANTERN
-			|| block == Blocks.BARRIER;
+		return !canConnect(block) && bl || block instanceof PaneBlock;
 	}
 
 	@Override
-	protected boolean requiresSilkTouch() {
-		return true;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.CUTOUT_MIPPED;
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT_MIPPED;
-	}
-
-	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.method_16928(field_18265, field_18266, field_18268, field_18267, field_18269);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return direction != Direction.UP && direction != Direction.DOWN ? BlockRenderLayer.MIDDLE_POLE_THIN : BlockRenderLayer.CENTER_SMALL;
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(NORTH, EAST, WEST, SOUTH, WATERLOGGED);
 	}
 }

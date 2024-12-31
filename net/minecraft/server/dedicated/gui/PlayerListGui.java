@@ -2,26 +2,24 @@ package net.minecraft.server.dedicated.gui;
 
 import java.util.Vector;
 import javax.swing.JList;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Tickable;
+import net.minecraft.server.network.ServerPlayerEntity;
 
-public class PlayerListGui extends JList<String> implements Tickable {
+public class PlayerListGui extends JList<String> {
 	private final MinecraftServer server;
 	private int tick;
 
 	public PlayerListGui(MinecraftServer minecraftServer) {
 		this.server = minecraftServer;
-		minecraftServer.addTickable(this);
+		minecraftServer.addServerGuiTickable(this::tick);
 	}
 
-	@Override
 	public void tick() {
 		if (this.tick++ % 20 == 0) {
 			Vector<String> vector = new Vector();
 
-			for (int i = 0; i < this.server.getPlayerManager().getPlayers().size(); i++) {
-				vector.add(((ServerPlayerEntity)this.server.getPlayerManager().getPlayers().get(i)).getGameProfile().getName());
+			for (int i = 0; i < this.server.getPlayerManager().getPlayerList().size(); i++) {
+				vector.add(((ServerPlayerEntity)this.server.getPlayerManager().getPlayerList().get(i)).getGameProfile().getName());
 			}
 
 			this.setListData(vector);

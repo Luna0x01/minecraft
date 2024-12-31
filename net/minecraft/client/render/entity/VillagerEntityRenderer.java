@@ -2,54 +2,36 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
-import net.minecraft.client.render.entity.model.VillagerEntityModel;
+import net.minecraft.client.render.entity.feature.VillagerClothingFeatureRenderer;
+import net.minecraft.client.render.entity.feature.VillagerHeldItemFeatureRenderer;
+import net.minecraft.client.render.entity.model.VillagerResemblingModel;
 import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.resource.ReloadableResourceManager;
 import net.minecraft.util.Identifier;
 
-public class VillagerEntityRenderer extends MobEntityRenderer<VillagerEntity> {
-	private static final Identifier UNEMPLOYED = new Identifier("textures/entity/villager/villager.png");
-	private static final Identifier FARMER = new Identifier("textures/entity/villager/farmer.png");
-	private static final Identifier LIBRARIAN = new Identifier("textures/entity/villager/librarian.png");
-	private static final Identifier PRIEST = new Identifier("textures/entity/villager/priest.png");
-	private static final Identifier BLACKSMITH = new Identifier("textures/entity/villager/smith.png");
-	private static final Identifier BUTCHER = new Identifier("textures/entity/villager/butcher.png");
+public class VillagerEntityRenderer extends MobEntityRenderer<VillagerEntity, VillagerResemblingModel<VillagerEntity>> {
+	private static final Identifier VILLAGER_SKIN = new Identifier("textures/entity/villager/villager.png");
 
-	public VillagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new VillagerEntityModel(0.0F), 0.5F);
-		this.addFeature(new HeadFeatureRenderer(this.getModel().method_18944()));
+	public VillagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ReloadableResourceManager reloadableResourceManager) {
+		super(entityRenderDispatcher, new VillagerResemblingModel<>(0.0F), 0.5F);
+		this.addFeature(new HeadFeatureRenderer<>(this));
+		this.addFeature(new VillagerClothingFeatureRenderer<>(this, reloadableResourceManager, "villager"));
+		this.addFeature(new VillagerHeldItemFeatureRenderer<>(this));
 	}
 
-	public VillagerEntityModel getModel() {
-		return (VillagerEntityModel)super.getModel();
+	protected Identifier method_4151(VillagerEntity villagerEntity) {
+		return VILLAGER_SKIN;
 	}
 
-	protected Identifier getTexture(VillagerEntity villagerEntity) {
-		switch (villagerEntity.profession()) {
-			case 0:
-				return FARMER;
-			case 1:
-				return LIBRARIAN;
-			case 2:
-				return PRIEST;
-			case 3:
-				return BLACKSMITH;
-			case 4:
-				return BUTCHER;
-			case 5:
-			default:
-				return UNEMPLOYED;
-		}
-	}
-
-	protected void scale(VillagerEntity villagerEntity, float f) {
+	protected void method_4149(VillagerEntity villagerEntity, float f) {
 		float g = 0.9375F;
-		if (villagerEntity.age() < 0) {
+		if (villagerEntity.isBaby()) {
 			g = (float)((double)g * 0.5);
-			this.shadowSize = 0.25F;
+			this.field_4673 = 0.25F;
 		} else {
-			this.shadowSize = 0.5F;
+			this.field_4673 = 0.5F;
 		}
 
-		GlStateManager.scale(g, g, g);
+		GlStateManager.scalef(g, g, g);
 	}
 }

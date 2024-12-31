@@ -1,76 +1,71 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.class_4342;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateManager;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.state.StateFactory;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EndRodBlock extends FacingBlock {
-	protected static final VoxelShape field_18310 = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 16.0, 10.0);
-	protected static final VoxelShape field_18311 = Block.createCuboidShape(6.0, 6.0, 0.0, 10.0, 10.0, 16.0);
-	protected static final VoxelShape field_18312 = Block.createCuboidShape(0.0, 6.0, 6.0, 16.0, 10.0, 10.0);
+	protected static final VoxelShape Y_SHAPE = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 16.0, 10.0);
+	protected static final VoxelShape Z_SHAPE = Block.createCuboidShape(6.0, 6.0, 0.0, 10.0, 10.0, 16.0);
+	protected static final VoxelShape X_SHAPE = Block.createCuboidShape(0.0, 6.0, 6.0, 16.0, 10.0, 10.0);
 
-	protected EndRodBlock(Block.Builder builder) {
-		super(builder);
-		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.UP));
+	protected EndRodBlock(Block.Settings settings) {
+		super(settings);
+		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11036));
 	}
 
 	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
+	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
+		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
 	}
 
 	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.withProperty(FACING, mirror.apply(state.getProperty(FACING)));
+	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
+		return blockState.with(FACING, blockMirror.apply(blockState.get(FACING)));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		switch (((Direction)state.getProperty(FACING)).getAxis()) {
-			case X:
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		switch (((Direction)blockState.get(FACING)).getAxis()) {
+			case field_11048:
 			default:
-				return field_18312;
-			case Z:
-				return field_18311;
-			case Y:
-				return field_18310;
+				return X_SHAPE;
+			case field_11051:
+				return Z_SHAPE;
+			case field_11052:
+				return Y_SHAPE;
 		}
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+		Direction direction = itemPlacementContext.getSide();
+		BlockState blockState = itemPlacementContext.getWorld().getBlockState(itemPlacementContext.getBlockPos().offset(direction.getOpposite()));
+		return blockState.getBlock() == this && blockState.get(FACING) == direction
+			? this.getDefaultState().with(FACING, direction.getOpposite())
+			: this.getDefaultState().with(FACING, direction);
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext context) {
-		Direction direction = context.method_16151();
-		BlockState blockState = context.getWorld().getBlockState(context.getBlockPos().offset(direction.getOpposite()));
-		return blockState.getBlock() == this && blockState.getProperty(FACING) == direction
-			? this.getDefaultState().withProperty(FACING, direction.getOpposite())
-			: this.getDefaultState().withProperty(FACING, direction);
-	}
-
-	@Override
-	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		Direction direction = state.getProperty(FACING);
-		double d = (double)pos.getX() + 0.55 - (double)(random.nextFloat() * 0.1F);
-		double e = (double)pos.getY() + 0.55 - (double)(random.nextFloat() * 0.1F);
-		double f = (double)pos.getZ() + 0.55 - (double)(random.nextFloat() * 0.1F);
+	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		Direction direction = blockState.get(FACING);
+		double d = (double)blockPos.getX() + 0.55 - (double)(random.nextFloat() * 0.1F);
+		double e = (double)blockPos.getY() + 0.55 - (double)(random.nextFloat() * 0.1F);
+		double f = (double)blockPos.getZ() + 0.55 - (double)(random.nextFloat() * 0.1F);
 		double g = (double)(0.4F - (random.nextFloat() + random.nextFloat()) * 0.4F);
 		if (random.nextInt(5) == 0) {
-			world.method_16343(
-				class_4342.field_21392,
+			world.addParticle(
+				ParticleTypes.field_11207,
 				d + (double)direction.getOffsetX() * g,
 				e + (double)direction.getOffsetY() * g,
 				f + (double)direction.getOffsetZ() * g,
@@ -82,22 +77,17 @@ public class EndRodBlock extends FacingBlock {
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.method_16928(FACING);
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(FACING);
 	}
 
 	@Override
-	public PistonBehavior getPistonBehavior(BlockState state) {
-		return PistonBehavior.NORMAL;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
+	public PistonBehavior getPistonBehavior(BlockState blockState) {
+		return PistonBehavior.field_15974;
 	}
 }

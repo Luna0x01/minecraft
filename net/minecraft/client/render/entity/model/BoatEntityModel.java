@@ -1,97 +1,93 @@
 package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.class_2854;
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class BoatEntityModel extends EntityModel implements class_2854 {
-	private final ModelPart[] boatParts = new ModelPart[5];
-	private final ModelPart[] field_13379 = new ModelPart[2];
-	private final ModelPart field_13380;
+public class BoatEntityModel extends EntityModel<BoatEntity> {
+	private final Cuboid[] body = new Cuboid[5];
+	private final Cuboid[] paddles = new Cuboid[2];
+	private final Cuboid field_3326;
 
 	public BoatEntityModel() {
-		this.boatParts[0] = new ModelPart(this, 0, 0).setTextureSize(128, 64);
-		this.boatParts[1] = new ModelPart(this, 0, 19).setTextureSize(128, 64);
-		this.boatParts[2] = new ModelPart(this, 0, 27).setTextureSize(128, 64);
-		this.boatParts[3] = new ModelPart(this, 0, 35).setTextureSize(128, 64);
-		this.boatParts[4] = new ModelPart(this, 0, 43).setTextureSize(128, 64);
+		this.body[0] = new Cuboid(this, 0, 0).setTextureSize(128, 64);
+		this.body[1] = new Cuboid(this, 0, 19).setTextureSize(128, 64);
+		this.body[2] = new Cuboid(this, 0, 27).setTextureSize(128, 64);
+		this.body[3] = new Cuboid(this, 0, 35).setTextureSize(128, 64);
+		this.body[4] = new Cuboid(this, 0, 43).setTextureSize(128, 64);
 		int i = 32;
 		int j = 6;
 		int k = 20;
 		int l = 4;
 		int m = 28;
-		this.boatParts[0].addCuboid(-14.0F, -9.0F, -3.0F, 28, 16, 3, 0.0F);
-		this.boatParts[0].setPivot(0.0F, 3.0F, 1.0F);
-		this.boatParts[1].addCuboid(-13.0F, -7.0F, -1.0F, 18, 6, 2, 0.0F);
-		this.boatParts[1].setPivot(-15.0F, 4.0F, 4.0F);
-		this.boatParts[2].addCuboid(-8.0F, -7.0F, -1.0F, 16, 6, 2, 0.0F);
-		this.boatParts[2].setPivot(15.0F, 4.0F, 0.0F);
-		this.boatParts[3].addCuboid(-14.0F, -7.0F, -1.0F, 28, 6, 2, 0.0F);
-		this.boatParts[3].setPivot(0.0F, 4.0F, -9.0F);
-		this.boatParts[4].addCuboid(-14.0F, -7.0F, -1.0F, 28, 6, 2, 0.0F);
-		this.boatParts[4].setPivot(0.0F, 4.0F, 9.0F);
-		this.boatParts[0].posX = (float) (Math.PI / 2);
-		this.boatParts[1].posY = (float) (Math.PI * 3.0 / 2.0);
-		this.boatParts[2].posY = (float) (Math.PI / 2);
-		this.boatParts[3].posY = (float) Math.PI;
-		this.field_13379[0] = this.method_12220(true);
-		this.field_13379[0].setPivot(3.0F, -5.0F, 9.0F);
-		this.field_13379[1] = this.method_12220(false);
-		this.field_13379[1].setPivot(3.0F, -5.0F, -9.0F);
-		this.field_13379[1].posY = (float) Math.PI;
-		this.field_13379[0].posZ = (float) (Math.PI / 16);
-		this.field_13379[1].posZ = (float) (Math.PI / 16);
-		this.field_13380 = new ModelPart(this, 0, 0).setTextureSize(128, 64);
-		this.field_13380.addCuboid(-14.0F, -9.0F, -3.0F, 28, 16, 3, 0.0F);
-		this.field_13380.setPivot(0.0F, -3.0F, 1.0F);
-		this.field_13380.posX = (float) (Math.PI / 2);
+		this.body[0].addBox(-14.0F, -9.0F, -3.0F, 28, 16, 3, 0.0F);
+		this.body[0].setRotationPoint(0.0F, 3.0F, 1.0F);
+		this.body[1].addBox(-13.0F, -7.0F, -1.0F, 18, 6, 2, 0.0F);
+		this.body[1].setRotationPoint(-15.0F, 4.0F, 4.0F);
+		this.body[2].addBox(-8.0F, -7.0F, -1.0F, 16, 6, 2, 0.0F);
+		this.body[2].setRotationPoint(15.0F, 4.0F, 0.0F);
+		this.body[3].addBox(-14.0F, -7.0F, -1.0F, 28, 6, 2, 0.0F);
+		this.body[3].setRotationPoint(0.0F, 4.0F, -9.0F);
+		this.body[4].addBox(-14.0F, -7.0F, -1.0F, 28, 6, 2, 0.0F);
+		this.body[4].setRotationPoint(0.0F, 4.0F, 9.0F);
+		this.body[0].pitch = (float) (Math.PI / 2);
+		this.body[1].yaw = (float) (Math.PI * 3.0 / 2.0);
+		this.body[2].yaw = (float) (Math.PI / 2);
+		this.body[3].yaw = (float) Math.PI;
+		this.paddles[0] = this.makePaddle(true);
+		this.paddles[0].setRotationPoint(3.0F, -5.0F, 9.0F);
+		this.paddles[1] = this.makePaddle(false);
+		this.paddles[1].setRotationPoint(3.0F, -5.0F, -9.0F);
+		this.paddles[1].yaw = (float) Math.PI;
+		this.paddles[0].roll = (float) (Math.PI / 16);
+		this.paddles[1].roll = (float) (Math.PI / 16);
+		this.field_3326 = new Cuboid(this, 0, 0).setTextureSize(128, 64);
+		this.field_3326.addBox(-14.0F, -9.0F, -3.0F, 28, 16, 3, 0.0F);
+		this.field_3326.setRotationPoint(0.0F, -3.0F, 1.0F);
+		this.field_3326.pitch = (float) (Math.PI / 2);
 	}
 
-	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		GlStateManager.rotate(90.0F, 0.0F, 1.0F, 0.0F);
-		BoatEntity boatEntity = (BoatEntity)entity;
-		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
+	public void method_17071(BoatEntity boatEntity, float f, float g, float h, float i, float j, float k) {
+		GlStateManager.rotatef(90.0F, 0.0F, 1.0F, 0.0F);
+		this.setAngles(boatEntity, f, g, h, i, j, k);
 
-		for (int i = 0; i < 5; i++) {
-			this.boatParts[i].render(scale);
+		for (int l = 0; l < 5; l++) {
+			this.body[l].render(k);
 		}
 
-		this.method_12219(boatEntity, 0, scale, handSwing);
-		this.method_12219(boatEntity, 1, scale, handSwing);
+		this.renderPaddle(boatEntity, 0, k, f);
+		this.renderPaddle(boatEntity, 1, k, f);
 	}
 
-	@Override
-	public void method_12226(Entity entity, float f, float g, float h, float i, float j, float k) {
-		GlStateManager.rotate(90.0F, 0.0F, 1.0F, 0.0F);
+	public void renderPass(Entity entity, float f, float g, float h, float i, float j, float k) {
+		GlStateManager.rotatef(90.0F, 0.0F, 1.0F, 0.0F);
 		GlStateManager.colorMask(false, false, false, false);
-		this.field_13380.render(k);
+		this.field_3326.render(k);
 		GlStateManager.colorMask(true, true, true, true);
 	}
 
-	protected ModelPart method_12220(boolean bl) {
-		ModelPart modelPart = new ModelPart(this, 62, bl ? 0 : 20).setTextureSize(128, 64);
+	protected Cuboid makePaddle(boolean bl) {
+		Cuboid cuboid = new Cuboid(this, 62, bl ? 0 : 20).setTextureSize(128, 64);
 		int i = 20;
 		int j = 7;
 		int k = 6;
 		float f = -5.0F;
-		modelPart.addCuboid(-1.0F, 0.0F, -5.0F, 2, 2, 18);
-		modelPart.addCuboid(bl ? -1.001F : 0.001F, -3.0F, 8.0F, 1, 6, 7);
-		return modelPart;
+		cuboid.addBox(-1.0F, 0.0F, -5.0F, 2, 2, 18);
+		cuboid.addBox(bl ? -1.001F : 0.001F, -3.0F, 8.0F, 1, 6, 7);
+		return cuboid;
 	}
 
-	protected void method_12219(BoatEntity boatEntity, int i, float f, float g) {
+	protected void renderPaddle(BoatEntity boatEntity, int i, float f, float g) {
 		float h = boatEntity.interpolatePaddlePhase(i, g);
-		ModelPart modelPart = this.field_13379[i];
-		modelPart.posX = (float)MathHelper.clampedLerp((float) (-Math.PI / 3), (float) (-Math.PI / 12), (double)((MathHelper.sin(-h) + 1.0F) / 2.0F));
-		modelPart.posY = (float)MathHelper.clampedLerp((float) (-Math.PI / 4), (float) (Math.PI / 4), (double)((MathHelper.sin(-h + 1.0F) + 1.0F) / 2.0F));
+		Cuboid cuboid = this.paddles[i];
+		cuboid.pitch = (float)MathHelper.clampedLerp((float) (-Math.PI / 3), (float) (-Math.PI / 12), (double)((MathHelper.sin(-h) + 1.0F) / 2.0F));
+		cuboid.yaw = (float)MathHelper.clampedLerp((float) (-Math.PI / 4), (float) (Math.PI / 4), (double)((MathHelper.sin(-h + 1.0F) + 1.0F) / 2.0F));
 		if (i == 1) {
-			modelPart.posY = (float) Math.PI - modelPart.posY;
+			cuboid.yaw = (float) Math.PI - cuboid.yaw;
 		}
 
-		modelPart.render(f);
+		cuboid.render(f);
 	}
 }

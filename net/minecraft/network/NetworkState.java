@@ -5,350 +5,370 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import javax.annotation.Nullable;
-import net.minecraft.class_4376;
-import net.minecraft.class_4379;
-import net.minecraft.class_4380;
-import net.minecraft.class_4381;
-import net.minecraft.class_4382;
-import net.minecraft.class_4383;
-import net.minecraft.class_4384;
-import net.minecraft.class_4385;
-import net.minecraft.class_4386;
-import net.minecraft.class_4387;
-import net.minecraft.class_4388;
-import net.minecraft.class_4389;
-import net.minecraft.class_4390;
-import net.minecraft.class_4391;
-import net.minecraft.class_4392;
-import net.minecraft.class_4393;
-import net.minecraft.class_4394;
-import net.minecraft.class_4396;
-import net.minecraft.network.packet.c2s.handshake.HandshakeC2SPacket;
-import net.minecraft.network.packet.c2s.login.LoginHelloC2SPacket;
-import net.minecraft.network.packet.c2s.login.LoginKeyC2SPacket;
-import net.minecraft.network.packet.c2s.play.AdvancementTabC2SPacket;
-import net.minecraft.network.packet.c2s.play.AdvancementUpdatePacket;
-import net.minecraft.network.packet.c2s.play.ButtonClickC2SPacket;
-import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClickWindowC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
-import net.minecraft.network.packet.c2s.play.ConfirmGuiActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.CraftRecipeRequestC2SPacket;
-import net.minecraft.network.packet.c2s.play.CraftingBlockData;
-import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
-import net.minecraft.network.packet.c2s.play.GuiCloseC2SPacket;
-import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
-import net.minecraft.network.packet.c2s.play.KeepAliveC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.network.packet.c2s.play.ResourcePackStatusC2SPacket;
-import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
-import net.minecraft.network.packet.c2s.play.SteerBoatC2SPacket;
-import net.minecraft.network.packet.c2s.play.SwingHandC2SPacket;
-import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
-import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
-import net.minecraft.network.packet.c2s.query.QueryPingC2SPacket;
-import net.minecraft.network.packet.c2s.query.QueryRequestC2SPacket;
-import net.minecraft.network.packet.s2c.login.LoginCompressionS2CPacket;
-import net.minecraft.network.packet.s2c.login.LoginDisconnectS2CPacket;
-import net.minecraft.network.packet.s2c.login.LoginHelloS2CPacket;
-import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
-import net.minecraft.network.packet.s2c.play.BedSleepS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockActionS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkLoadDistanceS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkRenderDistanceCenterS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkUnloadS2CPacket;
-import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
-import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-import net.minecraft.network.packet.s2c.play.ConfirmGuiActionS2CPacket;
-import net.minecraft.network.packet.s2c.play.CraftRecipeResponseS2CPacket;
-import net.minecraft.network.packet.s2c.play.CustomPayloadS2CPacket;
-import net.minecraft.network.packet.s2c.play.DifficultyS2CPacket;
-import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityAttachS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityAttributesS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityEquipmentUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySetHeadYawS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawnGlobalS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExperienceBarUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExperienceOrbSpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
-import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.HeldItemChangeS2CPacket;
-import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
-import net.minecraft.network.packet.s2c.play.KeepAliveS2CPacket;
-import net.minecraft.network.packet.s2c.play.MapUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
-import net.minecraft.network.packet.s2c.play.PaintingSpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlaySoundNameS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerSpawnPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerSpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.RecipesUnlockS2CPacket;
-import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
-import net.minecraft.network.packet.s2c.play.ResourcePackSendS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerPropertyUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.SelectAdvancementTabS2CPacket;
-import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
-import net.minecraft.network.packet.s2c.play.SetPassengersS2CPacket;
-import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
-import net.minecraft.network.packet.s2c.play.StatsUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.TeamS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
-import net.minecraft.network.packet.s2c.play.VehicleMoveS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldBorderS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.query.QueryPongS2CPacket;
-import net.minecraft.network.packet.s2c.query.QueryResponseS2CPacket;
+import net.minecraft.client.network.packet.AdvancementUpdateS2CPacket;
+import net.minecraft.client.network.packet.BlockActionS2CPacket;
+import net.minecraft.client.network.packet.BlockBreakingProgressS2CPacket;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.client.network.packet.BlockPlayerActionS2CPacket;
+import net.minecraft.client.network.packet.BlockUpdateS2CPacket;
+import net.minecraft.client.network.packet.BossBarS2CPacket;
+import net.minecraft.client.network.packet.ChatMessageS2CPacket;
+import net.minecraft.client.network.packet.ChunkDataS2CPacket;
+import net.minecraft.client.network.packet.ChunkDeltaUpdateS2CPacket;
+import net.minecraft.client.network.packet.ChunkLoadDistanceS2CPacket;
+import net.minecraft.client.network.packet.ChunkRenderDistanceCenterS2CPacket;
+import net.minecraft.client.network.packet.CombatEventS2CPacket;
+import net.minecraft.client.network.packet.CommandSuggestionsS2CPacket;
+import net.minecraft.client.network.packet.CommandTreeS2CPacket;
+import net.minecraft.client.network.packet.ConfirmGuiActionS2CPacket;
+import net.minecraft.client.network.packet.CooldownUpdateS2CPacket;
+import net.minecraft.client.network.packet.CraftResponseS2CPacket;
+import net.minecraft.client.network.packet.CustomPayloadS2CPacket;
+import net.minecraft.client.network.packet.DifficultyS2CPacket;
+import net.minecraft.client.network.packet.DisconnectS2CPacket;
+import net.minecraft.client.network.packet.EntitiesDestroyS2CPacket;
+import net.minecraft.client.network.packet.EntityAnimationS2CPacket;
+import net.minecraft.client.network.packet.EntityAttachS2CPacket;
+import net.minecraft.client.network.packet.EntityAttributesS2CPacket;
+import net.minecraft.client.network.packet.EntityEquipmentUpdateS2CPacket;
+import net.minecraft.client.network.packet.EntityPassengersSetS2CPacket;
+import net.minecraft.client.network.packet.EntityPositionS2CPacket;
+import net.minecraft.client.network.packet.EntityPotionEffectS2CPacket;
+import net.minecraft.client.network.packet.EntityS2CPacket;
+import net.minecraft.client.network.packet.EntitySetHeadYawS2CPacket;
+import net.minecraft.client.network.packet.EntitySpawnGlobalS2CPacket;
+import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
+import net.minecraft.client.network.packet.EntityStatusS2CPacket;
+import net.minecraft.client.network.packet.EntityTrackerUpdateS2CPacket;
+import net.minecraft.client.network.packet.EntityVelocityUpdateS2CPacket;
+import net.minecraft.client.network.packet.ExperienceBarUpdateS2CPacket;
+import net.minecraft.client.network.packet.ExperienceOrbSpawnS2CPacket;
+import net.minecraft.client.network.packet.ExplosionS2CPacket;
+import net.minecraft.client.network.packet.GameJoinS2CPacket;
+import net.minecraft.client.network.packet.GameStateChangeS2CPacket;
+import net.minecraft.client.network.packet.GuiCloseS2CPacket;
+import net.minecraft.client.network.packet.GuiOpenS2CPacket;
+import net.minecraft.client.network.packet.GuiSlotUpdateS2CPacket;
+import net.minecraft.client.network.packet.GuiUpdateS2CPacket;
+import net.minecraft.client.network.packet.HealthUpdateS2CPacket;
+import net.minecraft.client.network.packet.HeldItemChangeS2CPacket;
+import net.minecraft.client.network.packet.InventoryS2CPacket;
+import net.minecraft.client.network.packet.ItemPickupAnimationS2CPacket;
+import net.minecraft.client.network.packet.KeepAliveS2CPacket;
+import net.minecraft.client.network.packet.LightUpdateS2CPacket;
+import net.minecraft.client.network.packet.LoginCompressionS2CPacket;
+import net.minecraft.client.network.packet.LoginDisconnectS2CPacket;
+import net.minecraft.client.network.packet.LoginHelloS2CPacket;
+import net.minecraft.client.network.packet.LoginQueryRequestS2CPacket;
+import net.minecraft.client.network.packet.LoginSuccessS2CPacket;
+import net.minecraft.client.network.packet.LookAtS2CPacket;
+import net.minecraft.client.network.packet.MapUpdateS2CPacket;
+import net.minecraft.client.network.packet.MobSpawnS2CPacket;
+import net.minecraft.client.network.packet.OpenContainerPacket;
+import net.minecraft.client.network.packet.OpenWrittenBookS2CPacket;
+import net.minecraft.client.network.packet.PaintingSpawnS2CPacket;
+import net.minecraft.client.network.packet.ParticleS2CPacket;
+import net.minecraft.client.network.packet.PlaySoundFromEntityS2CPacket;
+import net.minecraft.client.network.packet.PlaySoundIdS2CPacket;
+import net.minecraft.client.network.packet.PlaySoundS2CPacket;
+import net.minecraft.client.network.packet.PlayerAbilitiesS2CPacket;
+import net.minecraft.client.network.packet.PlayerListHeaderS2CPacket;
+import net.minecraft.client.network.packet.PlayerListS2CPacket;
+import net.minecraft.client.network.packet.PlayerPositionLookS2CPacket;
+import net.minecraft.client.network.packet.PlayerRespawnS2CPacket;
+import net.minecraft.client.network.packet.PlayerSpawnPositionS2CPacket;
+import net.minecraft.client.network.packet.PlayerSpawnS2CPacket;
+import net.minecraft.client.network.packet.QueryPongS2CPacket;
+import net.minecraft.client.network.packet.QueryResponseS2CPacket;
+import net.minecraft.client.network.packet.RemoveEntityEffectS2CPacket;
+import net.minecraft.client.network.packet.ResourcePackSendS2CPacket;
+import net.minecraft.client.network.packet.ScoreboardDisplayS2CPacket;
+import net.minecraft.client.network.packet.ScoreboardObjectiveUpdateS2CPacket;
+import net.minecraft.client.network.packet.ScoreboardPlayerUpdateS2CPacket;
+import net.minecraft.client.network.packet.SelectAdvancementTabS2CPacket;
+import net.minecraft.client.network.packet.SetCameraEntityS2CPacket;
+import net.minecraft.client.network.packet.SetTradeOffersPacket;
+import net.minecraft.client.network.packet.SignEditorOpenS2CPacket;
+import net.minecraft.client.network.packet.StatisticsS2CPacket;
+import net.minecraft.client.network.packet.StopSoundS2CPacket;
+import net.minecraft.client.network.packet.SynchronizeRecipesS2CPacket;
+import net.minecraft.client.network.packet.SynchronizeTagsS2CPacket;
+import net.minecraft.client.network.packet.TagQueryResponseS2CPacket;
+import net.minecraft.client.network.packet.TeamS2CPacket;
+import net.minecraft.client.network.packet.TitleS2CPacket;
+import net.minecraft.client.network.packet.UnloadChunkS2CPacket;
+import net.minecraft.client.network.packet.UnlockRecipesS2CPacket;
+import net.minecraft.client.network.packet.VehicleMoveS2CPacket;
+import net.minecraft.client.network.packet.WorldBorderS2CPacket;
+import net.minecraft.client.network.packet.WorldEventS2CPacket;
+import net.minecraft.client.network.packet.WorldTimeUpdateS2CPacket;
+import net.minecraft.server.network.packet.AdvancementTabC2SPacket;
+import net.minecraft.server.network.packet.BoatPaddleStateC2SPacket;
+import net.minecraft.server.network.packet.BookUpdateC2SPacket;
+import net.minecraft.server.network.packet.ButtonClickC2SPacket;
+import net.minecraft.server.network.packet.ChatMessageC2SPacket;
+import net.minecraft.server.network.packet.ClickWindowC2SPacket;
+import net.minecraft.server.network.packet.ClientCommandC2SPacket;
+import net.minecraft.server.network.packet.ClientSettingsC2SPacket;
+import net.minecraft.server.network.packet.ClientStatusC2SPacket;
+import net.minecraft.server.network.packet.CraftRequestC2SPacket;
+import net.minecraft.server.network.packet.CreativeInventoryActionC2SPacket;
+import net.minecraft.server.network.packet.CustomPayloadC2SPacket;
+import net.minecraft.server.network.packet.GuiActionConfirmC2SPacket;
+import net.minecraft.server.network.packet.GuiCloseC2SPacket;
+import net.minecraft.server.network.packet.HandSwingC2SPacket;
+import net.minecraft.server.network.packet.HandshakeC2SPacket;
+import net.minecraft.server.network.packet.KeepAliveC2SPacket;
+import net.minecraft.server.network.packet.LoginHelloC2SPacket;
+import net.minecraft.server.network.packet.LoginKeyC2SPacket;
+import net.minecraft.server.network.packet.LoginQueryResponseC2SPacket;
+import net.minecraft.server.network.packet.PickFromInventoryC2SPacket;
+import net.minecraft.server.network.packet.PlayerActionC2SPacket;
+import net.minecraft.server.network.packet.PlayerInputC2SPacket;
+import net.minecraft.server.network.packet.PlayerInteractBlockC2SPacket;
+import net.minecraft.server.network.packet.PlayerInteractEntityC2SPacket;
+import net.minecraft.server.network.packet.PlayerInteractItemC2SPacket;
+import net.minecraft.server.network.packet.PlayerMoveC2SPacket;
+import net.minecraft.server.network.packet.QueryBlockNbtC2SPacket;
+import net.minecraft.server.network.packet.QueryEntityNbtC2SPacket;
+import net.minecraft.server.network.packet.QueryPingC2SPacket;
+import net.minecraft.server.network.packet.QueryRequestC2SPacket;
+import net.minecraft.server.network.packet.RecipeBookDataC2SPacket;
+import net.minecraft.server.network.packet.RenameItemC2SPacket;
+import net.minecraft.server.network.packet.RequestCommandCompletionsC2SPacket;
+import net.minecraft.server.network.packet.ResourcePackStatusC2SPacket;
+import net.minecraft.server.network.packet.SelectVillagerTradeC2SPacket;
+import net.minecraft.server.network.packet.SpectatorTeleportC2SPacket;
+import net.minecraft.server.network.packet.TeleportConfirmC2SPacket;
+import net.minecraft.server.network.packet.UpdateBeaconC2SPacket;
+import net.minecraft.server.network.packet.UpdateCommandBlockC2SPacket;
+import net.minecraft.server.network.packet.UpdateCommandBlockMinecartC2SPacket;
+import net.minecraft.server.network.packet.UpdateDifficultyC2SPacket;
+import net.minecraft.server.network.packet.UpdateDifficultyLockC2SPacket;
+import net.minecraft.server.network.packet.UpdateJigsawC2SPacket;
+import net.minecraft.server.network.packet.UpdatePlayerAbilitiesC2SPacket;
+import net.minecraft.server.network.packet.UpdateSelectedSlotC2SPacket;
+import net.minecraft.server.network.packet.UpdateSignC2SPacket;
+import net.minecraft.server.network.packet.UpdateStructureBlockC2SPacket;
+import net.minecraft.server.network.packet.VehicleMoveC2SPacket;
 import org.apache.logging.log4j.LogManager;
 
 public enum NetworkState {
-	HANDSHAKING(-1) {
+	field_11689(-1) {
 		{
-			this.register(NetworkSide.SERVERBOUND, HandshakeC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, HandshakeC2SPacket.class);
 		}
 	},
-	PLAY(0) {
+	field_11690(0) {
 		{
-			this.register(NetworkSide.CLIENTBOUND, EntitySpawnS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ExperienceOrbSpawnS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntitySpawnGlobalS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, MobSpawnS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PaintingSpawnS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerSpawnS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityAnimationS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, StatsUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, BlockBreakingProgressS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, BlockEntityUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, BlockActionS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, BlockUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, BossBarS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, DifficultyS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ChatMessageS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ChunkDeltaUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, CommandSuggestionsS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4376.class);
-			this.register(NetworkSide.CLIENTBOUND, ConfirmGuiActionS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, CloseScreenS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, OpenScreenS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, InventoryS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ScreenHandlerPropertyUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ScreenHandlerSlotUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ChunkLoadDistanceS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, CustomPayloadS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlaySoundNameS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, DisconnectS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityStatusS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4381.class);
-			this.register(NetworkSide.CLIENTBOUND, ExplosionS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ChunkUnloadS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, GameStateChangeS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, KeepAliveS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ChunkDataS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, WorldEventS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ParticleS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, GameJoinS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, MapUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.MoveRelative.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.RotateAndMoveRelative.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityS2CPacket.Rotate.class);
-			this.register(NetworkSide.CLIENTBOUND, VehicleMoveS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, SignEditorOpenS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, CraftRecipeResponseS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerAbilitiesS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, CombatEventS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerListS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4379.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerPositionLookS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, BedSleepS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, RecipesUnlockS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntitiesDestroyS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, RemoveEntityStatusEffectS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ResourcePackSendS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerRespawnS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntitySetHeadYawS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, SelectAdvancementTabS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, WorldBorderS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, SetCameraEntityS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, HeldItemChangeS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ScoreboardDisplayS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityTrackerUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityAttachS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityVelocityUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityEquipmentUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ExperienceBarUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, HealthUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ScoreboardObjectiveUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, SetPassengersS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, TeamS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ScoreboardPlayerUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerSpawnPositionS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, WorldTimeUpdateS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, TitleS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4380.class);
-			this.register(NetworkSide.CLIENTBOUND, PlaySoundIdS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, PlayerListHeaderS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, ChunkRenderDistanceCenterS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityPositionS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, AdvancementUpdatePacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityAttributesS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, EntityStatusEffectS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4382.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4383.class);
-			this.register(NetworkSide.SERVERBOUND, TeleportConfirmC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4384.class);
-			this.register(NetworkSide.SERVERBOUND, ChatMessageC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, ClientStatusC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, ClientSettingsC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, RequestCommandCompletionsC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, ConfirmGuiActionC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, ButtonClickC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, ClickWindowC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, GuiCloseC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, CustomPayloadC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4385.class);
-			this.register(NetworkSide.SERVERBOUND, class_4386.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerInteractEntityC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, KeepAliveC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.PositionOnly.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.Both.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerMoveC2SPacket.LookOnly.class);
-			this.register(NetworkSide.SERVERBOUND, VehicleMoveC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, SteerBoatC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4387.class);
-			this.register(NetworkSide.SERVERBOUND, CraftRecipeRequestC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, UpdatePlayerAbilitiesC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerActionC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, ClientCommandC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerInputC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, CraftingBlockData.class);
-			this.register(NetworkSide.SERVERBOUND, class_4388.class);
-			this.register(NetworkSide.SERVERBOUND, ResourcePackStatusC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, AdvancementTabC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4389.class);
-			this.register(NetworkSide.SERVERBOUND, class_4390.class);
-			this.register(NetworkSide.SERVERBOUND, UpdateSelectedSlotC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4391.class);
-			this.register(NetworkSide.SERVERBOUND, class_4392.class);
-			this.register(NetworkSide.SERVERBOUND, CreativeInventoryActionC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4393.class);
-			this.register(NetworkSide.SERVERBOUND, UpdateSignC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, HandSwingC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, SpectatorTeleportC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, PlayerInteractBlockC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, SwingHandC2SPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntitySpawnS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ExperienceOrbSpawnS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntitySpawnGlobalS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, MobSpawnS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PaintingSpawnS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerSpawnS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityAnimationS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, StatisticsS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, BlockBreakingProgressS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, BlockEntityUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, BlockActionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, BlockUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, BossBarS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, DifficultyS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ChatMessageS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ChunkDeltaUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, CommandSuggestionsS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, CommandTreeS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ConfirmGuiActionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, GuiCloseS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, InventoryS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, GuiUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, GuiSlotUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, CooldownUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, CustomPayloadS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlaySoundIdS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, DisconnectS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityStatusS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ExplosionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, UnloadChunkS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, GameStateChangeS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, GuiOpenS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, KeepAliveS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ChunkDataS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, WorldEventS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ParticleS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, LightUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, GameJoinS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, MapUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, SetTradeOffersPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityS2CPacket.MoveRelative.class);
+			this.addPacket(NetworkSide.field_11942, EntityS2CPacket.RotateAndMoveRelative.class);
+			this.addPacket(NetworkSide.field_11942, EntityS2CPacket.Rotate.class);
+			this.addPacket(NetworkSide.field_11942, EntityS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, VehicleMoveS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, OpenWrittenBookS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, OpenContainerPacket.class);
+			this.addPacket(NetworkSide.field_11942, SignEditorOpenS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, CraftResponseS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerAbilitiesS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, CombatEventS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerListS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, LookAtS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerPositionLookS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, UnlockRecipesS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntitiesDestroyS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, RemoveEntityEffectS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ResourcePackSendS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerRespawnS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntitySetHeadYawS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, SelectAdvancementTabS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, WorldBorderS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, SetCameraEntityS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, HeldItemChangeS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ChunkRenderDistanceCenterS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ChunkLoadDistanceS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ScoreboardDisplayS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityTrackerUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityAttachS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityVelocityUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityEquipmentUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ExperienceBarUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, HealthUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ScoreboardObjectiveUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityPassengersSetS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, TeamS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ScoreboardPlayerUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerSpawnPositionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, WorldTimeUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, TitleS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlaySoundFromEntityS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlaySoundS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, StopSoundS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, PlayerListHeaderS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, TagQueryResponseS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, ItemPickupAnimationS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityPositionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, AdvancementUpdateS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityAttributesS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, EntityPotionEffectS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, SynchronizeRecipesS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, SynchronizeTagsS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, BlockPlayerActionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11941, TeleportConfirmC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, QueryBlockNbtC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateDifficultyC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ChatMessageC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ClientStatusC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ClientSettingsC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, RequestCommandCompletionsC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, GuiActionConfirmC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ButtonClickC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ClickWindowC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, GuiCloseC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, CustomPayloadC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, BookUpdateC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, QueryEntityNbtC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PlayerInteractEntityC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, KeepAliveC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateDifficultyLockC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PlayerMoveC2SPacket.PositionOnly.class);
+			this.addPacket(NetworkSide.field_11941, PlayerMoveC2SPacket.Both.class);
+			this.addPacket(NetworkSide.field_11941, PlayerMoveC2SPacket.LookOnly.class);
+			this.addPacket(NetworkSide.field_11941, PlayerMoveC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, VehicleMoveC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, BoatPaddleStateC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PickFromInventoryC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, CraftRequestC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdatePlayerAbilitiesC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PlayerActionC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ClientCommandC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PlayerInputC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, RecipeBookDataC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, RenameItemC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, ResourcePackStatusC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, AdvancementTabC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, SelectVillagerTradeC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateBeaconC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateSelectedSlotC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateCommandBlockC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateCommandBlockMinecartC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, CreativeInventoryActionC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateJigsawC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateStructureBlockC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, UpdateSignC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, HandSwingC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, SpectatorTeleportC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PlayerInteractBlockC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, PlayerInteractItemC2SPacket.class);
 		}
 	},
-	STATUS(1) {
+	field_11691(1) {
 		{
-			this.register(NetworkSide.SERVERBOUND, QueryRequestC2SPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, QueryResponseS2CPacket.class);
-			this.register(NetworkSide.SERVERBOUND, QueryPingC2SPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, QueryPongS2CPacket.class);
+			this.addPacket(NetworkSide.field_11941, QueryRequestC2SPacket.class);
+			this.addPacket(NetworkSide.field_11942, QueryResponseS2CPacket.class);
+			this.addPacket(NetworkSide.field_11941, QueryPingC2SPacket.class);
+			this.addPacket(NetworkSide.field_11942, QueryPongS2CPacket.class);
 		}
 	},
-	LOGIN(2) {
+	field_11688(2) {
 		{
-			this.register(NetworkSide.CLIENTBOUND, LoginDisconnectS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, LoginHelloS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, LoginSuccessS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, LoginCompressionS2CPacket.class);
-			this.register(NetworkSide.CLIENTBOUND, class_4394.class);
-			this.register(NetworkSide.SERVERBOUND, LoginHelloC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, LoginKeyC2SPacket.class);
-			this.register(NetworkSide.SERVERBOUND, class_4396.class);
+			this.addPacket(NetworkSide.field_11942, LoginDisconnectS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, LoginHelloS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, LoginSuccessS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, LoginCompressionS2CPacket.class);
+			this.addPacket(NetworkSide.field_11942, LoginQueryRequestS2CPacket.class);
+			this.addPacket(NetworkSide.field_11941, LoginHelloC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, LoginKeyC2SPacket.class);
+			this.addPacket(NetworkSide.field_11941, LoginQueryResponseC2SPacket.class);
 		}
 	};
 
-	private static final NetworkState[] networkStates = new NetworkState[4];
-	private static final Map<Class<? extends Packet<?>>, NetworkState> PACKET_TO_STATE = Maps.newHashMap();
-	private final int stateId;
-	private final Map<NetworkSide, BiMap<Integer, Class<? extends Packet<?>>>> packetClasses = Maps.newEnumMap(NetworkSide.class);
+	private static final NetworkState[] STATES = new NetworkState[4];
+	private static final Map<Class<? extends Packet<?>>, NetworkState> HANDLER_STATE_MAP = Maps.newHashMap();
+	private final int id;
+	private final Map<NetworkSide, BiMap<Integer, Class<? extends Packet<?>>>> packetHandlerMap = Maps.newEnumMap(NetworkSide.class);
 
 	private NetworkState(int j) {
-		this.stateId = j;
+		this.id = j;
 	}
 
-	protected NetworkState register(NetworkSide side, Class<? extends Packet<?>> packetClass) {
-		BiMap<Integer, Class<? extends Packet<?>>> biMap = (BiMap<Integer, Class<? extends Packet<?>>>)this.packetClasses.get(side);
+	protected NetworkState addPacket(NetworkSide networkSide, Class<? extends Packet<?>> class_) {
+		BiMap<Integer, Class<? extends Packet<?>>> biMap = (BiMap<Integer, Class<? extends Packet<?>>>)this.packetHandlerMap.get(networkSide);
 		if (biMap == null) {
 			biMap = HashBiMap.create();
-			this.packetClasses.put(side, biMap);
+			this.packetHandlerMap.put(networkSide, biMap);
 		}
 
-		if (biMap.containsValue(packetClass)) {
-			String string = side + " packet " + packetClass + " is already known to ID " + biMap.inverse().get(packetClass);
+		if (biMap.containsValue(class_)) {
+			String string = networkSide + " packet " + class_ + " is already known to ID " + biMap.inverse().get(class_);
 			LogManager.getLogger().fatal(string);
 			throw new IllegalArgumentException(string);
 		} else {
-			biMap.put(biMap.size(), packetClass);
+			biMap.put(biMap.size(), class_);
 			return this;
 		}
 	}
 
-	public Integer getRawId(NetworkSide side, Packet<?> packet) throws Exception {
-		return (Integer)((BiMap)this.packetClasses.get(side)).inverse().get(packet.getClass());
+	public Integer getPacketId(NetworkSide networkSide, Packet<?> packet) throws Exception {
+		return (Integer)((BiMap)this.packetHandlerMap.get(networkSide)).inverse().get(packet.getClass());
 	}
 
 	@Nullable
-	public Packet<?> createPacket(NetworkSide side, int id) throws IllegalAccessException, InstantiationException {
-		Class<? extends Packet<?>> class_ = (Class<? extends Packet<?>>)((BiMap)this.packetClasses.get(side)).get(id);
+	public Packet<?> getPacketHandler(NetworkSide networkSide, int i) throws IllegalAccessException, InstantiationException {
+		Class<? extends Packet<?>> class_ = (Class<? extends Packet<?>>)((BiMap)this.packetHandlerMap.get(networkSide)).get(i);
 		return class_ == null ? null : (Packet)class_.newInstance();
 	}
 
 	public int getId() {
-		return this.stateId;
+		return this.id;
 	}
 
-	public static NetworkState byId(int id) {
-		return id >= -1 && id <= 2 ? networkStates[id - -1] : null;
+	public static NetworkState byId(int i) {
+		return i >= -1 && i <= 2 ? STATES[i - -1] : null;
 	}
 
-	public static NetworkState getPacketHandlerState(Packet<?> handler) {
-		return (NetworkState)PACKET_TO_STATE.get(handler.getClass());
+	public static NetworkState getPacketHandlerState(Packet<?> packet) {
+		return (NetworkState)HANDLER_STATE_MAP.get(packet.getClass());
 	}
 
 	static {
@@ -358,12 +378,12 @@ public enum NetworkState {
 				throw new Error("Invalid protocol ID " + Integer.toString(i));
 			}
 
-			networkStates[i - -1] = networkState;
+			STATES[i - -1] = networkState;
 
-			for (NetworkSide networkSide : networkState.packetClasses.keySet()) {
-				for (Class<? extends Packet<?>> class_ : ((BiMap)networkState.packetClasses.get(networkSide)).values()) {
-					if (PACKET_TO_STATE.containsKey(class_) && PACKET_TO_STATE.get(class_) != networkState) {
-						throw new Error("Packet " + class_ + " is already assigned to protocol " + PACKET_TO_STATE.get(class_) + " - can't reassign to " + networkState);
+			for (NetworkSide networkSide : networkState.packetHandlerMap.keySet()) {
+				for (Class<? extends Packet<?>> class_ : ((BiMap)networkState.packetHandlerMap.get(networkSide)).values()) {
+					if (HANDLER_STATE_MAP.containsKey(class_) && HANDLER_STATE_MAP.get(class_) != networkState) {
+						throw new Error("Packet " + class_ + " is already assigned to protocol " + HANDLER_STATE_MAP.get(class_) + " - can't reassign to " + networkState);
 					}
 
 					try {
@@ -372,7 +392,7 @@ public enum NetworkState {
 						throw new Error("Packet " + class_ + " fails instantiation checks! " + class_);
 					}
 
-					PACKET_TO_STATE.put(class_, networkState);
+					HANDLER_STATE_MAP.put(class_, networkState);
 				}
 			}
 		}

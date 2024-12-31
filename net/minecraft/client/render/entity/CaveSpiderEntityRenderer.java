@@ -5,18 +5,18 @@ import net.minecraft.entity.mob.CaveSpiderEntity;
 import net.minecraft.util.Identifier;
 
 public class CaveSpiderEntityRenderer extends SpiderEntityRenderer<CaveSpiderEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/spider/cave_spider.png");
+	private static final Identifier SKIN = new Identifier("textures/entity/spider/cave_spider.png");
 
 	public CaveSpiderEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.shadowSize *= 0.7F;
+		this.field_4673 *= 0.7F;
 	}
 
-	protected void scale(CaveSpiderEntity caveSpiderEntity, float f) {
-		GlStateManager.scale(0.7F, 0.7F, 0.7F);
+	protected void method_3886(CaveSpiderEntity caveSpiderEntity, float f) {
+		GlStateManager.scalef(0.7F, 0.7F, 0.7F);
 	}
 
-	protected Identifier getTexture(CaveSpiderEntity caveSpiderEntity) {
-		return TEXTURE;
+	protected Identifier method_3885(CaveSpiderEntity caveSpiderEntity) {
+		return SKIN;
 	}
 }

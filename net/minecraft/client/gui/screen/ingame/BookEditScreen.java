@@ -1,80 +1,71 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.google.common.collect.Lists;
-import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.class_4385;
-import net.minecraft.client.MinecraftClient;
+import java.util.ListIterator;
+import net.minecraft.SharedConstants;
+import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.client.util.Texts;
+import net.minecraft.client.util.NarratorManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.WrittenBookItem;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.server.network.packet.BookUpdateC2SPacket;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.SharedConstants;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.MathHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class BookEditScreen extends Screen {
-	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Identifier TEXTURE = new Identifier("textures/gui/book.png");
-	private final PlayerEntity reader;
-	private final ItemStack item;
-	private final boolean writeable;
+	private final PlayerEntity player;
+	private final ItemStack itemStack;
 	private boolean dirty;
 	private boolean signing;
 	private int tickCounter;
-	private final int pageWidth = 192;
-	private final int pageHeight = 192;
-	private int totalPages = 1;
 	private int currentPage;
-	private NbtList pages;
+	private final List<String> pages = Lists.newArrayList();
 	private String title = "";
-	private List<Text> bookText;
+	private int cursorIndex;
+	private int highlightTo;
+	private long lastClickTime;
 	private int lastClickIndex = -1;
-	private BookEditScreen.BookButton nextPageButton;
-	private BookEditScreen.BookButton previousPageButton;
-	private ButtonWidget doneButton;
-	private ButtonWidget signButton;
-	private ButtonWidget finalizeButton;
-	private ButtonWidget cancelButton;
-	private final Hand field_20386;
+	private PageTurnWidget buttonPreviousPage;
+	private PageTurnWidget buttonNextPage;
+	private ButtonWidget buttonDone;
+	private ButtonWidget buttonSign;
+	private ButtonWidget buttonFinalize;
+	private ButtonWidget buttonCancel;
+	private final Hand hand;
 
-	public BookEditScreen(PlayerEntity playerEntity, ItemStack itemStack, boolean bl, Hand hand) {
-		this.reader = playerEntity;
-		this.item = itemStack;
-		this.writeable = bl;
-		this.field_20386 = hand;
-		if (itemStack.hasNbt()) {
-			NbtCompound nbtCompound = itemStack.getNbt();
-			this.pages = nbtCompound.getList("pages", 8).copy();
-			this.totalPages = this.pages.size();
-			if (this.totalPages < 1) {
-				this.pages.add((NbtElement)(new NbtString("")));
-				this.totalPages = 1;
+	public BookEditScreen(PlayerEntity playerEntity, ItemStack itemStack, Hand hand) {
+		super(NarratorManager.EMPTY);
+		this.player = playerEntity;
+		this.itemStack = itemStack;
+		this.hand = hand;
+		CompoundTag compoundTag = itemStack.getTag();
+		if (compoundTag != null) {
+			ListTag listTag = compoundTag.getList("pages", 8).method_10612();
+
+			for (int i = 0; i < listTag.size(); i++) {
+				this.pages.add(listTag.getString(i));
 			}
 		}
 
-		if (this.pages == null && bl) {
-			this.pages = new NbtList();
-			this.pages.add((NbtElement)(new NbtString("")));
-			this.totalPages = 1;
+		if (this.pages.isEmpty()) {
+			this.pages.add("");
 		}
+	}
+
+	private int countPages() {
+		return this.pages.size();
 	}
 
 	@Override
@@ -85,125 +76,119 @@ public class BookEditScreen extends Screen {
 
 	@Override
 	protected void init() {
-		this.client.field_19946.method_18191(true);
-		if (this.writeable) {
-			this.signButton = this.addButton(new ButtonWidget(3, this.width / 2 - 100, 196, 98, 20, I18n.translate("book.signButton")) {
-				@Override
-				public void method_18374(double d, double e) {
-					BookEditScreen.this.signing = true;
-					BookEditScreen.this.updateButtons();
-				}
-			});
-			this.doneButton = this.addButton(new ButtonWidget(0, this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.done")) {
-				@Override
-				public void method_18374(double d, double e) {
-					BookEditScreen.this.client.setScreen(null);
-					BookEditScreen.this.finalizeBook(false);
-				}
-			});
-			this.finalizeButton = this.addButton(new ButtonWidget(5, this.width / 2 - 100, 196, 98, 20, I18n.translate("book.finalizeButton")) {
-				@Override
-				public void method_18374(double d, double e) {
-					if (BookEditScreen.this.signing) {
-						BookEditScreen.this.finalizeBook(true);
-						BookEditScreen.this.client.setScreen(null);
-					}
-				}
-			});
-			this.cancelButton = this.addButton(new ButtonWidget(4, this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.cancel")) {
-				@Override
-				public void method_18374(double d, double e) {
-					if (BookEditScreen.this.signing) {
-						BookEditScreen.this.signing = false;
-					}
+		this.minecraft.keyboard.enableRepeatEvents(true);
+		this.buttonSign = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("book.signButton"), buttonWidget -> {
+			this.signing = true;
+			this.updateButtons();
+		}));
+		this.buttonDone = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.done"), buttonWidget -> {
+			this.minecraft.openScreen(null);
+			this.finalizeBook(false);
+		}));
+		this.buttonFinalize = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("book.finalizeButton"), buttonWidget -> {
+			if (this.signing) {
+				this.finalizeBook(true);
+				this.minecraft.openScreen(null);
+			}
+		}));
+		this.buttonCancel = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.cancel"), buttonWidget -> {
+			if (this.signing) {
+				this.signing = false;
+			}
 
-					BookEditScreen.this.updateButtons();
-				}
-			});
-		} else {
-			this.doneButton = this.addButton(new ButtonWidget(0, this.width / 2 - 100, 196, 200, 20, I18n.translate("gui.done")) {
-				@Override
-				public void method_18374(double d, double e) {
-					BookEditScreen.this.client.setScreen(null);
-					BookEditScreen.this.finalizeBook(false);
-				}
-			});
-		}
-
+			this.updateButtons();
+		}));
 		int i = (this.width - 192) / 2;
 		int j = 2;
-		this.nextPageButton = this.addButton(new BookEditScreen.BookButton(1, i + 120, 156, true) {
-			@Override
-			public void method_18374(double d, double e) {
-				if (BookEditScreen.this.currentPage < BookEditScreen.this.totalPages - 1) {
-					BookEditScreen.this.currentPage++;
-				} else if (BookEditScreen.this.writeable) {
-					BookEditScreen.this.appendNewPage();
-					if (BookEditScreen.this.currentPage < BookEditScreen.this.totalPages - 1) {
-						BookEditScreen.this.currentPage++;
-					}
-				}
+		this.buttonPreviousPage = this.addButton(new PageTurnWidget(i + 116, 159, true, buttonWidget -> this.openNextPage(), true));
+		this.buttonNextPage = this.addButton(new PageTurnWidget(i + 43, 159, false, buttonWidget -> this.openPreviousPage(), true));
+		this.updateButtons();
+	}
 
-				BookEditScreen.this.updateButtons();
-			}
-		});
-		this.previousPageButton = this.addButton(new BookEditScreen.BookButton(2, i + 38, 156, false) {
-			@Override
-			public void method_18374(double d, double e) {
-				if (BookEditScreen.this.currentPage > 0) {
-					BookEditScreen.this.currentPage--;
-				}
+	private String stripFromatting(String string) {
+		StringBuilder stringBuilder = new StringBuilder();
 
-				BookEditScreen.this.updateButtons();
+		for (char c : string.toCharArray()) {
+			if (c != 167 && c != 127) {
+				stringBuilder.append(c);
 			}
-		});
+		}
+
+		return stringBuilder.toString();
+	}
+
+	private void openPreviousPage() {
+		if (this.currentPage > 0) {
+			this.currentPage--;
+			this.cursorIndex = 0;
+			this.highlightTo = this.cursorIndex;
+		}
+
+		this.updateButtons();
+	}
+
+	private void openNextPage() {
+		if (this.currentPage < this.countPages() - 1) {
+			this.currentPage++;
+			this.cursorIndex = 0;
+			this.highlightTo = this.cursorIndex;
+		} else {
+			this.appendNewPage();
+			if (this.currentPage < this.countPages() - 1) {
+				this.currentPage++;
+			}
+
+			this.cursorIndex = 0;
+			this.highlightTo = this.cursorIndex;
+		}
+
 		this.updateButtons();
 	}
 
 	@Override
 	public void removed() {
-		this.client.field_19946.method_18191(false);
+		this.minecraft.keyboard.enableRepeatEvents(false);
 	}
 
 	private void updateButtons() {
-		this.nextPageButton.visible = !this.signing && (this.currentPage < this.totalPages - 1 || this.writeable);
-		this.previousPageButton.visible = !this.signing && this.currentPage > 0;
-		this.doneButton.visible = !this.writeable || !this.signing;
-		if (this.writeable) {
-			this.signButton.visible = !this.signing;
-			this.cancelButton.visible = this.signing;
-			this.finalizeButton.visible = this.signing;
-			this.finalizeButton.active = !this.title.trim().isEmpty();
+		this.buttonNextPage.visible = !this.signing && this.currentPage > 0;
+		this.buttonPreviousPage.visible = !this.signing;
+		this.buttonDone.visible = !this.signing;
+		this.buttonSign.visible = !this.signing;
+		this.buttonCancel.visible = this.signing;
+		this.buttonFinalize.visible = this.signing;
+		this.buttonFinalize.active = !this.title.trim().isEmpty();
+	}
+
+	private void removeEmptyPages() {
+		ListIterator<String> listIterator = this.pages.listIterator(this.pages.size());
+
+		while (listIterator.hasPrevious() && ((String)listIterator.previous()).isEmpty()) {
+			listIterator.remove();
 		}
 	}
 
-	private void finalizeBook(boolean signBook) {
-		if (this.writeable && this.dirty) {
-			if (this.pages != null) {
-				while (this.pages.size() > 1) {
-					String string = this.pages.getString(this.pages.size() - 1);
-					if (!string.isEmpty()) {
-						break;
-					}
-
-					this.pages.remove(this.pages.size() - 1);
-				}
-
-				this.item.addNbt("pages", this.pages);
-				if (signBook) {
-					this.item.addNbt("author", new NbtString(this.reader.getGameProfile().getName()));
-					this.item.addNbt("title", new NbtString(this.title.trim()));
-				}
-
-				this.client.getNetworkHandler().sendPacket(new class_4385(this.item, signBook, this.field_20386));
+	private void finalizeBook(boolean bl) {
+		if (this.dirty) {
+			this.removeEmptyPages();
+			ListTag listTag = new ListTag();
+			this.pages.stream().map(StringTag::new).forEach(listTag::add);
+			if (!this.pages.isEmpty()) {
+				this.itemStack.putSubTag("pages", listTag);
 			}
+
+			if (bl) {
+				this.itemStack.putSubTag("author", new StringTag(this.player.getGameProfile().getName()));
+				this.itemStack.putSubTag("title", new StringTag(this.title.trim()));
+			}
+
+			this.minecraft.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(this.itemStack, bl, this.hand));
 		}
 	}
 
 	private void appendNewPage() {
-		if (this.pages != null && this.pages.size() < 50) {
-			this.pages.add((NbtElement)(new NbtString("")));
-			this.totalPages++;
+		if (this.countPages() < 100) {
+			this.pages.add("");
 			this.dirty = true;
 		}
 	}
@@ -212,10 +197,8 @@ public class BookEditScreen extends Screen {
 	public boolean keyPressed(int i, int j, int k) {
 		if (super.keyPressed(i, j, k)) {
 			return true;
-		} else if (this.writeable) {
-			return this.signing ? this.method_18709(i, j, k) : this.method_18706(i, j, k);
 		} else {
-			return false;
+			return this.signing ? this.keyPressedSignMode(i, j, k) : this.keyPressedEditMode(i, j, k);
 		}
 	}
 
@@ -223,43 +206,75 @@ public class BookEditScreen extends Screen {
 	public boolean charTyped(char c, int i) {
 		if (super.charTyped(c, i)) {
 			return true;
-		} else if (this.writeable) {
-			if (this.signing) {
-				if (this.title.length() < 16 && SharedConstants.isValidChar(c)) {
-					this.title = this.title + Character.toString(c);
-					this.updateButtons();
-					this.dirty = true;
-					return true;
-				} else {
-					return false;
-				}
-			} else if (SharedConstants.isValidChar(c)) {
-				this.writeText(Character.toString(c));
+		} else if (this.signing) {
+			if (this.title.length() < 16 && SharedConstants.isValidChar(c)) {
+				this.title = this.title + Character.toString(c);
+				this.updateButtons();
+				this.dirty = true;
 				return true;
 			} else {
 				return false;
 			}
+		} else if (SharedConstants.isValidChar(c)) {
+			this.writeString(Character.toString(c));
+			return true;
 		} else {
 			return false;
 		}
 	}
 
-	private boolean method_18706(int i, int j, int k) {
-		if (Screen.isPaste(i)) {
-			this.writeText(this.client.field_19946.method_18177());
+	private boolean keyPressedEditMode(int i, int j, int k) {
+		String string = this.getCurrentPageContent();
+		if (Screen.isSelectAll(i)) {
+			this.highlightTo = 0;
+			this.cursorIndex = string.length();
+			return true;
+		} else if (Screen.isCopy(i)) {
+			this.minecraft.keyboard.setClipboard(this.getHighlightedText());
+			return true;
+		} else if (Screen.isPaste(i)) {
+			this.writeString(this.stripFromatting(Formatting.strip(this.minecraft.keyboard.getClipboard().replaceAll("\\r", ""))));
+			this.highlightTo = this.cursorIndex;
+			return true;
+		} else if (Screen.isCut(i)) {
+			this.minecraft.keyboard.setClipboard(this.getHighlightedText());
+			this.removeHighlightedText();
 			return true;
 		} else {
 			switch (i) {
 				case 257:
 				case 335:
-					this.writeText("\n");
+					this.writeString("\n");
 					return true;
 				case 259:
-					String string = this.getCurrentPageContent();
-					if (!string.isEmpty()) {
-						this.setPageContent(string.substring(0, string.length() - 1));
-					}
-
+					this.applyBackspaceKey(string);
+					return true;
+				case 261:
+					this.applyDeleteKey(string);
+					return true;
+				case 262:
+					this.applyRightArrowKey(string);
+					return true;
+				case 263:
+					this.applyLeftArrowKey(string);
+					return true;
+				case 264:
+					this.applyDownArrowKey(string);
+					return true;
+				case 265:
+					this.applyUpArrowKey(string);
+					return true;
+				case 266:
+					this.buttonNextPage.onPress();
+					return true;
+				case 267:
+					this.buttonPreviousPage.onPress();
+					return true;
+				case 268:
+					this.moveCursorToTop(string);
+					return true;
+				case 269:
+					this.moveCursorToBottom(string);
 					return true;
 				default:
 					return false;
@@ -267,13 +282,138 @@ public class BookEditScreen extends Screen {
 		}
 	}
 
-	private boolean method_18709(int i, int j, int k) {
+	private void applyBackspaceKey(String string) {
+		if (!string.isEmpty()) {
+			if (this.highlightTo != this.cursorIndex) {
+				this.removeHighlightedText();
+			} else if (this.cursorIndex > 0) {
+				String string2 = new StringBuilder(string).deleteCharAt(Math.max(0, this.cursorIndex - 1)).toString();
+				this.setPageContent(string2);
+				this.cursorIndex = Math.max(0, this.cursorIndex - 1);
+				this.highlightTo = this.cursorIndex;
+			}
+		}
+	}
+
+	private void applyDeleteKey(String string) {
+		if (!string.isEmpty()) {
+			if (this.highlightTo != this.cursorIndex) {
+				this.removeHighlightedText();
+			} else if (this.cursorIndex < string.length()) {
+				String string2 = new StringBuilder(string).deleteCharAt(Math.max(0, this.cursorIndex)).toString();
+				this.setPageContent(string2);
+			}
+		}
+	}
+
+	private void applyLeftArrowKey(String string) {
+		int i = this.font.isRightToLeft() ? 1 : -1;
+		if (Screen.hasControlDown()) {
+			this.cursorIndex = this.font.findWordEdge(string, i, this.cursorIndex, true);
+		} else {
+			this.cursorIndex = Math.max(0, this.cursorIndex + i);
+		}
+
+		if (!Screen.hasShiftDown()) {
+			this.highlightTo = this.cursorIndex;
+		}
+	}
+
+	private void applyRightArrowKey(String string) {
+		int i = this.font.isRightToLeft() ? -1 : 1;
+		if (Screen.hasControlDown()) {
+			this.cursorIndex = this.font.findWordEdge(string, i, this.cursorIndex, true);
+		} else {
+			this.cursorIndex = Math.min(string.length(), this.cursorIndex + i);
+		}
+
+		if (!Screen.hasShiftDown()) {
+			this.highlightTo = this.cursorIndex;
+		}
+	}
+
+	private void applyUpArrowKey(String string) {
+		if (!string.isEmpty()) {
+			BookEditScreen.Position position = this.getCursorPositionForIndex(string, this.cursorIndex);
+			if (position.y == 0) {
+				this.cursorIndex = 0;
+				if (!Screen.hasShiftDown()) {
+					this.highlightTo = this.cursorIndex;
+				}
+			} else {
+				int i = this.getCharacterCountInFrontOfCursor(
+					string, new BookEditScreen.Position(position.x + this.getCharWidthInString(string, this.cursorIndex) / 3, position.y - 9)
+				);
+				if (i >= 0) {
+					this.cursorIndex = i;
+					if (!Screen.hasShiftDown()) {
+						this.highlightTo = this.cursorIndex;
+					}
+				}
+			}
+		}
+	}
+
+	private void applyDownArrowKey(String string) {
+		if (!string.isEmpty()) {
+			BookEditScreen.Position position = this.getCursorPositionForIndex(string, this.cursorIndex);
+			int i = this.font.getStringBoundedHeight(string + "" + Formatting.field_1074 + "_", 114);
+			if (position.y + 9 == i) {
+				this.cursorIndex = string.length();
+				if (!Screen.hasShiftDown()) {
+					this.highlightTo = this.cursorIndex;
+				}
+			} else {
+				int j = this.getCharacterCountInFrontOfCursor(
+					string, new BookEditScreen.Position(position.x + this.getCharWidthInString(string, this.cursorIndex) / 3, position.y + 9)
+				);
+				if (j >= 0) {
+					this.cursorIndex = j;
+					if (!Screen.hasShiftDown()) {
+						this.highlightTo = this.cursorIndex;
+					}
+				}
+			}
+		}
+	}
+
+	private void moveCursorToTop(String string) {
+		this.cursorIndex = this.getCharacterCountInFrontOfCursor(string, new BookEditScreen.Position(0, this.getCursorPositionForIndex(string, this.cursorIndex).y));
+		if (!Screen.hasShiftDown()) {
+			this.highlightTo = this.cursorIndex;
+		}
+	}
+
+	private void moveCursorToBottom(String string) {
+		this.cursorIndex = this.getCharacterCountInFrontOfCursor(string, new BookEditScreen.Position(113, this.getCursorPositionForIndex(string, this.cursorIndex).y));
+		if (!Screen.hasShiftDown()) {
+			this.highlightTo = this.cursorIndex;
+		}
+	}
+
+	private void removeHighlightedText() {
+		if (this.highlightTo != this.cursorIndex) {
+			String string = this.getCurrentPageContent();
+			int i = Math.min(this.cursorIndex, this.highlightTo);
+			int j = Math.max(this.cursorIndex, this.highlightTo);
+			String string2 = string.substring(0, i) + string.substring(j);
+			this.cursorIndex = i;
+			this.highlightTo = this.cursorIndex;
+			this.setPageContent(string2);
+		}
+	}
+
+	private int getCharWidthInString(String string, int i) {
+		return (int)this.font.getCharWidth(string.charAt(MathHelper.clamp(i, 0, string.length() - 1)));
+	}
+
+	private boolean keyPressedSignMode(int i, int j, int k) {
 		switch (i) {
 			case 257:
 			case 335:
 				if (!this.title.isEmpty()) {
 					this.finalizeBook(true);
-					this.client.setScreen(null);
+					this.minecraft.openScreen(null);
 				}
 
 				return true;
@@ -290,206 +430,338 @@ public class BookEditScreen extends Screen {
 	}
 
 	private String getCurrentPageContent() {
-		return this.pages != null && this.currentPage >= 0 && this.currentPage < this.pages.size() ? this.pages.getString(this.currentPage) : "";
+		return this.currentPage >= 0 && this.currentPage < this.pages.size() ? (String)this.pages.get(this.currentPage) : "";
 	}
 
-	private void setPageContent(String newContent) {
-		if (this.pages != null && this.currentPage >= 0 && this.currentPage < this.pages.size()) {
-			this.pages.set(this.currentPage, (NbtElement)(new NbtString(newContent)));
+	private void setPageContent(String string) {
+		if (this.currentPage >= 0 && this.currentPage < this.pages.size()) {
+			this.pages.set(this.currentPage, string);
 			this.dirty = true;
 		}
 	}
 
-	private void writeText(String text) {
-		String string = this.getCurrentPageContent();
-		String string2 = string + text;
-		int i = this.textRenderer.getHeightSplit(string2 + "" + Formatting.BLACK + "_", 118);
-		if (i <= 128 && string2.length() < 256) {
-			this.setPageContent(string2);
+	private void writeString(String string) {
+		if (this.highlightTo != this.cursorIndex) {
+			this.removeHighlightedText();
+		}
+
+		String string2 = this.getCurrentPageContent();
+		this.cursorIndex = MathHelper.clamp(this.cursorIndex, 0, string2.length());
+		String string3 = new StringBuilder(string2).insert(this.cursorIndex, string).toString();
+		int i = this.font.getStringBoundedHeight(string3 + "" + Formatting.field_1074 + "_", 114);
+		if (i <= 128 && string3.length() < 1024) {
+			this.setPageContent(string3);
+			this.highlightTo = this.cursorIndex = Math.min(this.getCurrentPageContent().length(), this.cursorIndex + string.length());
 		}
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
-		int i = (this.width - 192) / 2;
-		int j = 2;
-		this.drawTexture(i, 2, 0, 0, 192, 192);
+	public void render(int i, int j, float f) {
+		this.renderBackground();
+		this.setFocused(null);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		this.minecraft.getTextureManager().bindTexture(BookScreen.BOOK_TEXTURE);
+		int k = (this.width - 192) / 2;
+		int l = 2;
+		this.blit(k, 2, 0, 0, 192, 192);
 		if (this.signing) {
 			String string = this.title;
-			if (this.writeable) {
-				if (this.tickCounter / 6 % 2 == 0) {
-					string = string + "" + Formatting.BLACK + "_";
-				} else {
-					string = string + "" + Formatting.GRAY + "_";
-				}
+			if (this.tickCounter / 6 % 2 == 0) {
+				string = string + "" + Formatting.field_1074 + "_";
+			} else {
+				string = string + "" + Formatting.field_1080 + "_";
 			}
 
 			String string2 = I18n.translate("book.editTitle");
-			int k = this.textRenderer.getStringWidth(string2);
-			this.textRenderer.method_18355(string2, (float)(i + 36 + (116 - k) / 2), 34.0F, 0);
-			int l = this.textRenderer.getStringWidth(string);
-			this.textRenderer.method_18355(string, (float)(i + 36 + (116 - l) / 2), 50.0F, 0);
-			String string3 = I18n.translate("book.byAuthor", this.reader.method_15540().getString());
-			int m = this.textRenderer.getStringWidth(string3);
-			this.textRenderer.method_18355(Formatting.DARK_GRAY + string3, (float)(i + 36 + (116 - m) / 2), 60.0F, 0);
+			int m = this.getStringWidth(string2);
+			this.font.draw(string2, (float)(k + 36 + (114 - m) / 2), 34.0F, 0);
+			int n = this.getStringWidth(string);
+			this.font.draw(string, (float)(k + 36 + (114 - n) / 2), 50.0F, 0);
+			String string3 = I18n.translate("book.byAuthor", this.player.getName().getString());
+			int o = this.getStringWidth(string3);
+			this.font.draw(Formatting.field_1063 + string3, (float)(k + 36 + (114 - o) / 2), 60.0F, 0);
 			String string4 = I18n.translate("book.finalizeWarning");
-			this.textRenderer.drawTrimmed(string4, i + 36, 82, 116, 0);
+			this.font.drawStringBounded(string4, k + 36, 82, 114, 0);
 		} else {
-			String string5 = I18n.translate("book.pageIndicator", this.currentPage + 1, this.totalPages);
-			String string6 = "";
-			if (this.pages != null && this.currentPage >= 0 && this.currentPage < this.pages.size()) {
-				string6 = this.pages.getString(this.currentPage);
-			}
+			String string5 = I18n.translate("book.pageIndicator", this.currentPage + 1, this.countPages());
+			String string6 = this.getCurrentPageContent();
+			int p = this.getStringWidth(string5);
+			this.font.draw(string5, (float)(k - p + 192 - 44), 18.0F, 0);
+			this.font.drawStringBounded(string6, k + 36, 32, 114, 0);
+			this.drawHighlight(string6);
+			if (this.tickCounter / 6 % 2 == 0) {
+				BookEditScreen.Position position = this.getCursorPositionForIndex(string6, this.cursorIndex);
+				if (this.font.isRightToLeft()) {
+					this.localizePosition(position);
+					position.x = position.x - 4;
+				}
 
-			if (this.writeable) {
-				if (this.textRenderer.isRightToLeft()) {
-					string6 = string6 + "_";
-				} else if (this.tickCounter / 6 % 2 == 0) {
-					string6 = string6 + "" + Formatting.BLACK + "_";
+				this.translateRelativePositionToGlPosition(position);
+				if (this.cursorIndex < string6.length()) {
+					DrawableHelper.fill(position.x, position.y - 1, position.x + 1, position.y + 9, -16777216);
 				} else {
-					string6 = string6 + "" + Formatting.GRAY + "_";
-				}
-			} else if (this.lastClickIndex != this.currentPage) {
-				if (WrittenBookItem.isValid(this.item.getNbt())) {
-					try {
-						Text text = Text.Serializer.deserializeText(string6);
-						this.bookText = text != null ? Texts.wrapLines(text, 116, this.textRenderer, true, true) : null;
-					} catch (JsonParseException var13) {
-						this.bookText = null;
-					}
-				} else {
-					this.bookText = Lists.newArrayList(new TranslatableText("book.invalid.tag").formatted(Formatting.DARK_RED));
-				}
-
-				this.lastClickIndex = this.currentPage;
-			}
-
-			int n = this.textRenderer.getStringWidth(string5);
-			this.textRenderer.method_18355(string5, (float)(i - n + 192 - 44), 18.0F, 0);
-			if (this.bookText == null) {
-				this.textRenderer.drawTrimmed(string6, i + 36, 34, 116, 0);
-			} else {
-				int o = Math.min(128 / this.textRenderer.fontHeight, this.bookText.size());
-
-				for (int p = 0; p < o; p++) {
-					Text text2 = (Text)this.bookText.get(p);
-					this.textRenderer.method_18355(text2.asFormattedString(), (float)(i + 36), (float)(34 + p * this.textRenderer.fontHeight), 0);
-				}
-
-				Text text3 = this.method_18705((double)mouseX, (double)mouseY);
-				if (text3 != null) {
-					this.renderTextHoverEffect(text3, mouseX, mouseY);
+					this.font.draw("_", (float)position.x, (float)position.y, 0);
 				}
 			}
 		}
 
-		super.render(mouseX, mouseY, tickDelta);
+		super.render(i, j, f);
+	}
+
+	private int getStringWidth(String string) {
+		return this.font.getStringWidth(this.font.isRightToLeft() ? this.font.mirror(string) : string);
+	}
+
+	private int getCharacterCountForWidth(String string, int i) {
+		return this.font.getCharacterCountForWidth(string, i);
+	}
+
+	private String getHighlightedText() {
+		String string = this.getCurrentPageContent();
+		int i = Math.min(this.cursorIndex, this.highlightTo);
+		int j = Math.max(this.cursorIndex, this.highlightTo);
+		return string.substring(i, j);
+	}
+
+	private void drawHighlight(String string) {
+		if (this.highlightTo != this.cursorIndex) {
+			int i = Math.min(this.cursorIndex, this.highlightTo);
+			int j = Math.max(this.cursorIndex, this.highlightTo);
+			String string2 = string.substring(i, j);
+			int k = this.font.findWordEdge(string, 1, j, true);
+			String string3 = string.substring(i, k);
+			BookEditScreen.Position position = this.getCursorPositionForIndex(string, i);
+			BookEditScreen.Position position2 = new BookEditScreen.Position(position.x, position.y + 9);
+
+			while (!string2.isEmpty()) {
+				int l = this.getCharacterCountForWidth(string3, 114 - position.x);
+				if (string2.length() <= l) {
+					position2.x = position.x + this.getStringWidth(string2);
+					this.drawHighlightRect(position, position2);
+					break;
+				}
+
+				l = Math.min(l, string2.length() - 1);
+				String string4 = string2.substring(0, l);
+				char c = string2.charAt(l);
+				boolean bl = c == ' ' || c == '\n';
+				string2 = Formatting.getFormatAtEnd(string4) + string2.substring(l + (bl ? 1 : 0));
+				string3 = Formatting.getFormatAtEnd(string4) + string3.substring(l + (bl ? 1 : 0));
+				position2.x = position.x + this.getStringWidth(string4 + " ");
+				this.drawHighlightRect(position, position2);
+				position.x = 0;
+				position.y = position.y + 9;
+				position2.y = position2.y + 9;
+			}
+		}
+	}
+
+	private void drawHighlightRect(BookEditScreen.Position position, BookEditScreen.Position position2) {
+		BookEditScreen.Position position3 = new BookEditScreen.Position(position.x, position.y);
+		BookEditScreen.Position position4 = new BookEditScreen.Position(position2.x, position2.y);
+		if (this.font.isRightToLeft()) {
+			this.localizePosition(position3);
+			this.localizePosition(position4);
+			int i = position4.x;
+			position4.x = position3.x;
+			position3.x = i;
+		}
+
+		this.translateRelativePositionToGlPosition(position3);
+		this.translateRelativePositionToGlPosition(position4);
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+		GlStateManager.color4f(0.0F, 0.0F, 255.0F, 255.0F);
+		GlStateManager.disableTexture();
+		GlStateManager.enableColorLogicOp();
+		GlStateManager.logicOp(GlStateManager.LogicOp.field_5110);
+		bufferBuilder.begin(7, VertexFormats.POSITION);
+		bufferBuilder.vertex((double)position3.x, (double)position4.y, 0.0).next();
+		bufferBuilder.vertex((double)position4.x, (double)position4.y, 0.0).next();
+		bufferBuilder.vertex((double)position4.x, (double)position3.y, 0.0).next();
+		bufferBuilder.vertex((double)position3.x, (double)position3.y, 0.0).next();
+		tessellator.draw();
+		GlStateManager.disableColorLogicOp();
+		GlStateManager.enableTexture();
+	}
+
+	private BookEditScreen.Position getCursorPositionForIndex(String string, int i) {
+		BookEditScreen.Position position = new BookEditScreen.Position();
+		int j = 0;
+		int k = 0;
+
+		for (String string2 = string; !string2.isEmpty(); k = j) {
+			int l = this.getCharacterCountForWidth(string2, 114);
+			if (string2.length() <= l) {
+				String string3 = string2.substring(0, Math.min(Math.max(i - k, 0), string2.length()));
+				position.x = position.x + this.getStringWidth(string3);
+				break;
+			}
+
+			String string4 = string2.substring(0, l);
+			char c = string2.charAt(l);
+			boolean bl = c == ' ' || c == '\n';
+			string2 = Formatting.getFormatAtEnd(string4) + string2.substring(l + (bl ? 1 : 0));
+			j += string4.length() + (bl ? 1 : 0);
+			if (j - 1 >= i) {
+				String string5 = string4.substring(0, Math.min(Math.max(i - k, 0), string4.length()));
+				position.x = position.x + this.getStringWidth(string5);
+				break;
+			}
+
+			position.y = position.y + 9;
+		}
+
+		return position;
+	}
+
+	private void localizePosition(BookEditScreen.Position position) {
+		if (this.font.isRightToLeft()) {
+			position.x = 114 - position.x;
+		}
+	}
+
+	private void translateGlPositionToRelativePosition(BookEditScreen.Position position) {
+		position.x = position.x - (this.width - 192) / 2 - 36;
+		position.y = position.y - 32;
+	}
+
+	private void translateRelativePositionToGlPosition(BookEditScreen.Position position) {
+		position.x = position.x + (this.width - 192) / 2 + 36;
+		position.y = position.y + 32;
+	}
+
+	private int getCharacterCountForStringWidth(String string, int i) {
+		if (i < 0) {
+			return 0;
+		} else {
+			float f = 0.0F;
+			boolean bl = false;
+			String string2 = string + " ";
+
+			for (int j = 0; j < string2.length(); j++) {
+				char c = string2.charAt(j);
+				float g = this.font.getCharWidth(c);
+				if (c == 167 && j < string2.length() - 1) {
+					c = string2.charAt(++j);
+					if (c == 'l' || c == 'L') {
+						bl = true;
+					} else if (c == 'r' || c == 'R') {
+						bl = false;
+					}
+
+					g = 0.0F;
+				}
+
+				float h = f;
+				f += g;
+				if (bl && g > 0.0F) {
+					f++;
+				}
+
+				if ((float)i >= h && (float)i < f) {
+					return j;
+				}
+			}
+
+			return (float)i >= f ? string2.length() - 1 : -1;
+		}
+	}
+
+	private int getCharacterCountInFrontOfCursor(String string, BookEditScreen.Position position) {
+		int i = 16 * 9;
+		if (position.y > i) {
+			return -1;
+		} else {
+			int j = Integer.MIN_VALUE;
+			int k = 9;
+			int l = 0;
+
+			for (String string2 = string; !string2.isEmpty() && j < i; k += 9) {
+				int m = this.getCharacterCountForWidth(string2, 114);
+				if (m < string2.length()) {
+					String string3 = string2.substring(0, m);
+					if (position.y >= j && position.y < k) {
+						int n = this.getCharacterCountForStringWidth(string3, position.x);
+						return n < 0 ? -1 : l + n;
+					}
+
+					char c = string2.charAt(m);
+					boolean bl = c == ' ' || c == '\n';
+					string2 = Formatting.getFormatAtEnd(string3) + string2.substring(m + (bl ? 1 : 0));
+					l += string3.length() + (bl ? 1 : 0);
+				} else if (position.y >= j && position.y < k) {
+					int o = this.getCharacterCountForStringWidth(string2, position.x);
+					return o < 0 ? -1 : l + o;
+				}
+
+				j = k;
+			}
+
+			return string.length();
+		}
 	}
 
 	@Override
 	public boolean mouseClicked(double d, double e, int i) {
 		if (i == 0) {
-			Text text = this.method_18705(d, e);
-			if (text != null && this.handleTextClick(text)) {
-				return true;
+			long l = SystemUtil.getMeasuringTimeMs();
+			String string = this.getCurrentPageContent();
+			if (!string.isEmpty()) {
+				BookEditScreen.Position position = new BookEditScreen.Position((int)d, (int)e);
+				this.translateGlPositionToRelativePosition(position);
+				this.localizePosition(position);
+				int j = this.getCharacterCountInFrontOfCursor(string, position);
+				if (j >= 0) {
+					if (j != this.lastClickIndex || l - this.lastClickTime >= 250L) {
+						this.cursorIndex = j;
+						if (!Screen.hasShiftDown()) {
+							this.highlightTo = this.cursorIndex;
+						}
+					} else if (this.highlightTo == this.cursorIndex) {
+						this.highlightTo = this.font.findWordEdge(string, -1, j, false);
+						this.cursorIndex = this.font.findWordEdge(string, 1, j, false);
+					} else {
+						this.highlightTo = 0;
+						this.cursorIndex = this.getCurrentPageContent().length();
+					}
+				}
+
+				this.lastClickIndex = j;
 			}
+
+			this.lastClickTime = l;
 		}
 
 		return super.mouseClicked(d, e, i);
 	}
 
 	@Override
-	public boolean handleTextClick(Text text) {
-		ClickEvent clickEvent = text.getStyle().getClickEvent();
-		if (clickEvent == null) {
-			return false;
-		} else if (clickEvent.getAction() == ClickEvent.Action.CHANGE_PAGE) {
-			String string = clickEvent.getValue();
-
-			try {
-				int i = Integer.parseInt(string) - 1;
-				if (i >= 0 && i < this.totalPages && i != this.currentPage) {
-					this.currentPage = i;
-					this.updateButtons();
-					return true;
-				}
-			} catch (Throwable var5) {
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		if (i == 0 && this.currentPage >= 0 && this.currentPage < this.pages.size()) {
+			String string = (String)this.pages.get(this.currentPage);
+			BookEditScreen.Position position = new BookEditScreen.Position((int)d, (int)e);
+			this.translateGlPositionToRelativePosition(position);
+			this.localizePosition(position);
+			int j = this.getCharacterCountInFrontOfCursor(string, position);
+			if (j >= 0) {
+				this.cursorIndex = j;
 			}
-
-			return false;
-		} else {
-			boolean bl = super.handleTextClick(text);
-			if (bl && clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
-				this.client.setScreen(null);
-			}
-
-			return bl;
 		}
+
+		return super.mouseDragged(d, e, i, f, g);
 	}
 
-	@Nullable
-	public Text method_18705(double d, double e) {
-		if (this.bookText == null) {
-			return null;
-		} else {
-			int i = MathHelper.floor(d - (double)((this.width - 192) / 2) - 36.0);
-			int j = MathHelper.floor(e - 2.0 - 16.0 - 16.0);
-			if (i >= 0 && j >= 0) {
-				int k = Math.min(128 / this.textRenderer.fontHeight, this.bookText.size());
-				if (i <= 116 && j < this.client.textRenderer.fontHeight * k + k) {
-					int l = j / this.client.textRenderer.fontHeight;
-					if (l >= 0 && l < this.bookText.size()) {
-						Text text = (Text)this.bookText.get(l);
-						int m = 0;
+	class Position {
+		private int x;
+		private int y;
 
-						for (Text text2 : text) {
-							if (text2 instanceof LiteralText) {
-								m += this.client.textRenderer.getStringWidth(text2.asFormattedString());
-								if (m > i) {
-									return text2;
-								}
-							}
-						}
-					}
-
-					return null;
-				} else {
-					return null;
-				}
-			} else {
-				return null;
-			}
-		}
-	}
-
-	abstract static class BookButton extends ButtonWidget {
-		private final boolean isRight;
-
-		public BookButton(int i, int j, int k, boolean bl) {
-			super(i, j, k, 23, 13, "");
-			this.isRight = bl;
+		Position() {
 		}
 
-		@Override
-		public void method_891(int i, int j, float f) {
-			if (this.visible) {
-				boolean bl = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-				MinecraftClient.getInstance().getTextureManager().bindTexture(BookEditScreen.TEXTURE);
-				int k = 0;
-				int l = 192;
-				if (bl) {
-					k += 23;
-				}
-
-				if (!this.isRight) {
-					l += 13;
-				}
-
-				this.drawTexture(this.x, this.y, k, l, 23, 13);
-			}
+		Position(int i, int j) {
+			this.x = i;
+			this.y = j;
 		}
 	}
 }

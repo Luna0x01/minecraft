@@ -14,27 +14,27 @@ public class CarrotOnAStickItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (world.isClient) {
-			return new TypedActionResult<>(ActionResult.PASS, itemStack);
+			return new TypedActionResult<>(ActionResult.field_5811, itemStack);
 		} else {
-			if (player.hasMount() && player.getVehicle() instanceof PigEntity) {
-				PigEntity pigEntity = (PigEntity)player.getVehicle();
-				if (itemStack.getMaxDamage() - itemStack.getDamage() >= 7 && pigEntity.method_13117()) {
-					itemStack.damage(7, player);
+			if (playerEntity.hasVehicle() && playerEntity.getVehicle() instanceof PigEntity) {
+				PigEntity pigEntity = (PigEntity)playerEntity.getVehicle();
+				if (itemStack.getMaxDamage() - itemStack.getDamage() >= 7 && pigEntity.method_6577()) {
+					itemStack.damage(7, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
 					if (itemStack.isEmpty()) {
-						ItemStack itemStack2 = new ItemStack(Items.FISHING_ROD);
-						itemStack2.setNbt(itemStack.getNbt());
-						return new TypedActionResult<>(ActionResult.SUCCESS, itemStack2);
+						ItemStack itemStack2 = new ItemStack(Items.field_8378);
+						itemStack2.setTag(itemStack.getTag());
+						return new TypedActionResult<>(ActionResult.field_5812, itemStack2);
 					}
 
-					return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+					return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 				}
 			}
 
-			player.method_15932(Stats.USED.method_21429(this));
-			return new TypedActionResult<>(ActionResult.PASS, itemStack);
+			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+			return new TypedActionResult<>(ActionResult.field_5811, itemStack);
 		}
 	}
 }

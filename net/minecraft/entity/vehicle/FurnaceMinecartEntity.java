@@ -1,6 +1,5 @@
 package net.minecraft.entity.vehicle;
 
-import net.minecraft.class_4342;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
@@ -12,12 +11,15 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 public class FurnaceMinecartEntity extends AbstractMinecartEntity {
@@ -25,19 +27,19 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	private int fuel;
 	public double pushX;
 	public double pushZ;
-	private static final Ingredient field_17124 = Ingredient.ofItems(Items.COAL, Items.CHARCOAL);
+	private static final Ingredient ACCEPTABLE_FUEL = Ingredient.ofItems(Items.field_8713, Items.field_8665);
 
-	public FurnaceMinecartEntity(World world) {
-		super(EntityType.FURNACE_MINECART, world);
+	public FurnaceMinecartEntity(EntityType<? extends FurnaceMinecartEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	public FurnaceMinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.FURNACE_MINECART, world, d, e, f);
+		super(EntityType.field_6080, world, d, e, f);
 	}
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.FURNACE;
+		return AbstractMinecartEntity.Type.field_7679;
 	}
 
 	@Override
@@ -60,36 +62,37 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 
 		this.setLit(this.fuel > 0);
 		if (this.isLit() && this.random.nextInt(4) == 0) {
-			this.world.method_16343(class_4342.field_21356, this.x, this.y + 0.8, this.z, 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.field_11237, this.x, this.y + 0.8, this.z, 0.0, 0.0, 0.0);
 		}
 	}
 
 	@Override
-	protected double getMaxOffRailSpeed() {
+	protected double method_7504() {
 		return 0.2;
 	}
 
 	@Override
 	public void dropItems(DamageSource damageSource) {
 		super.dropItems(damageSource);
-		if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean("doEntityDrops")) {
-			this.method_15560(Blocks.FURNACE);
+		if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.field_19393)) {
+			this.dropItem(Blocks.field_10181);
 		}
 	}
 
 	@Override
-	protected void moveOnRail(BlockPos pos, BlockState state) {
-		super.moveOnRail(pos, state);
+	protected void method_7513(BlockPos blockPos, BlockState blockState) {
+		super.method_7513(blockPos, blockState);
 		double d = this.pushX * this.pushX + this.pushZ * this.pushZ;
-		if (d > 1.0E-4 && this.velocityX * this.velocityX + this.velocityZ * this.velocityZ > 0.001) {
+		Vec3d vec3d = this.getVelocity();
+		if (d > 1.0E-4 && squaredHorizontalLength(vec3d) > 0.001) {
 			d = (double)MathHelper.sqrt(d);
 			this.pushX /= d;
 			this.pushZ /= d;
-			if (this.pushX * this.velocityX + this.pushZ * this.velocityZ < 0.0) {
+			if (this.pushX * vec3d.x + this.pushZ * vec3d.z < 0.0) {
 				this.pushX = 0.0;
 				this.pushZ = 0.0;
 			} else {
-				double e = d / this.getMaxOffRailSpeed();
+				double e = d / this.method_7504();
 				this.pushX *= e;
 				this.pushZ *= e;
 			}
@@ -97,72 +100,62 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	protected void applySlowdown() {
+	protected void method_7525() {
 		double d = this.pushX * this.pushX + this.pushZ * this.pushZ;
-		if (d > 1.0E-4) {
+		if (d > 1.0E-7) {
 			d = (double)MathHelper.sqrt(d);
 			this.pushX /= d;
 			this.pushZ /= d;
-			double e = 1.0;
-			this.velocityX *= 0.8F;
-			this.velocityY *= 0.0;
-			this.velocityZ *= 0.8F;
-			this.velocityX = this.velocityX + this.pushX * 1.0;
-			this.velocityZ = this.velocityZ + this.pushZ * 1.0;
+			this.setVelocity(this.getVelocity().multiply(0.8, 0.0, 0.8).add(this.pushX, 0.0, this.pushZ));
 		} else {
-			this.velocityX *= 0.98F;
-			this.velocityY *= 0.0;
-			this.velocityZ *= 0.98F;
+			this.setVelocity(this.getVelocity().multiply(0.98, 0.0, 0.98));
 		}
 
-		super.applySlowdown();
+		super.method_7525();
 	}
 
 	@Override
-	public boolean interact(PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		if (field_17124.test(itemStack) && this.fuel + 3600 <= 32000) {
-			if (!player.abilities.creativeMode) {
+	public boolean interact(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (ACCEPTABLE_FUEL.method_8093(itemStack) && this.fuel + 3600 <= 32000) {
+			if (!playerEntity.abilities.creativeMode) {
 				itemStack.decrement(1);
 			}
 
 			this.fuel += 3600;
 		}
 
-		this.pushX = this.x - player.x;
-		this.pushZ = this.z - player.z;
+		this.pushX = this.x - playerEntity.x;
+		this.pushZ = this.z - playerEntity.z;
 		return true;
 	}
 
 	@Override
-	protected void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putDouble("PushX", this.pushX);
-		nbt.putDouble("PushZ", this.pushZ);
-		nbt.putShort("Fuel", (short)this.fuel);
+	protected void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		compoundTag.putDouble("PushX", this.pushX);
+		compoundTag.putDouble("PushZ", this.pushZ);
+		compoundTag.putShort("Fuel", (short)this.fuel);
 	}
 
 	@Override
-	protected void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.pushX = nbt.getDouble("PushX");
-		this.pushZ = nbt.getDouble("PushZ");
-		this.fuel = nbt.getShort("Fuel");
+	protected void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		this.pushX = compoundTag.getDouble("PushX");
+		this.pushZ = compoundTag.getDouble("PushZ");
+		this.fuel = compoundTag.getShort("Fuel");
 	}
 
 	protected boolean isLit() {
 		return this.dataTracker.get(LIT);
 	}
 
-	protected void setLit(boolean lit) {
-		this.dataTracker.set(LIT, lit);
+	protected void setLit(boolean bl) {
+		this.dataTracker.set(LIT, bl);
 	}
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.FURNACE
-			.getDefaultState()
-			.withProperty(FurnaceBlock.FACING, Direction.NORTH)
-			.withProperty(FurnaceBlock.field_18348, Boolean.valueOf(this.isLit()));
+		return Blocks.field_10181.getDefaultState().with(FurnaceBlock.FACING, Direction.field_11043).with(FurnaceBlock.LIT, Boolean.valueOf(this.isLit()));
 	}
 }

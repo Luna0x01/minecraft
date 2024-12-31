@@ -5,81 +5,78 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import joptsimple.AbstractOptionSpec;
-import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import joptsimple.OptionSpecBuilder;
-import net.minecraft.class_4344;
-import net.minecraft.class_4347;
-import net.minecraft.class_4353;
-import net.minecraft.class_4354;
-import net.minecraft.class_4355;
-import net.minecraft.class_4357;
-import net.minecraft.class_4365;
-import net.minecraft.class_4366;
-import net.minecraft.class_4367;
-import net.minecraft.class_4368;
-import net.minecraft.class_4369;
+import joptsimple.OptionSpec;
+import net.minecraft.data.dev.NbtProvider;
+import net.minecraft.data.report.BlockListProvider;
+import net.minecraft.data.report.CommandSyntaxProvider;
+import net.minecraft.data.report.ItemListProvider;
+import net.minecraft.data.server.AdvancementsProvider;
+import net.minecraft.data.server.BlockTagsProvider;
+import net.minecraft.data.server.EntityTypeTagsProvider;
+import net.minecraft.data.server.FluidTagsProvider;
+import net.minecraft.data.server.ItemTagsProvider;
+import net.minecraft.data.server.LootTablesProvider;
+import net.minecraft.data.server.RecipesProvider;
+import net.minecraft.data.validate.StructureValidatorProvider;
 
 public class Main {
 	public static void main(String[] strings) throws IOException {
 		OptionParser optionParser = new OptionParser();
-		AbstractOptionSpec<Void> abstractOptionSpec = optionParser.accepts("help", "Show the help menu").forHelp();
-		OptionSpecBuilder optionSpecBuilder = optionParser.accepts("server", "Include server generators");
-		OptionSpecBuilder optionSpecBuilder2 = optionParser.accepts("client", "Include client generators");
-		OptionSpecBuilder optionSpecBuilder3 = optionParser.accepts("dev", "Include development tools");
-		OptionSpecBuilder optionSpecBuilder4 = optionParser.accepts("reports", "Include data reports");
-		OptionSpecBuilder optionSpecBuilder5 = optionParser.accepts("all", "Include all generators");
-		ArgumentAcceptingOptionSpec<String> argumentAcceptingOptionSpec = optionParser.accepts("output", "Output folder")
-			.withRequiredArg()
-			.defaultsTo("generated", new String[0]);
-		ArgumentAcceptingOptionSpec<String> argumentAcceptingOptionSpec2 = optionParser.accepts("input", "Input folder").withRequiredArg();
+		OptionSpec<Void> optionSpec = optionParser.accepts("help", "Show the help menu").forHelp();
+		OptionSpec<Void> optionSpec2 = optionParser.accepts("server", "Include server generators");
+		OptionSpec<Void> optionSpec3 = optionParser.accepts("client", "Include client generators");
+		OptionSpec<Void> optionSpec4 = optionParser.accepts("dev", "Include development tools");
+		OptionSpec<Void> optionSpec5 = optionParser.accepts("reports", "Include data reports");
+		OptionSpec<Void> optionSpec6 = optionParser.accepts("validate", "Validate inputs");
+		OptionSpec<Void> optionSpec7 = optionParser.accepts("all", "Include all generators");
+		OptionSpec<String> optionSpec8 = optionParser.accepts("output", "Output folder").withRequiredArg().defaultsTo("generated", new String[0]);
+		OptionSpec<String> optionSpec9 = optionParser.accepts("input", "Input folder").withRequiredArg();
 		OptionSet optionSet = optionParser.parse(strings);
-		if (!optionSet.has(abstractOptionSpec) && optionSet.hasOptions()) {
-			Path path = Paths.get((String)argumentAcceptingOptionSpec.value(optionSet));
-			boolean bl = optionSet.has(optionSpecBuilder2) || optionSet.has(optionSpecBuilder5);
-			boolean bl2 = optionSet.has(optionSpecBuilder) || optionSet.has(optionSpecBuilder5);
-			boolean bl3 = optionSet.has(optionSpecBuilder3) || optionSet.has(optionSpecBuilder5);
-			boolean bl4 = optionSet.has(optionSpecBuilder4) || optionSet.has(optionSpecBuilder5);
-			class_4344 lv = method_20306(
-				path,
-				(Collection<Path>)optionSet.valuesOf(argumentAcceptingOptionSpec2).stream().map(string -> Paths.get(string)).collect(Collectors.toList()),
-				bl,
-				bl2,
-				bl3,
-				bl4
+		if (!optionSet.has(optionSpec) && optionSet.hasOptions()) {
+			Path path = Paths.get((String)optionSpec8.value(optionSet));
+			boolean bl = optionSet.has(optionSpec7);
+			boolean bl2 = bl || optionSet.has(optionSpec3);
+			boolean bl3 = bl || optionSet.has(optionSpec2);
+			boolean bl4 = bl || optionSet.has(optionSpec4);
+			boolean bl5 = bl || optionSet.has(optionSpec5);
+			boolean bl6 = bl || optionSet.has(optionSpec6);
+			DataGenerator dataGenerator = create(
+				path, (Collection<Path>)optionSet.valuesOf(optionSpec9).stream().map(string -> Paths.get(string)).collect(Collectors.toList()), bl2, bl3, bl4, bl5, bl6
 			);
-			lv.method_19994();
+			dataGenerator.run();
 		} else {
 			optionParser.printHelpOn(System.out);
 		}
 	}
 
-	public static class_4344 method_20306(Path path, Collection<Path> collection, boolean bl, boolean bl2, boolean bl3, boolean bl4) {
-		class_4344 lv = new class_4344(path, collection);
+	public static DataGenerator create(Path path, Collection<Path> collection, boolean bl, boolean bl2, boolean bl3, boolean bl4, boolean bl5) {
+		DataGenerator dataGenerator = new DataGenerator(path, collection);
 		if (bl || bl2) {
-			lv.method_19992(new class_4366(lv));
+			dataGenerator.install(new SnbtProvider(dataGenerator).method_21672(new StructureValidatorProvider()));
 		}
 
 		if (bl2) {
-			lv.method_19992(new class_4368(lv));
-			lv.method_19992(new class_4367(lv));
-			lv.method_19992(new class_4369(lv));
-			lv.method_19992(new class_4357(lv));
-			lv.method_19992(new class_4347(lv));
+			dataGenerator.install(new FluidTagsProvider(dataGenerator));
+			dataGenerator.install(new BlockTagsProvider(dataGenerator));
+			dataGenerator.install(new ItemTagsProvider(dataGenerator));
+			dataGenerator.install(new EntityTypeTagsProvider(dataGenerator));
+			dataGenerator.install(new RecipesProvider(dataGenerator));
+			dataGenerator.install(new AdvancementsProvider(dataGenerator));
+			dataGenerator.install(new LootTablesProvider(dataGenerator));
 		}
 
 		if (bl3) {
-			lv.method_19992(new class_4365(lv));
+			dataGenerator.install(new NbtProvider(dataGenerator));
 		}
 
 		if (bl4) {
-			lv.method_19992(new class_4353(lv));
-			lv.method_19992(new class_4355(lv));
-			lv.method_19992(new class_4354(lv));
+			dataGenerator.install(new BlockListProvider(dataGenerator));
+			dataGenerator.install(new ItemListProvider(dataGenerator));
+			dataGenerator.install(new CommandSyntaxProvider(dataGenerator));
 		}
 
-		return lv;
+		return dataGenerator;
 	}
 }

@@ -46,11 +46,11 @@ public class HoverEvent {
 	}
 
 	public static enum Action {
-		SHOW_TEXT("show_text", true),
-		SHOW_ITEM("show_item", true),
-		SHOW_ENTITY("show_entity", true);
+		field_11762("show_text", true),
+		field_11757("show_item", true),
+		field_11761("show_entity", true);
 
-		private static final Map<String, HoverEvent.Action> NAME_TO_ACTION = (Map<String, HoverEvent.Action>)Arrays.stream(values())
+		private static final Map<String, HoverEvent.Action> BY_NAME = (Map<String, HoverEvent.Action>)Arrays.stream(values())
 			.collect(Collectors.toMap(HoverEvent.Action::getName, action -> action));
 		private final boolean userDefinable;
 		private final String name;
@@ -68,8 +68,8 @@ public class HoverEvent {
 			return this.name;
 		}
 
-		public static HoverEvent.Action byName(String name) {
-			return (HoverEvent.Action)NAME_TO_ACTION.get(name);
+		public static HoverEvent.Action byName(String string) {
+			return (HoverEvent.Action)BY_NAME.get(string);
 		}
 	}
 }

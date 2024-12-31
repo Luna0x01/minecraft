@@ -1,157 +1,133 @@
 package net.minecraft.client.gui.screen.world;
 
+import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import net.minecraft.class_3260;
-import net.minecraft.class_3264;
-import net.minecraft.class_4153;
-import net.minecraft.class_4179;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.BackupPromptScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.toast.SystemToast;
+import net.minecraft.client.toast.ToastManager;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Util;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.level.LevelProperties;
-import net.minecraft.world.level.storage.LevelStorageAccess;
+import net.minecraft.world.level.storage.LevelStorage;
 import org.apache.commons.io.FileUtils;
 
 public class EditWorldScreen extends Screen {
-	private ButtonWidget field_20482;
-	private final IdentifiableBooleanConsumer field_20483;
-	private TextFieldWidget searchField;
+	private ButtonWidget saveButton;
+	private final BooleanConsumer callback;
+	private TextFieldWidget levelNameTextField;
 	private final String levelName;
 
-	public EditWorldScreen(IdentifiableBooleanConsumer identifiableBooleanConsumer, String string) {
-		this.field_20483 = identifiableBooleanConsumer;
+	public EditWorldScreen(BooleanConsumer booleanConsumer, String string) {
+		super(new TranslatableText("selectWorld.edit.title"));
+		this.callback = booleanConsumer;
 		this.levelName = string;
 	}
 
 	@Override
 	public void tick() {
-		this.searchField.tick();
+		this.levelNameTextField.tick();
 	}
 
 	@Override
 	protected void init() {
-		this.client.field_19946.method_18191(true);
+		this.minecraft.keyboard.enableRepeatEvents(true);
 		ButtonWidget buttonWidget = this.addButton(
-			new ButtonWidget(3, this.width / 2 - 100, this.height / 4 + 24 + 5, I18n.translate("selectWorld.edit.resetIcon")) {
-				@Override
-				public void method_18374(double d, double e) {
-					LevelStorageAccess levelStorageAccess = EditWorldScreen.this.client.getCurrentSave();
-					FileUtils.deleteQuietly(levelStorageAccess.method_11957(EditWorldScreen.this.levelName, "icon.png"));
-					this.active = false;
-				}
-			}
+			new ButtonWidget(this.width / 2 - 100, this.height / 4 + 24 + 5, 200, 20, I18n.translate("selectWorld.edit.resetIcon"), buttonWidgetx -> {
+				LevelStorage levelStoragex = this.minecraft.getLevelStorage();
+				FileUtils.deleteQuietly(levelStoragex.resolveFile(this.levelName, "icon.png"));
+				buttonWidgetx.active = false;
+			})
 		);
-		this.addButton(new ButtonWidget(4, this.width / 2 - 100, this.height / 4 + 48 + 5, I18n.translate("selectWorld.edit.openFolder")) {
-			@Override
-			public void method_18374(double d, double e) {
-				LevelStorageAccess levelStorageAccess = EditWorldScreen.this.client.getCurrentSave();
-				Util.getOperatingSystem().method_20235(levelStorageAccess.method_11957(EditWorldScreen.this.levelName, "icon.png").getParentFile());
-			}
-		});
-		this.addButton(new ButtonWidget(5, this.width / 2 - 100, this.height / 4 + 72 + 5, I18n.translate("selectWorld.edit.backup")) {
-			@Override
-			public void method_18374(double d, double e) {
-				LevelStorageAccess levelStorageAccess = EditWorldScreen.this.client.getCurrentSave();
-				EditWorldScreen.method_18857(levelStorageAccess, EditWorldScreen.this.levelName);
-				EditWorldScreen.this.field_20483.confirmResult(false, 0);
-			}
-		});
-		this.addButton(new ButtonWidget(6, this.width / 2 - 100, this.height / 4 + 96 + 5, I18n.translate("selectWorld.edit.backupFolder")) {
-			@Override
-			public void method_18374(double d, double e) {
-				LevelStorageAccess levelStorageAccess = EditWorldScreen.this.client.getCurrentSave();
-				Path path = levelStorageAccess.method_17968();
+		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 48 + 5, 200, 20, I18n.translate("selectWorld.edit.openFolder"), buttonWidgetx -> {
+			LevelStorage levelStoragex = this.minecraft.getLevelStorage();
+			SystemUtil.getOperatingSystem().open(levelStoragex.resolveFile(this.levelName, "icon.png").getParentFile());
+		}));
+		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 72 + 5, 200, 20, I18n.translate("selectWorld.edit.backup"), buttonWidgetx -> {
+			LevelStorage levelStoragex = this.minecraft.getLevelStorage();
+			backupLevel(levelStoragex, this.levelName);
+			this.callback.accept(false);
+		}));
+		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 96 + 5, 200, 20, I18n.translate("selectWorld.edit.backupFolder"), buttonWidgetx -> {
+			LevelStorage levelStoragex = this.minecraft.getLevelStorage();
+			Path path = levelStoragex.getBackupsDirectory();
 
-				try {
-					Files.createDirectories(Files.exists(path, new LinkOption[0]) ? path.toRealPath() : path);
-				} catch (IOException var8) {
-					throw new RuntimeException(var8);
-				}
-
-				Util.getOperatingSystem().method_20235(path.toFile());
+			try {
+				Files.createDirectories(Files.exists(path, new LinkOption[0]) ? path.toRealPath() : path);
+			} catch (IOException var5) {
+				throw new RuntimeException(var5);
 			}
-		});
+
+			SystemUtil.getOperatingSystem().open(path.toFile());
+		}));
 		this.addButton(
-			new ButtonWidget(7, this.width / 2 - 100, this.height / 4 + 120 + 5, I18n.translate("selectWorld.edit.optimize")) {
-				@Override
-				public void method_18374(double d, double e) {
-					EditWorldScreen.this.client
-						.setScreen(
-							new class_4153(
-								EditWorldScreen.this,
-								bl -> {
-									if (bl) {
-										EditWorldScreen.method_18857(EditWorldScreen.this.client.getCurrentSave(), EditWorldScreen.this.levelName);
-									}
+			new ButtonWidget(
+				this.width / 2 - 100,
+				this.height / 4 + 120 + 5,
+				200,
+				20,
+				I18n.translate("selectWorld.edit.optimize"),
+				buttonWidgetx -> this.minecraft.openScreen(new BackupPromptScreen(this, (bl, bl2) -> {
+						if (bl) {
+							backupLevel(this.minecraft.getLevelStorage(), this.levelName);
+						}
 
-									EditWorldScreen.this.client
-										.setScreen(new class_4179(EditWorldScreen.this.field_20483, EditWorldScreen.this.levelName, EditWorldScreen.this.client.getCurrentSave()));
-								},
-								I18n.translate("optimizeWorld.confirm.title"),
-								I18n.translate("optimizeWorld.confirm.description")
-							)
-						);
-				}
-			}
+						this.minecraft.openScreen(new OptimizeWorldScreen(this.callback, this.levelName, this.minecraft.getLevelStorage(), bl2));
+					}, new TranslatableText("optimizeWorld.confirm.title"), new TranslatableText("optimizeWorld.confirm.description"), true))
+			)
 		);
-		this.field_20482 = this.addButton(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 144 + 5, 98, 20, I18n.translate("selectWorld.edit.save")) {
-			@Override
-			public void method_18374(double d, double e) {
-				EditWorldScreen.this.method_18865();
-			}
-		});
-		this.addButton(new ButtonWidget(1, this.width / 2 + 2, this.height / 4 + 144 + 5, 98, 20, I18n.translate("gui.cancel")) {
-			@Override
-			public void method_18374(double d, double e) {
-				EditWorldScreen.this.field_20483.confirmResult(false, 0);
-			}
-		});
-		buttonWidget.active = this.client.getCurrentSave().method_11957(this.levelName, "icon.png").isFile();
-		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
-		LevelProperties levelProperties = levelStorageAccess.getLevelProperties(this.levelName);
+		this.saveButton = this.addButton(
+			new ButtonWidget(this.width / 2 - 100, this.height / 4 + 144 + 5, 98, 20, I18n.translate("selectWorld.edit.save"), buttonWidgetx -> this.commit())
+		);
+		this.addButton(
+			new ButtonWidget(this.width / 2 + 2, this.height / 4 + 144 + 5, 98, 20, I18n.translate("gui.cancel"), buttonWidgetx -> this.callback.accept(false))
+		);
+		buttonWidget.active = this.minecraft.getLevelStorage().resolveFile(this.levelName, "icon.png").isFile();
+		LevelStorage levelStorage = this.minecraft.getLevelStorage();
+		LevelProperties levelProperties = levelStorage.getLevelProperties(this.levelName);
 		String string = levelProperties == null ? "" : levelProperties.getLevelName();
-		this.searchField = new TextFieldWidget(2, this.textRenderer, this.width / 2 - 100, 53, 200, 20);
-		this.searchField.setFocused(true);
-		this.searchField.setText(string);
-		this.field_20307.add(this.searchField);
+		this.levelNameTextField = new TextFieldWidget(this.font, this.width / 2 - 100, 53, 200, 20, I18n.translate("selectWorld.enterName"));
+		this.levelNameTextField.setText(string);
+		this.levelNameTextField.setChangedListener(stringx -> this.saveButton.active = !stringx.trim().isEmpty());
+		this.children.add(this.levelNameTextField);
+		this.setInitialFocus(this.levelNameTextField);
 	}
 
 	@Override
-	public void resize(MinecraftClient client, int width, int height) {
-		String string = this.searchField.getText();
-		this.init(client, width, height);
-		this.searchField.setText(string);
+	public void resize(MinecraftClient minecraftClient, int i, int j) {
+		String string = this.levelNameTextField.getText();
+		this.init(minecraftClient, i, j);
+		this.levelNameTextField.setText(string);
 	}
 
 	@Override
 	public void removed() {
-		this.client.field_19946.method_18191(false);
+		this.minecraft.keyboard.enableRepeatEvents(false);
 	}
 
-	private void method_18865() {
-		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
-		levelStorageAccess.renameLevel(this.levelName, this.searchField.getText().trim());
-		this.field_20483.confirmResult(true, 0);
+	private void commit() {
+		LevelStorage levelStorage = this.minecraft.getLevelStorage();
+		levelStorage.renameLevel(this.levelName, this.levelNameTextField.getText().trim());
+		this.callback.accept(true);
 	}
 
-	public static void method_18857(LevelStorageAccess levelStorageAccess, String string) {
-		class_3264 lv = MinecraftClient.getInstance().method_14462();
+	public static void backupLevel(LevelStorage levelStorage, String string) {
+		ToastManager toastManager = MinecraftClient.getInstance().getToastManager();
 		long l = 0L;
 		IOException iOException = null;
 
 		try {
-			l = levelStorageAccess.method_17970(string);
+			l = levelStorage.backupLevel(string);
 		} catch (IOException var8) {
 			iOException = var8;
 		}
@@ -166,38 +142,15 @@ public class EditWorldScreen extends Screen {
 			text2 = new TranslatableText("selectWorld.edit.backupSize", MathHelper.ceil((double)l / 1048576.0));
 		}
 
-		lv.method_14491(new class_3260(class_3260.class_3261.WORLD_BACKUP, text, text2));
+		toastManager.add(new SystemToast(SystemToast.Type.field_2220, text, text2));
 	}
 
 	@Override
-	public boolean charTyped(char c, int i) {
-		if (this.searchField.charTyped(c, i)) {
-			this.field_20482.active = !this.searchField.getText().trim().isEmpty();
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public boolean keyPressed(int i, int j, int k) {
-		if (this.searchField.keyPressed(i, j, k)) {
-			this.field_20482.active = !this.searchField.getText().trim().isEmpty();
-			return true;
-		} else if (i != 257 && i != 335) {
-			return false;
-		} else {
-			this.method_18865();
-			return true;
-		}
-	}
-
-	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		this.drawCenteredString(this.textRenderer, I18n.translate("selectWorld.edit.title"), this.width / 2, 20, 16777215);
-		this.drawWithShadow(this.textRenderer, I18n.translate("selectWorld.enterName"), this.width / 2 - 100, 40, 10526880);
-		this.searchField.method_18385(mouseX, mouseY, tickDelta);
-		super.render(mouseX, mouseY, tickDelta);
+		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 20, 16777215);
+		this.drawString(this.font, I18n.translate("selectWorld.enterName"), this.width / 2 - 100, 40, 10526880);
+		this.levelNameTextField.render(i, j, f);
+		super.render(i, j, f);
 	}
 }

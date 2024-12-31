@@ -5,64 +5,64 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.class_2876;
+import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.collection.Weighting;
+import net.minecraft.util.WeightedPicker;
 import net.minecraft.util.math.Direction;
 
 public class WeightedBakedModel implements BakedModel {
 	private final int totalWeight;
-	private final List<WeightedBakedModel.class_4292> modelItems;
-	private final BakedModel model;
+	private final List<WeightedBakedModel.ModelEntry> models;
+	private final BakedModel defaultModel;
 
-	public WeightedBakedModel(List<WeightedBakedModel.class_4292> list) {
-		this.modelItems = list;
-		this.totalWeight = Weighting.getWeightSum(list);
-		this.model = ((WeightedBakedModel.class_4292)list.get(0)).field_21095;
+	public WeightedBakedModel(List<WeightedBakedModel.ModelEntry> list) {
+		this.models = list;
+		this.totalWeight = WeightedPicker.getWeightSum(list);
+		this.defaultModel = ((WeightedBakedModel.ModelEntry)list.get(0)).model;
 	}
 
 	@Override
-	public List<BakedQuad> method_19561(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
-		return Weighting.getAt(this.modelItems, Math.abs((int)random.nextLong()) % this.totalWeight).field_21095.method_19561(blockState, direction, random);
+	public List<BakedQuad> getQuads(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
+		return WeightedPicker.getAt(this.models, Math.abs((int)random.nextLong()) % this.totalWeight).model.getQuads(blockState, direction, random);
 	}
 
 	@Override
 	public boolean useAmbientOcclusion() {
-		return this.model.useAmbientOcclusion();
+		return this.defaultModel.useAmbientOcclusion();
 	}
 
 	@Override
-	public boolean hasDepth() {
-		return this.model.hasDepth();
+	public boolean hasDepthInGui() {
+		return this.defaultModel.hasDepthInGui();
 	}
 
 	@Override
 	public boolean isBuiltin() {
-		return this.model.isBuiltin();
+		return this.defaultModel.isBuiltin();
 	}
 
 	@Override
-	public Sprite getParticleSprite() {
-		return this.model.getParticleSprite();
+	public Sprite getSprite() {
+		return this.defaultModel.getSprite();
 	}
 
 	@Override
 	public ModelTransformation getTransformation() {
-		return this.model.getTransformation();
+		return this.defaultModel.getTransformation();
 	}
 
 	@Override
-	public class_2876 method_12503() {
-		return this.model.method_12503();
+	public ModelItemPropertyOverrideList getItemPropertyOverrides() {
+		return this.defaultModel.getItemPropertyOverrides();
 	}
 
 	public static class Builder {
-		private final List<WeightedBakedModel.class_4292> models = Lists.newArrayList();
+		private final List<WeightedBakedModel.ModelEntry> models = Lists.newArrayList();
 
-		public WeightedBakedModel.Builder add(@Nullable BakedModel model, int weight) {
-			if (model != null) {
-				this.models.add(new WeightedBakedModel.class_4292(model, weight));
+		public WeightedBakedModel.Builder add(@Nullable BakedModel bakedModel, int i) {
+			if (bakedModel != null) {
+				this.models.add(new WeightedBakedModel.ModelEntry(bakedModel, i));
 			}
 
 			return this;
@@ -73,17 +73,17 @@ public class WeightedBakedModel implements BakedModel {
 			if (this.models.isEmpty()) {
 				return null;
 			} else {
-				return (BakedModel)(this.models.size() == 1 ? ((WeightedBakedModel.class_4292)this.models.get(0)).field_21095 : new WeightedBakedModel(this.models));
+				return (BakedModel)(this.models.size() == 1 ? ((WeightedBakedModel.ModelEntry)this.models.get(0)).model : new WeightedBakedModel(this.models));
 			}
 		}
 	}
 
-	static class class_4292 extends Weighting.Weight {
-		protected final BakedModel field_21095;
+	static class ModelEntry extends WeightedPicker.Entry {
+		protected final BakedModel model;
 
-		public class_4292(BakedModel bakedModel, int i) {
+		public ModelEntry(BakedModel bakedModel, int i) {
 			super(i);
-			this.field_21095 = bakedModel;
+			this.model = bakedModel;
 		}
 	}
 }

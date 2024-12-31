@@ -40,7 +40,7 @@ public class DamageRecord {
 
 	@Nullable
 	public Text getAttackerName() {
-		return this.getDamageSource().getAttacker() == null ? null : this.getDamageSource().getAttacker().getName();
+		return this.getDamageSource().getAttacker() == null ? null : this.getDamageSource().getAttacker().getDisplayName();
 	}
 
 	public float getFallDistance() {

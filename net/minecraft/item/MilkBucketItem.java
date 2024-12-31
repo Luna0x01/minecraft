@@ -1,9 +1,9 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -17,37 +17,37 @@ public class MilkBucketItem extends Item {
 	}
 
 	@Override
-	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
-		if (entity instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
-			AchievementsAndCriterions.field_16353.method_15090(serverPlayerEntity, stack);
-			serverPlayerEntity.method_15932(Stats.USED.method_21429(this));
+	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
+		if (livingEntity instanceof ServerPlayerEntity) {
+			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)livingEntity;
+			Criterions.CONSUME_ITEM.handle(serverPlayerEntity, itemStack);
+			serverPlayerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
 		}
 
-		if (entity instanceof PlayerEntity && !((PlayerEntity)entity).abilities.creativeMode) {
-			stack.decrement(1);
+		if (livingEntity instanceof PlayerEntity && !((PlayerEntity)livingEntity).abilities.creativeMode) {
+			itemStack.decrement(1);
 		}
 
 		if (!world.isClient) {
-			entity.method_6119();
+			livingEntity.clearPotionEffects();
 		}
 
-		return stack.isEmpty() ? new ItemStack(Items.BUCKET) : stack;
+		return itemStack.isEmpty() ? new ItemStack(Items.field_8550) : itemStack;
 	}
 
 	@Override
-	public int getMaxUseTime(ItemStack stack) {
+	public int getMaxUseTime(ItemStack itemStack) {
 		return 32;
 	}
 
 	@Override
-	public UseAction getUseAction(ItemStack stack) {
-		return UseAction.DRINK;
+	public UseAction getUseAction(ItemStack itemStack) {
+		return UseAction.field_8946;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		player.method_13050(hand);
-		return new TypedActionResult<>(ActionResult.SUCCESS, player.getStackInHand(hand));
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		playerEntity.setCurrentHand(hand);
+		return new TypedActionResult<>(ActionResult.field_5812, playerEntity.getStackInHand(hand));
 	}
 }

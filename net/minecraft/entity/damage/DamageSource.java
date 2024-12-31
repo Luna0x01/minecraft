@@ -1,19 +1,18 @@
 package net.minecraft.entity.damage;
 
 import javax.annotation.Nullable;
-import net.minecraft.class_3458;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.explosion.Explosion;
 
 public class DamageSource {
-	public static final DamageSource FIRE = new DamageSource("inFire").setFire();
+	public static final DamageSource IN_FIRE = new DamageSource("inFire").setFire();
 	public static final DamageSource LIGHTNING_BOLT = new DamageSource("lightningBolt");
 	public static final DamageSource ON_FIRE = new DamageSource("onFire").setBypassesArmor().setFire();
 	public static final DamageSource LAVA = new DamageSource("lava").setFire();
@@ -25,17 +24,18 @@ public class DamageSource {
 	public static final DamageSource CACTUS = new DamageSource("cactus");
 	public static final DamageSource FALL = new DamageSource("fall").setBypassesArmor();
 	public static final DamageSource FLY_INTO_WALL = new DamageSource("flyIntoWall").setBypassesArmor();
-	public static final DamageSource OUT_OF_WORLD = new DamageSource("outOfWorld").setBypassesArmor().setOutOfWorld();
+	public static final DamageSource OUT_OF_WORLD = new DamageSource("outOfWorld").setBypassesArmor().setDamageToCreative();
 	public static final DamageSource GENERIC = new DamageSource("generic").setBypassesArmor();
 	public static final DamageSource MAGIC = new DamageSource("magic").setBypassesArmor().setUsesMagic();
 	public static final DamageSource WITHER = new DamageSource("wither").setBypassesArmor();
 	public static final DamageSource ANVIL = new DamageSource("anvil");
 	public static final DamageSource FALLING_BLOCK = new DamageSource("fallingBlock");
 	public static final DamageSource DRAGON_BREATH = new DamageSource("dragonBreath").setBypassesArmor();
-	public static final DamageSource FIREWORK = new DamageSource("fireworks").setExplosive();
+	public static final DamageSource FIREWORKS = new DamageSource("fireworks").setExplosive();
 	public static final DamageSource DRYOUT = new DamageSource("dryout");
+	public static final DamageSource SWEET_BERRY_BUSH = new DamageSource("sweetBerryBush");
 	private boolean bypassesArmor;
-	private boolean outOfWorld;
+	private boolean damageToCreative;
 	private boolean unblockable;
 	private float exhaustion = 0.1F;
 	private boolean fire;
@@ -45,42 +45,42 @@ public class DamageSource {
 	private boolean explosive;
 	public final String name;
 
-	public static DamageSource mob(LivingEntity attacker) {
-		return new EntityDamageSource("mob", attacker);
+	public static DamageSource mob(LivingEntity livingEntity) {
+		return new EntityDamageSource("mob", livingEntity);
 	}
 
-	public static DamageSource mobProjectile(Entity projectile, LivingEntity attacker) {
-		return new ProjectileDamageSource("mob", projectile, attacker);
+	public static DamageSource mobProjectile(Entity entity, LivingEntity livingEntity) {
+		return new ProjectileDamageSource("mob", entity, livingEntity);
 	}
 
-	public static DamageSource player(PlayerEntity attacker) {
-		return new EntityDamageSource("player", attacker);
+	public static DamageSource player(PlayerEntity playerEntity) {
+		return new EntityDamageSource("player", playerEntity);
 	}
 
-	public static DamageSource arrow(AbstractArrowEntity arrow, @Nullable Entity attacker) {
-		return new ProjectileDamageSource("arrow", arrow, attacker).setProjectile();
+	public static DamageSource arrow(ProjectileEntity projectileEntity, @Nullable Entity entity) {
+		return new ProjectileDamageSource("arrow", projectileEntity, entity).setProjectile();
 	}
 
-	public static DamageSource method_15546(Entity entity, @Nullable Entity entity2) {
+	public static DamageSource trident(Entity entity, @Nullable Entity entity2) {
 		return new ProjectileDamageSource("trident", entity, entity2).setProjectile();
 	}
 
-	public static DamageSource fire(ExplosiveProjectileEntity projectile, @Nullable Entity attacker) {
-		return attacker == null
-			? new ProjectileDamageSource("onFire", projectile, projectile).setFire().setProjectile()
-			: new ProjectileDamageSource("fireball", projectile, attacker).setFire().setProjectile();
+	public static DamageSource explosiveProjectile(ExplosiveProjectileEntity explosiveProjectileEntity, @Nullable Entity entity) {
+		return entity == null
+			? new ProjectileDamageSource("onFire", explosiveProjectileEntity, explosiveProjectileEntity).setFire().setProjectile()
+			: new ProjectileDamageSource("fireball", explosiveProjectileEntity, entity).setFire().setProjectile();
 	}
 
-	public static DamageSource thrownProjectile(Entity projectile, @Nullable Entity attacker) {
-		return new ProjectileDamageSource("thrown", projectile, attacker).setProjectile();
+	public static DamageSource thrownProjectile(Entity entity, @Nullable Entity entity2) {
+		return new ProjectileDamageSource("thrown", entity, entity2).setProjectile();
 	}
 
-	public static DamageSource magic(Entity magic, @Nullable Entity attacker) {
-		return new ProjectileDamageSource("indirectMagic", magic, attacker).setBypassesArmor().setUsesMagic();
+	public static DamageSource magic(Entity entity, @Nullable Entity entity2) {
+		return new ProjectileDamageSource("indirectMagic", entity, entity2).setBypassesArmor().setUsesMagic();
 	}
 
-	public static DamageSource thorns(Entity attacker) {
-		return new EntityDamageSource("thorns", attacker).setThorns().setUsesMagic();
+	public static DamageSource thorns(Entity entity) {
+		return new EntityDamageSource("thorns", entity).method_5550().setUsesMagic();
 	}
 
 	public static DamageSource explosion(@Nullable Explosion explosion) {
@@ -89,14 +89,14 @@ public class DamageSource {
 			: new DamageSource("explosion").setScaledWithDifficulty().setExplosive();
 	}
 
-	public static DamageSource explosion(@Nullable LivingEntity attacker) {
-		return attacker != null
-			? new EntityDamageSource("explosion.player", attacker).setScaledWithDifficulty().setExplosive()
+	public static DamageSource explosion(@Nullable LivingEntity livingEntity) {
+		return livingEntity != null
+			? new EntityDamageSource("explosion.player", livingEntity).setScaledWithDifficulty().setExplosive()
 			: new DamageSource("explosion").setScaledWithDifficulty().setExplosive();
 	}
 
-	public static DamageSource method_15545() {
-		return new class_3458();
+	public static DamageSource netherBed() {
+		return new NetherBedDamageSource();
 	}
 
 	public boolean isProjectile() {
@@ -125,8 +125,8 @@ public class DamageSource {
 		return this.exhaustion;
 	}
 
-	public boolean isOutOfWorld() {
-		return this.outOfWorld;
+	public boolean doesDamageToCreative() {
+		return this.damageToCreative;
 	}
 
 	public boolean isUnblockable() {
@@ -153,8 +153,8 @@ public class DamageSource {
 		return this;
 	}
 
-	protected DamageSource setOutOfWorld() {
-		this.outOfWorld = true;
+	protected DamageSource setDamageToCreative() {
+		this.damageToCreative = true;
 		return this;
 	}
 
@@ -169,11 +169,13 @@ public class DamageSource {
 		return this;
 	}
 
-	public Text getDeathMessage(LivingEntity entity) {
-		LivingEntity livingEntity = entity.getOpponent();
+	public Text getDeathMessage(LivingEntity livingEntity) {
+		LivingEntity livingEntity2 = livingEntity.method_6124();
 		String string = "death.attack." + this.name;
 		String string2 = string + ".player";
-		return livingEntity != null ? new TranslatableText(string2, entity.getName(), livingEntity.getName()) : new TranslatableText(string, entity.getName());
+		return livingEntity2 != null
+			? new TranslatableText(string2, livingEntity.getDisplayName(), livingEntity2.getDisplayName())
+			: new TranslatableText(string, livingEntity.getDisplayName());
 	}
 
 	public boolean isFire() {
@@ -208,7 +210,7 @@ public class DamageSource {
 	}
 
 	@Nullable
-	public Vec3d getPosition() {
+	public Vec3d method_5510() {
 		return null;
 	}
 }

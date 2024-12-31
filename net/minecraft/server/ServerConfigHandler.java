@@ -19,7 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.dedicated.AbstractPropertiesHandler;
 import net.minecraft.server.dedicated.MinecraftDedicatedServer;
 import net.minecraft.util.ChatUtil;
 import org.apache.logging.log4j.LogManager;
@@ -32,34 +31,34 @@ public class ServerConfigHandler {
 	public static final File OPERATORS_FILE = new File("ops.txt");
 	public static final File WHITE_LIST_FILE = new File("white-list.txt");
 
-	static List<String> processSimpleListFile(File file, Map<String, String[]> valueMap) throws IOException {
+	static List<String> processSimpleListFile(File file, Map<String, String[]> map) throws IOException {
 		List<String> list = Files.readLines(file, StandardCharsets.UTF_8);
 
 		for (String string : list) {
 			string = string.trim();
 			if (!string.startsWith("#") && string.length() >= 1) {
 				String[] strings = string.split("\\|");
-				valueMap.put(strings[0].toLowerCase(Locale.ROOT), strings);
+				map.put(strings[0].toLowerCase(Locale.ROOT), strings);
 			}
 		}
 
 		return list;
 	}
 
-	private static void lookupProfile(MinecraftServer server, Collection<String> bannedPlayers, ProfileLookupCallback callback) {
-		String[] strings = (String[])bannedPlayers.stream().filter(stringx -> !ChatUtil.isEmpty(stringx)).toArray(String[]::new);
-		if (server.isOnlineMode()) {
-			server.getGameProfileRepo().findProfilesByNames(strings, Agent.MINECRAFT, callback);
+	private static void lookupProfile(MinecraftServer minecraftServer, Collection<String> collection, ProfileLookupCallback profileLookupCallback) {
+		String[] strings = (String[])collection.stream().filter(stringx -> !ChatUtil.isEmpty(stringx)).toArray(String[]::new);
+		if (minecraftServer.isOnlineMode()) {
+			minecraftServer.getGameProfileRepo().findProfilesByNames(strings, Agent.MINECRAFT, profileLookupCallback);
 		} else {
 			for (String string : strings) {
 				UUID uUID = PlayerEntity.getUuidFromProfile(new GameProfile(null, string));
 				GameProfile gameProfile = new GameProfile(uUID, string);
-				callback.onProfileLookupSucceeded(gameProfile);
+				profileLookupCallback.onProfileLookupSucceeded(gameProfile);
 			}
 		}
 	}
 
-	public static boolean convertBannedPlayers(MinecraftServer server) {
+	public static boolean convertBannedPlayers(MinecraftServer minecraftServer) {
 		final BannedPlayerList bannedPlayerList = new BannedPlayerList(PlayerManager.BANNED_PLAYERS_FILE);
 		if (BANNED_PLAYERS_FILE.exists() && BANNED_PLAYERS_FILE.isFile()) {
 			if (bannedPlayerList.getFile().exists()) {
@@ -75,7 +74,7 @@ public class ServerConfigHandler {
 				processSimpleListFile(BANNED_PLAYERS_FILE, map);
 				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
 					public void onProfileLookupSucceeded(GameProfile gameProfile) {
-						server.getUserCache().add(gameProfile);
+						minecraftServer.getUserCache().add(gameProfile);
 						String[] strings = (String[])map.get(gameProfile.getName().toLowerCase(Locale.ROOT));
 						if (strings == null) {
 							ServerConfigHandler.LOGGER.warn("Could not convert user banlist entry for {}", gameProfile.getName());
@@ -96,7 +95,7 @@ public class ServerConfigHandler {
 						}
 					}
 				};
-				lookupProfile(server, map.keySet(), profileLookupCallback);
+				lookupProfile(minecraftServer, map.keySet(), profileLookupCallback);
 				bannedPlayerList.save();
 				markFileConverted(BANNED_PLAYERS_FILE);
 				return true;
@@ -112,7 +111,7 @@ public class ServerConfigHandler {
 		}
 	}
 
-	public static boolean convertBannedIps(MinecraftServer server) {
+	public static boolean convertBannedIps(MinecraftServer minecraftServer) {
 		BannedIpList bannedIpList = new BannedIpList(PlayerManager.BANNED_IPS_FILE);
 		if (BANNED_IPS_FILE.exists() && BANNED_IPS_FILE.isFile()) {
 			if (bannedIpList.getFile().exists()) {
@@ -148,7 +147,7 @@ public class ServerConfigHandler {
 		}
 	}
 
-	public static boolean convertOperators(MinecraftServer server) {
+	public static boolean convertOperators(MinecraftServer minecraftServer) {
 		final OperatorList operatorList = new OperatorList(PlayerManager.OPERATORS_FILE);
 		if (OPERATORS_FILE.exists() && OPERATORS_FILE.isFile()) {
 			if (operatorList.getFile().exists()) {
@@ -162,19 +161,19 @@ public class ServerConfigHandler {
 			try {
 				List<String> list = Files.readLines(OPERATORS_FILE, StandardCharsets.UTF_8);
 				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
-					public void onProfileLookupSucceeded(GameProfile profile) {
-						server.getUserCache().add(profile);
-						operatorList.add(new OperatorEntry(profile, server.getOpPermissionLevel(), false));
+					public void onProfileLookupSucceeded(GameProfile gameProfile) {
+						minecraftServer.getUserCache().add(gameProfile);
+						operatorList.add(new OperatorEntry(gameProfile, minecraftServer.getOpPermissionLevel(), false));
 					}
 
-					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
-						ServerConfigHandler.LOGGER.warn("Could not lookup oplist entry for {}", profile.getName(), exception);
+					public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup oplist entry for {}", gameProfile.getName(), exception);
 						if (!(exception instanceof ProfileNotFoundException)) {
-							throw new ServerConfigHandler.ServerConfigException("Could not request user " + profile.getName() + " from backend systems", exception);
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + gameProfile.getName() + " from backend systems", exception);
 						}
 					}
 				};
-				lookupProfile(server, list, profileLookupCallback);
+				lookupProfile(minecraftServer, list, profileLookupCallback);
 				operatorList.save();
 				markFileConverted(OPERATORS_FILE);
 				return true;
@@ -190,7 +189,7 @@ public class ServerConfigHandler {
 		}
 	}
 
-	public static boolean convertWhitelist(MinecraftServer server) {
+	public static boolean convertWhitelist(MinecraftServer minecraftServer) {
 		final Whitelist whitelist = new Whitelist(PlayerManager.WHITELIST_FILE);
 		if (WHITE_LIST_FILE.exists() && WHITE_LIST_FILE.isFile()) {
 			if (whitelist.getFile().exists()) {
@@ -204,19 +203,19 @@ public class ServerConfigHandler {
 			try {
 				List<String> list = Files.readLines(WHITE_LIST_FILE, StandardCharsets.UTF_8);
 				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
-					public void onProfileLookupSucceeded(GameProfile profile) {
-						server.getUserCache().add(profile);
-						whitelist.add(new WhitelistEntry(profile));
+					public void onProfileLookupSucceeded(GameProfile gameProfile) {
+						minecraftServer.getUserCache().add(gameProfile);
+						whitelist.add(new WhitelistEntry(gameProfile));
 					}
 
-					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
-						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for {}", profile.getName(), exception);
+					public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for {}", gameProfile.getName(), exception);
 						if (!(exception instanceof ProfileNotFoundException)) {
-							throw new ServerConfigHandler.ServerConfigException("Could not request user " + profile.getName() + " from backend systems", exception);
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + gameProfile.getName() + " from backend systems", exception);
 						}
 					}
 				};
-				lookupProfile(server, list, profileLookupCallback);
+				lookupProfile(minecraftServer, list, profileLookupCallback);
 				whitelist.save();
 				markFileConverted(WHITE_LIST_FILE);
 				return true;
@@ -232,7 +231,7 @@ public class ServerConfigHandler {
 		}
 	}
 
-	public static String method_8204(MinecraftServer minecraftServer, String string) {
+	public static String getPlayerUuidByName(MinecraftServer minecraftServer, String string) {
 		if (!ChatUtil.isEmpty(string) && string.length() <= 16) {
 			GameProfile gameProfile = minecraftServer.getUserCache().findByName(string);
 			if (gameProfile != null && gameProfile.getId() != null) {
@@ -240,13 +239,13 @@ public class ServerConfigHandler {
 			} else if (!minecraftServer.isSinglePlayer() && minecraftServer.isOnlineMode()) {
 				final List<GameProfile> list = Lists.newArrayList();
 				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
-					public void onProfileLookupSucceeded(GameProfile profile) {
-						minecraftServer.getUserCache().add(profile);
-						list.add(profile);
+					public void onProfileLookupSucceeded(GameProfile gameProfile) {
+						minecraftServer.getUserCache().add(gameProfile);
+						list.add(gameProfile);
 					}
 
-					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
-						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for {}", profile.getName(), exception);
+					public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for {}", gameProfile.getName(), exception);
 					}
 				};
 				lookupProfile(minecraftServer, Lists.newArrayList(new String[]{string}), profileLookupCallback);
@@ -259,8 +258,8 @@ public class ServerConfigHandler {
 		}
 	}
 
-	public static boolean convertPlayerFiles(MinecraftDedicatedServer minecraftServer, AbstractPropertiesHandler abstractPropertiesHandler) {
-		final File file = getLevelPlayersFolder(abstractPropertiesHandler);
+	public static boolean convertPlayerFiles(MinecraftDedicatedServer minecraftDedicatedServer) {
+		final File file = getLevelPlayersFolder(minecraftDedicatedServer);
 		final File file2 = new File(file.getParentFile(), "playerdata");
 		final File file3 = new File(file.getParentFile(), "unknownplayers");
 		if (file.exists() && file.isDirectory()) {
@@ -280,27 +279,27 @@ public class ServerConfigHandler {
 			try {
 				final String[] strings = (String[])list.toArray(new String[list.size()]);
 				ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
-					public void onProfileLookupSucceeded(GameProfile profile) {
-						minecraftServer.getUserCache().add(profile);
-						UUID uUID = profile.getId();
+					public void onProfileLookupSucceeded(GameProfile gameProfile) {
+						minecraftDedicatedServer.getUserCache().add(gameProfile);
+						UUID uUID = gameProfile.getId();
 						if (uUID == null) {
-							throw new ServerConfigHandler.ServerConfigException("Missing UUID for user profile " + profile.getName());
+							throw new ServerConfigHandler.ServerConfigException("Missing UUID for user profile " + gameProfile.getName());
 						} else {
-							this.method_21384(file2, this.method_21383(profile), uUID.toString());
+							this.convertPlayerFile(file2, this.getPlayerFileName(gameProfile), uUID.toString());
 						}
 					}
 
-					public void onProfileLookupFailed(GameProfile profile, Exception exception) {
-						ServerConfigHandler.LOGGER.warn("Could not lookup user uuid for {}", profile.getName(), exception);
+					public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
+						ServerConfigHandler.LOGGER.warn("Could not lookup user uuid for {}", gameProfile.getName(), exception);
 						if (exception instanceof ProfileNotFoundException) {
-							String string = this.method_21383(profile);
-							this.method_21384(file3, string, string);
+							String string = this.getPlayerFileName(gameProfile);
+							this.convertPlayerFile(file3, string, string);
 						} else {
-							throw new ServerConfigHandler.ServerConfigException("Could not request user " + profile.getName() + " from backend systems", exception);
+							throw new ServerConfigHandler.ServerConfigException("Could not request user " + gameProfile.getName() + " from backend systems", exception);
 						}
 					}
 
-					private void method_21384(File file, String string, String string2) {
+					private void convertPlayerFile(File file, String string, String string2) {
 						File file2 = new File(file, string + ".dat");
 						File file3 = new File(file, string2 + ".dat");
 						ServerConfigHandler.createDirectory(file);
@@ -309,7 +308,7 @@ public class ServerConfigHandler {
 						}
 					}
 
-					private String method_21383(GameProfile gameProfile) {
+					private String getPlayerFileName(GameProfile gameProfile) {
 						String string = null;
 
 						for (String string2 : strings) {
@@ -326,10 +325,10 @@ public class ServerConfigHandler {
 						}
 					}
 				};
-				lookupProfile(minecraftServer, Lists.newArrayList(strings), profileLookupCallback);
+				lookupProfile(minecraftDedicatedServer, Lists.newArrayList(strings), profileLookupCallback);
 				return true;
-			} catch (ServerConfigHandler.ServerConfigException var13) {
-				LOGGER.error("Conversion failed, please try again later", var13);
+			} catch (ServerConfigHandler.ServerConfigException var12) {
+				LOGGER.error("Conversion failed, please try again later", var12);
 				return false;
 			}
 		} else {
@@ -337,22 +336,22 @@ public class ServerConfigHandler {
 		}
 	}
 
-	private static void createDirectory(File directory) {
-		if (directory.exists()) {
-			if (!directory.isDirectory()) {
-				throw new ServerConfigHandler.ServerConfigException("Can't create directory " + directory.getName() + " in world save directory.");
+	private static void createDirectory(File file) {
+		if (file.exists()) {
+			if (!file.isDirectory()) {
+				throw new ServerConfigHandler.ServerConfigException("Can't create directory " + file.getName() + " in world save directory.");
 			}
-		} else if (!directory.mkdirs()) {
-			throw new ServerConfigHandler.ServerConfigException("Can't create directory " + directory.getName() + " in world save directory.");
+		} else if (!file.mkdirs()) {
+			throw new ServerConfigHandler.ServerConfigException("Can't create directory " + file.getName() + " in world save directory.");
 		}
 	}
 
-	public static boolean checkSuccess(AbstractPropertiesHandler abstractPropertiesHandler) {
-		boolean bl = checkListConversionSuccess(abstractPropertiesHandler);
-		return bl && checkPlayerConversionSuccess(abstractPropertiesHandler);
+	public static boolean checkSuccess(MinecraftServer minecraftServer) {
+		boolean bl = checkListConversionSuccess();
+		return bl && checkPlayerConversionSuccess(minecraftServer);
 	}
 
-	private static boolean checkListConversionSuccess(AbstractPropertiesHandler abstractPropertiesHandler) {
+	private static boolean checkListConversionSuccess() {
 		boolean bl = false;
 		if (BANNED_PLAYERS_FILE.exists() && BANNED_PLAYERS_FILE.isFile()) {
 			bl = true;
@@ -398,8 +397,8 @@ public class ServerConfigHandler {
 		}
 	}
 
-	private static boolean checkPlayerConversionSuccess(AbstractPropertiesHandler abstractPropertiesHandler) {
-		File file = getLevelPlayersFolder(abstractPropertiesHandler);
+	private static boolean checkPlayerConversionSuccess(MinecraftServer minecraftServer) {
+		File file = getLevelPlayersFolder(minecraftServer);
 		if (!file.exists() || !file.isDirectory() || file.list().length <= 0 && file.delete()) {
 			return true;
 		} else {
@@ -410,8 +409,8 @@ public class ServerConfigHandler {
 		}
 	}
 
-	private static File getLevelPlayersFolder(AbstractPropertiesHandler abstractPropertiesHandler) {
-		String string = abstractPropertiesHandler.getOrDefault("level-name", "world");
+	private static File getLevelPlayersFolder(MinecraftServer minecraftServer) {
+		String string = minecraftServer.getLevelName();
 		File file = new File(string);
 		return new File(file, "players");
 	}
@@ -421,15 +420,15 @@ public class ServerConfigHandler {
 		file.renameTo(file2);
 	}
 
-	private static Date stringToDate(String string, Date fallback) {
-		Date date;
+	private static Date stringToDate(String string, Date date) {
+		Date date2;
 		try {
-			date = BanEntry.DATE_FORMAT.parse(string);
+			date2 = BanEntry.DATE_FORMAT.parse(string);
 		} catch (ParseException var4) {
-			date = fallback;
+			date2 = date;
 		}
 
-		return date;
+		return date2;
 	}
 
 	static class ServerConfigException extends RuntimeException {

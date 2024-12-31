@@ -1,61 +1,60 @@
 package net.minecraft.client.render.block;
 
 import java.util.Random;
-import net.minecraft.class_3600;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.BlockColors;
+import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.block.entity.ChestOpeningRenderHelper;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BasicBakedModel;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.resource.SynchronousResourceReloadListener;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.ExtendedBlockView;
 
-public class BlockRenderManager implements ResourceReloadListener {
-	private final BlockModelShapes models;
-	private final BlockModelRenderer blockModelRenderer;
-	private final ChestOpeningRenderHelper field_10858 = new ChestOpeningRenderHelper();
+public class BlockRenderManager implements SynchronousResourceReloadListener {
+	private final BlockModels models;
+	private final BlockModelRenderer renderer;
+	private final DynamicBlockRenderer dynamicRenderer = new DynamicBlockRenderer();
 	private final FluidRenderer fluidRenderer;
-	private final Random field_20771 = new Random();
+	private final Random random = new Random();
 
-	public BlockRenderManager(BlockModelShapes blockModelShapes, BlockColors blockColors) {
-		this.models = blockModelShapes;
-		this.blockModelRenderer = new BlockModelRenderer(blockColors);
+	public BlockRenderManager(BlockModels blockModels, BlockColors blockColors) {
+		this.models = blockModels;
+		this.renderer = new BlockModelRenderer(blockColors);
 		this.fluidRenderer = new FluidRenderer();
 	}
 
-	public BlockModelShapes getModels() {
+	public BlockModels getModels() {
 		return this.models;
 	}
 
-	public void method_9953(BlockState blockState, BlockPos blockPos, Sprite sprite, class_3600 arg) {
-		if (blockState.getRenderType() == BlockRenderType.MODEL) {
-			BakedModel bakedModel = this.models.getBakedModel(blockState);
+	public void tesselateDamage(BlockState blockState, BlockPos blockPos, Sprite sprite, ExtendedBlockView extendedBlockView) {
+		if (blockState.getRenderType() == BlockRenderType.field_11458) {
+			BakedModel bakedModel = this.models.getModel(blockState);
 			long l = blockState.getRenderingSeed(blockPos);
-			BakedModel bakedModel2 = new BasicBakedModel.Builder(blockState, bakedModel, sprite, this.field_20771, l).build();
-			this.blockModelRenderer.method_19197(arg, bakedModel2, blockState, blockPos, Tessellator.getInstance().getBuffer(), true, this.field_20771, l);
+			BakedModel bakedModel2 = new BasicBakedModel.Builder(blockState, bakedModel, sprite, this.random, l).build();
+			this.renderer.tesselate(extendedBlockView, bakedModel2, blockState, blockPos, Tessellator.getInstance().getBufferBuilder(), true, this.random, l);
 		}
 	}
 
-	public boolean method_19188(BlockState blockState, BlockPos blockPos, class_3600 arg, BufferBuilder bufferBuilder, Random random) {
+	public boolean tesselateBlock(BlockState blockState, BlockPos blockPos, ExtendedBlockView extendedBlockView, BufferBuilder bufferBuilder, Random random) {
 		try {
 			BlockRenderType blockRenderType = blockState.getRenderType();
-			if (blockRenderType == BlockRenderType.INVISIBLE) {
+			if (blockRenderType == BlockRenderType.field_11455) {
 				return false;
 			} else {
 				switch (blockRenderType) {
-					case MODEL:
-						return this.blockModelRenderer
-							.method_19197(arg, this.method_12346(blockState), blockState, blockPos, bufferBuilder, true, random, blockState.getRenderingSeed(blockPos));
-					case ENTITYBLOCK_ANIMATED:
+					case field_11458:
+						return this.renderer
+							.tesselate(extendedBlockView, this.getModel(blockState), blockState, blockPos, bufferBuilder, true, random, blockState.getRenderingSeed(blockPos));
+					case field_11456:
 						return false;
 					default:
 						return false;
@@ -69,9 +68,9 @@ public class BlockRenderManager implements ResourceReloadListener {
 		}
 	}
 
-	public boolean method_19189(BlockPos blockPos, class_3600 arg, BufferBuilder bufferBuilder, FluidState fluidState) {
+	public boolean tesselateFluid(BlockPos blockPos, ExtendedBlockView extendedBlockView, BufferBuilder bufferBuilder, FluidState fluidState) {
 		try {
-			return this.fluidRenderer.method_19194(arg, blockPos, bufferBuilder, fluidState);
+			return this.fluidRenderer.tesselate(extendedBlockView, blockPos, bufferBuilder, fluidState);
 		} catch (Throwable var8) {
 			CrashReport crashReport = CrashReport.create(var8, "Tesselating liquid in world");
 			CrashReportSection crashReportSection = crashReport.addElement("Block being tesselated");
@@ -81,29 +80,29 @@ public class BlockRenderManager implements ResourceReloadListener {
 	}
 
 	public BlockModelRenderer getModelRenderer() {
-		return this.blockModelRenderer;
+		return this.renderer;
 	}
 
-	public BakedModel method_12346(BlockState blockState) {
-		return this.models.getBakedModel(blockState);
+	public BakedModel getModel(BlockState blockState) {
+		return this.models.getModel(blockState);
 	}
 
-	public void renderBlockEntity(BlockState state, float light) {
-		BlockRenderType blockRenderType = state.getRenderType();
-		if (blockRenderType != BlockRenderType.INVISIBLE) {
+	public void renderDynamic(BlockState blockState, float f) {
+		BlockRenderType blockRenderType = blockState.getRenderType();
+		if (blockRenderType != BlockRenderType.field_11455) {
 			switch (blockRenderType) {
-				case MODEL:
-					BakedModel bakedModel = this.method_12346(state);
-					this.blockModelRenderer.render(bakedModel, state, light, true);
+				case field_11458:
+					BakedModel bakedModel = this.getModel(blockState);
+					this.renderer.render(bakedModel, blockState, f, true);
 					break;
-				case ENTITYBLOCK_ANIMATED:
-					this.field_10858.render(state.getBlock(), light);
+				case field_11456:
+					this.dynamicRenderer.render(blockState.getBlock(), f);
 			}
 		}
 	}
 
 	@Override
-	public void reload(ResourceManager resourceManager) {
+	public void apply(ResourceManager resourceManager) {
 		this.fluidRenderer.onResourceReload();
 	}
 }

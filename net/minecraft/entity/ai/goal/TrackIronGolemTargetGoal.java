@@ -1,43 +1,48 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
+import java.util.List;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.CreeperEntity;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.passive.IronGolemEntity;
-import net.minecraft.village.Village;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Box;
 
 public class TrackIronGolemTargetGoal extends TrackTargetGoal {
-	private final IronGolemEntity field_3622;
-	private LivingEntity field_6866;
+	private final IronGolemEntity golem;
+	private LivingEntity target;
+	private final TargetPredicate field_19340 = new TargetPredicate().setBaseMaxDistance(64.0);
 
 	public TrackIronGolemTargetGoal(IronGolemEntity ironGolemEntity) {
 		super(ironGolemEntity, false, true);
-		this.field_3622 = ironGolemEntity;
-		this.setCategoryBits(1);
+		this.golem = ironGolemEntity;
+		this.setControls(EnumSet.of(Goal.Control.field_18408));
 	}
 
 	@Override
 	public boolean canStart() {
-		Village village = this.field_3622.method_2870();
-		if (village == null) {
-			return false;
-		} else {
-			this.field_6866 = village.getClosestAttacker(this.field_3622);
-			if (this.field_6866 instanceof CreeperEntity) {
-				return false;
-			} else if (this.canTrack(this.field_6866, false)) {
-				return true;
-			} else if (this.mob.getRandom().nextInt(20) == 0) {
-				this.field_6866 = village.method_6229(this.field_3622);
-				return this.canTrack(this.field_6866, false);
-			} else {
-				return false;
+		Box box = this.golem.getBoundingBox().expand(10.0, 8.0, 10.0);
+		List<LivingEntity> list = this.golem.world.getTargets(VillagerEntity.class, this.field_19340, this.golem, box);
+		List<PlayerEntity> list2 = this.golem.world.getPlayersInBox(this.field_19340, this.golem, box);
+
+		for (LivingEntity livingEntity : list) {
+			VillagerEntity villagerEntity = (VillagerEntity)livingEntity;
+
+			for (PlayerEntity playerEntity : list2) {
+				int i = villagerEntity.getReputation(playerEntity);
+				if (i <= -100) {
+					this.target = playerEntity;
+				}
 			}
 		}
+
+		return this.target != null;
 	}
 
 	@Override
 	public void start() {
-		this.field_3622.setTarget(this.field_6866);
+		this.golem.setTarget(this.target);
 		super.start();
 	}
 }

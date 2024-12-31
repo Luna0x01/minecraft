@@ -1,6 +1,7 @@
 package net.minecraft.entity.ai.pathing;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_4459;
 import net.minecraft.block.BlockPlacementEnvironment;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.mob.MobEntity;
@@ -11,39 +12,39 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 
-public class WaterPathNodeMaker extends class_2771 {
-	private final boolean field_19719;
+public class WaterPathNodeMaker extends PathNodeMaker {
+	private final boolean field_58;
 
 	public WaterPathNodeMaker(boolean bl) {
-		this.field_19719 = bl;
+		this.field_58 = bl;
 	}
 
 	@Override
-	public PathNode method_11918() {
-		return super.method_11912(
-			MathHelper.floor(this.field_13076.getBoundingBox().minX),
-			MathHelper.floor(this.field_13076.getBoundingBox().minY + 0.5),
-			MathHelper.floor(this.field_13076.getBoundingBox().minZ)
+	public PathNode getStart() {
+		return super.getPathNode(
+			MathHelper.floor(this.entity.getBoundingBox().minX),
+			MathHelper.floor(this.entity.getBoundingBox().minY + 0.5),
+			MathHelper.floor(this.entity.getBoundingBox().minZ)
 		);
 	}
 
 	@Override
-	public PathNode method_11911(double d, double e, double f) {
-		return super.method_11912(
-			MathHelper.floor(d - (double)(this.field_13076.width / 2.0F)), MathHelper.floor(e + 0.5), MathHelper.floor(f - (double)(this.field_13076.width / 2.0F))
+	public class_4459 getPathNode(double d, double e, double f) {
+		return new class_4459(
+			super.getPathNode(
+				MathHelper.floor(d - (double)(this.entity.getWidth() / 2.0F)), MathHelper.floor(e + 0.5), MathHelper.floor(f - (double)(this.entity.getWidth() / 2.0F))
+			)
 		);
 	}
 
 	@Override
-	public int method_11917(PathNode[] pathNodes, PathNode pathNode, PathNode pathNode2, float f) {
+	public int getPathNodes(PathNode[] pathNodes, PathNode pathNode) {
 		int i = 0;
 
 		for (Direction direction : Direction.values()) {
-			PathNode pathNode3 = this.method_11944(
-				pathNode.posX + direction.getOffsetX(), pathNode.posY + direction.getOffsetY(), pathNode.posZ + direction.getOffsetZ()
-			);
-			if (pathNode3 != null && !pathNode3.visited && pathNode3.getDistance(pathNode2) < f) {
-				pathNodes[i++] = pathNode3;
+			PathNode pathNode2 = this.getPathNodeInWater(pathNode.x + direction.getOffsetX(), pathNode.y + direction.getOffsetY(), pathNode.z + direction.getOffsetZ());
+			if (pathNode2 != null && !pathNode2.field_42) {
+				pathNodes[i++] = pathNode2;
 			}
 		}
 
@@ -51,68 +52,68 @@ public class WaterPathNodeMaker extends class_2771 {
 	}
 
 	@Override
-	public LandType method_11914(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2) {
-		return this.method_11913(blockView, i, j, k);
+	public PathNodeType getPathNodeType(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2) {
+		return this.getPathNodeType(blockView, i, j, k);
 	}
 
 	@Override
-	public LandType method_11913(BlockView blockView, int i, int j, int k) {
+	public PathNodeType getPathNodeType(BlockView blockView, int i, int j, int k) {
 		BlockPos blockPos = new BlockPos(i, j, k);
 		FluidState fluidState = blockView.getFluidState(blockPos);
 		BlockState blockState = blockView.getBlockState(blockPos);
-		if (fluidState.isEmpty() && blockState.canPlaceAtSide(blockView, blockPos.down(), BlockPlacementEnvironment.WATER) && blockState.isAir()) {
-			return LandType.BREACH;
+		if (fluidState.isEmpty() && blockState.canPlaceAtSide(blockView, blockPos.down(), BlockPlacementEnvironment.field_48) && blockState.isAir()) {
+			return PathNodeType.field_16;
 		} else {
-			return fluidState.matches(FluidTags.WATER) && blockState.canPlaceAtSide(blockView, blockPos, BlockPlacementEnvironment.WATER)
-				? LandType.WATER
-				: LandType.BLOCKED;
+			return fluidState.matches(FluidTags.field_15517) && blockState.canPlaceAtSide(blockView, blockPos, BlockPlacementEnvironment.field_48)
+				? PathNodeType.field_18
+				: PathNodeType.field_22;
 		}
 	}
 
 	@Nullable
-	private PathNode method_11944(int i, int j, int k) {
-		LandType landType = this.method_11945(i, j, k);
-		return (!this.field_19719 || landType != LandType.BREACH) && landType != LandType.WATER ? null : this.method_11912(i, j, k);
+	private PathNode getPathNodeInWater(int i, int j, int k) {
+		PathNodeType pathNodeType = this.getPathNodeType(i, j, k);
+		return (!this.field_58 || pathNodeType != PathNodeType.field_16) && pathNodeType != PathNodeType.field_18 ? null : this.getPathNode(i, j, k);
 	}
 
 	@Nullable
 	@Override
-	protected PathNode method_11912(int i, int j, int k) {
+	protected PathNode getPathNode(int i, int j, int k) {
 		PathNode pathNode = null;
-		LandType landType = this.method_11913(this.field_13076.world, i, j, k);
-		float f = this.field_13076.method_13075(landType);
+		PathNodeType pathNodeType = this.getPathNodeType(this.entity.world, i, j, k);
+		float f = this.entity.getPathNodeTypeWeight(pathNodeType);
 		if (f >= 0.0F) {
-			pathNode = super.method_11912(i, j, k);
-			pathNode.field_13074 = landType;
-			pathNode.field_13073 = Math.max(pathNode.field_13073, f);
-			if (this.field_13075.getFluidState(new BlockPos(i, j, k)).isEmpty()) {
-				pathNode.field_13073 += 8.0F;
+			pathNode = super.getPathNode(i, j, k);
+			pathNode.type = pathNodeType;
+			pathNode.field_43 = Math.max(pathNode.field_43, f);
+			if (this.blockView.getFluidState(new BlockPos(i, j, k)).isEmpty()) {
+				pathNode.field_43 += 8.0F;
 			}
 		}
 
-		return landType == LandType.OPEN ? pathNode : pathNode;
+		return pathNodeType == PathNodeType.field_7 ? pathNode : pathNode;
 	}
 
-	private LandType method_11945(int i, int j, int k) {
+	private PathNodeType getPathNodeType(int i, int j, int k) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int l = i; l < i + this.field_13078; l++) {
-			for (int m = j; m < j + this.field_13079; m++) {
-				for (int n = k; n < k + this.field_13080; n++) {
-					FluidState fluidState = this.field_13075.getFluidState(mutable.setPosition(l, m, n));
-					BlockState blockState = this.field_13075.getBlockState(mutable.setPosition(l, m, n));
-					if (fluidState.isEmpty() && blockState.canPlaceAtSide(this.field_13075, mutable.down(), BlockPlacementEnvironment.WATER) && blockState.isAir()) {
-						return LandType.BREACH;
+		for (int l = i; l < i + this.field_31; l++) {
+			for (int m = j; m < j + this.field_30; m++) {
+				for (int n = k; n < k + this.field_28; n++) {
+					FluidState fluidState = this.blockView.getFluidState(mutable.set(l, m, n));
+					BlockState blockState = this.blockView.getBlockState(mutable.set(l, m, n));
+					if (fluidState.isEmpty() && blockState.canPlaceAtSide(this.blockView, mutable.down(), BlockPlacementEnvironment.field_48) && blockState.isAir()) {
+						return PathNodeType.field_16;
 					}
 
-					if (!fluidState.matches(FluidTags.WATER)) {
-						return LandType.BLOCKED;
+					if (!fluidState.matches(FluidTags.field_15517)) {
+						return PathNodeType.field_22;
 					}
 				}
 			}
 		}
 
-		BlockState blockState2 = this.field_13075.getBlockState(mutable);
-		return blockState2.canPlaceAtSide(this.field_13075, mutable, BlockPlacementEnvironment.WATER) ? LandType.WATER : LandType.BLOCKED;
+		BlockState blockState2 = this.blockView.getBlockState(mutable);
+		return blockState2.canPlaceAtSide(this.blockView, mutable, BlockPlacementEnvironment.field_48) ? PathNodeType.field_18 : PathNodeType.field_22;
 	}
 }

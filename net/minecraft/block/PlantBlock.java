@@ -1,52 +1,47 @@
 package net.minecraft.block;
 
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 
 public class PlantBlock extends Block {
-	protected PlantBlock(Block.Builder builder) {
-		super(builder);
+	protected PlantBlock(Block.Settings settings) {
+		super(settings);
 	}
 
-	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
-		Block block = state.getBlock();
-		return block == Blocks.GRASS_BLOCK || block == Blocks.DIRT || block == Blocks.COARSE_DIRT || block == Blocks.PODZOL || block == Blocks.FARMLAND;
-	}
-
-	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		return !state.canPlaceAt(world, pos)
-			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	protected boolean canPlantOnTop(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		Block block = blockState.getBlock();
+		return block == Blocks.field_10219
+			|| block == Blocks.field_10566
+			|| block == Blocks.field_10253
+			|| block == Blocks.field_10520
+			|| block == Blocks.field_10362;
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
-		BlockPos blockPos = pos.down();
-		return this.canPlantOnTop(world.getBlockState(blockPos), world, blockPos);
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		return !blockState.canPlaceAt(iWorld, blockPos)
+			? Blocks.field_10124.getDefaultState()
+			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+		BlockPos blockPos2 = blockPos.down();
+		return this.canPlantOnTop(viewableWorld.getBlockState(blockPos2), viewableWorld, blockPos2);
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
-	}
-
-	@Override
-	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
-		return 0;
+	public boolean isTranslucent(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return true;
 	}
 }

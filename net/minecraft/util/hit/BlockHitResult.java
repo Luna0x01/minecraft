@@ -1,49 +1,49 @@
 package net.minecraft.util.hit;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
-public class BlockHitResult {
-	private BlockPos blockPos;
-	public BlockHitResult.Type type;
-	public Direction direction;
-	public Vec3d pos;
-	public Entity entity;
+public class BlockHitResult extends HitResult {
+	private final Direction side;
+	private final BlockPos blockPos;
+	private final boolean missed;
+	private final boolean field_17591;
 
-	public BlockHitResult(Vec3d vec3d, Direction direction, BlockPos blockPos) {
-		this(BlockHitResult.Type.BLOCK, vec3d, direction, blockPos);
+	public static BlockHitResult createMissed(Vec3d vec3d, Direction direction, BlockPos blockPos) {
+		return new BlockHitResult(true, vec3d, direction, blockPos, false);
 	}
 
-	public BlockHitResult(Entity entity) {
-		this(entity, new Vec3d(entity.x, entity.y, entity.z));
+	public BlockHitResult(Vec3d vec3d, Direction direction, BlockPos blockPos, boolean bl) {
+		this(false, vec3d, direction, blockPos, bl);
 	}
 
-	public BlockHitResult(BlockHitResult.Type type, Vec3d vec3d, Direction direction, BlockPos blockPos) {
-		this.type = type;
+	private BlockHitResult(boolean bl, Vec3d vec3d, Direction direction, BlockPos blockPos, boolean bl2) {
+		super(vec3d);
+		this.missed = bl;
+		this.side = direction;
 		this.blockPos = blockPos;
-		this.direction = direction;
-		this.pos = new Vec3d(vec3d.x, vec3d.y, vec3d.z);
+		this.field_17591 = bl2;
 	}
 
-	public BlockHitResult(Entity entity, Vec3d vec3d) {
-		this.type = BlockHitResult.Type.ENTITY;
-		this.entity = entity;
-		this.pos = vec3d;
+	public BlockHitResult withSide(Direction direction) {
+		return new BlockHitResult(this.missed, this.pos, direction, this.blockPos, this.field_17591);
 	}
 
 	public BlockPos getBlockPos() {
 		return this.blockPos;
 	}
 
-	public String toString() {
-		return "HitResult{type=" + this.type + ", blockpos=" + this.blockPos + ", f=" + this.direction + ", pos=" + this.pos + ", entity=" + this.entity + '}';
+	public Direction getSide() {
+		return this.side;
 	}
 
-	public static enum Type {
-		MISS,
-		BLOCK,
-		ENTITY;
+	@Override
+	public HitResult.Type getType() {
+		return this.missed ? HitResult.Type.field_1333 : HitResult.Type.field_1332;
+	}
+
+	public boolean method_17781() {
+		return this.field_17591;
 	}
 }

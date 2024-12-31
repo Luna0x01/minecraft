@@ -1,18 +1,17 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class CloudParticle extends Particle {
-	private final float prevScale;
+public class CloudParticle extends SpriteBillboardParticle {
+	private final SpriteProvider field_17862;
 
-	protected CloudParticle(World world, double d, double e, double f, double g, double h, double i) {
+	private CloudParticle(World world, double d, double e, double f, double g, double h, double i, SpriteProvider spriteProvider) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
+		this.field_17862 = spriteProvider;
 		float j = 2.5F;
 		this.velocityX *= 0.1F;
 		this.velocityY *= 0.1F;
@@ -21,59 +20,80 @@ public class CloudParticle extends Particle {
 		this.velocityY += h;
 		this.velocityZ += i;
 		float k = 1.0F - (float)(Math.random() * 0.3F);
-		this.red = k;
-		this.green = k;
-		this.blue = k;
-		this.scale *= 0.75F;
-		this.scale *= 2.5F;
-		this.prevScale = this.scale;
-		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.3));
-		this.maxAge = (int)((float)this.maxAge * 2.5F);
-		this.maxAge = Math.max(this.maxAge, 1);
-		this.field_14950 = false;
+		this.colorRed = k;
+		this.colorGreen = k;
+		this.colorBlue = k;
+		this.scale *= 1.875F;
+		int l = (int)(8.0 / (Math.random() * 0.8 + 0.3));
+		this.maxAge = (int)Math.max((float)l * 2.5F, 1.0F);
+		this.collidesWithWorld = false;
+		this.setSpriteForAge(spriteProvider);
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge * 32.0F;
-		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		this.scale = this.prevScale * f;
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
+	public float getSize(float f) {
+		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
+	}
+
+	@Override
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
-		}
+			this.markDead();
+		} else {
+			this.setSpriteForAge(this.field_17862);
+			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.velocityX *= 0.96F;
+			this.velocityY *= 0.96F;
+			this.velocityZ *= 0.96F;
+			PlayerEntity playerEntity = this.world.getClosestPlayer(this.x, this.y, this.z, 2.0, false);
+			if (playerEntity != null) {
+				Box box = playerEntity.getBoundingBox();
+				if (this.y > box.minY) {
+					this.y = this.y + (box.minY - this.y) * 0.2;
+					this.velocityY = this.velocityY + (playerEntity.getVelocity().y - this.velocityY) * 0.2;
+					this.setPos(this.x, this.y, this.z);
+				}
+			}
 
-		this.setMiscTexture(7 - this.age * 8 / this.maxAge);
-		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		this.velocityX *= 0.96F;
-		this.velocityY *= 0.96F;
-		this.velocityZ *= 0.96F;
-		PlayerEntity playerEntity = this.field_13424.method_16361(this.field_13428, this.field_13429, this.field_13430, 2.0, false);
-		if (playerEntity != null) {
-			Box box = playerEntity.getBoundingBox();
-			if (this.field_13429 > box.minY) {
-				this.field_13429 = this.field_13429 + (box.minY - this.field_13429) * 0.2;
-				this.velocityY = this.velocityY + (playerEntity.velocityY - this.velocityY) * 0.2;
-				this.method_12247(this.field_13428, this.field_13429, this.field_13430);
+			if (this.onGround) {
+				this.velocityX *= 0.7F;
+				this.velocityZ *= 0.7F;
 			}
 		}
+	}
 
-		if (this.field_13434) {
-			this.velocityX *= 0.7F;
-			this.velocityZ *= 0.7F;
+	public static class CloudFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17863;
+
+		public CloudFactory(SpriteProvider spriteProvider) {
+			this.field_17863 = spriteProvider;
+		}
+
+		public Particle method_3088(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			return new CloudParticle(world, d, e, f, g, h, i, this.field_17863);
 		}
 	}
 
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new CloudParticle(world, d, e, f, g, h, i);
+	public static class SneezeFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17864;
+
+		public SneezeFactory(SpriteProvider spriteProvider) {
+			this.field_17864 = spriteProvider;
+		}
+
+		public Particle method_3089(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new CloudParticle(world, d, e, f, g, h, i, this.field_17864);
+			particle.setColor(200.0F, 50.0F, 120.0F);
+			particle.setColorAlpha(0.4F);
+			return particle;
 		}
 	}
 }

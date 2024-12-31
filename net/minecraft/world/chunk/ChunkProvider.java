@@ -1,30 +1,16 @@
 package net.minecraft.world.chunk;
 
-import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
-import net.minecraft.class_3781;
-import net.minecraft.server.world.ChunkGenerator;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.LightType;
 
-public interface ChunkProvider extends AutoCloseable {
+public interface ChunkProvider {
 	@Nullable
-	Chunk method_17044(int i, int j, boolean bl, boolean bl2);
+	BlockView getChunk(int i, int j);
 
-	@Nullable
-	default class_3781 method_17043(int i, int j, boolean bl) {
-		Chunk chunk = this.method_17044(i, j, true, false);
-		if (chunk == null && bl) {
-			throw new UnsupportedOperationException("Could not create an empty chunk");
-		} else {
-			return chunk;
-		}
+	default void onLightUpdate(LightType lightType, ChunkSectionPos chunkSectionPos) {
 	}
 
-	boolean method_17045(BooleanSupplier booleanSupplier);
-
-	String getChunkProviderName();
-
-	ChunkGenerator<?> method_17046();
-
-	default void close() {
-	}
+	BlockView getWorld();
 }

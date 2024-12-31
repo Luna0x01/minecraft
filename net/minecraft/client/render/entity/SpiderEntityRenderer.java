@@ -5,19 +5,19 @@ import net.minecraft.client.render.entity.model.SpiderEntityModel;
 import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.util.Identifier;
 
-public class SpiderEntityRenderer<T extends SpiderEntity> extends MobEntityRenderer<T> {
-	private static final Identifier SPIDER_TEX = new Identifier("textures/entity/spider/spider.png");
+public class SpiderEntityRenderer<T extends SpiderEntity> extends MobEntityRenderer<T, SpiderEntityModel<T>> {
+	private static final Identifier SKIN = new Identifier("textures/entity/spider/spider.png");
 
 	public SpiderEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new SpiderEntityModel(), 1.0F);
+		super(entityRenderDispatcher, new SpiderEntityModel<>(), 0.8F);
 		this.addFeature(new SpiderEyesFeatureRenderer<>(this));
 	}
 
-	protected float method_5771(T spiderEntity) {
+	protected float method_4124(T spiderEntity) {
 		return 180.0F;
 	}
 
-	protected Identifier getTexture(T spiderEntity) {
-		return SPIDER_TEX;
+	protected Identifier method_4123(T spiderEntity) {
+		return SKIN;
 	}
 }

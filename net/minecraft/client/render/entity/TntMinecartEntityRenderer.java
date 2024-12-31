@@ -13,7 +13,7 @@ public class TntMinecartEntityRenderer extends MinecartEntityRenderer<TntMinecar
 		super(entityRenderDispatcher);
 	}
 
-	protected void method_5180(TntMinecartEntity tntMinecartEntity, float f, BlockState blockState) {
+	protected void method_4137(TntMinecartEntity tntMinecartEntity, float f, BlockState blockState) {
 		int i = tntMinecartEntity.getFuseTicks();
 		if (i > -1 && (float)i - f + 1.0F < 10.0F) {
 			float g = 1.0F - ((float)i - f + 1.0F) / 10.0F;
@@ -21,21 +21,21 @@ public class TntMinecartEntityRenderer extends MinecartEntityRenderer<TntMinecar
 			g *= g;
 			g *= g;
 			float h = 1.0F + g * 0.3F;
-			GlStateManager.scale(h, h, h);
+			GlStateManager.scalef(h, h, h);
 		}
 
-		super.method_5180(tntMinecartEntity, f, blockState);
+		super.renderBlock(tntMinecartEntity, f, blockState);
 		if (i > -1 && i / 5 % 2 == 0) {
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 			GlStateManager.disableTexture();
 			GlStateManager.disableLighting();
 			GlStateManager.enableBlend();
-			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.DST_ALPHA);
-			GlStateManager.color(1.0F, 1.0F, 1.0F, (1.0F - ((float)i - f + 1.0F) / 100.0F) * 0.8F);
+			GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.DST_ALPHA);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, (1.0F - ((float)i - f + 1.0F) / 100.0F) * 0.8F);
 			GlStateManager.pushMatrix();
-			blockRenderManager.renderBlockEntity(Blocks.TNT.getDefaultState(), 1.0F);
+			blockRenderManager.renderDynamic(Blocks.field_10375.getDefaultState(), 1.0F);
 			GlStateManager.popMatrix();
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			GlStateManager.disableBlend();
 			GlStateManager.enableLighting();
 			GlStateManager.enableTexture();

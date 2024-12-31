@@ -2,49 +2,49 @@ package net.minecraft.block;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.item.DyeItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.states.property.Properties;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
-public abstract class AbstractSignBlock extends BlockWithEntity implements FluidDrainable, FluidFillable {
+public abstract class AbstractSignBlock extends BlockWithEntity implements Waterloggable {
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 0.0, 4.0, 12.0, 16.0, 12.0);
 
-	protected AbstractSignBlock(Block.Builder builder) {
-		super(builder);
+	protected AbstractSignBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		if ((Boolean)state.getProperty(WATERLOGGED)) {
-			world.method_16340().schedule(pos, Fluids.WATER, Fluids.WATER.method_17778(world));
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		if ((Boolean)blockState.get(WATERLOGGED)) {
+			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
 		}
 
-		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+		return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
 		return SHAPE;
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public boolean method_13704(BlockState state) {
+	public boolean hasBlockEntityBreakingRender(BlockState blockState) {
 		return true;
 	}
 
@@ -54,58 +54,35 @@ public abstract class AbstractSignBlock extends BlockWithEntity implements Fluid
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
+	public BlockEntity createBlockEntity(BlockView blockView) {
 		return new SignBlockEntity();
 	}
 
 	@Override
-	public boolean onUse(
-		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
-	) {
+	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			return blockEntity instanceof SignBlockEntity && ((SignBlockEntity)blockEntity).onActivate(player);
-		}
-	}
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			if (blockEntity instanceof SignBlockEntity) {
+				SignBlockEntity signBlockEntity = (SignBlockEntity)blockEntity;
+				ItemStack itemStack = playerEntity.getStackInHand(hand);
+				if (itemStack.getItem() instanceof DyeItem && playerEntity.abilities.allowModifyWorld) {
+					boolean bl = signBlockEntity.setTextColor(((DyeItem)itemStack.getItem()).getColor());
+					if (bl && !playerEntity.isCreative()) {
+						itemStack.decrement(1);
+					}
+				}
 
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
-	}
-
-	@Override
-	public Fluid tryDrainFluid(IWorld world, BlockPos pos, BlockState state) {
-		if ((Boolean)state.getProperty(WATERLOGGED)) {
-			world.setBlockState(pos, state.withProperty(WATERLOGGED, Boolean.valueOf(false)), 3);
-			return Fluids.WATER;
-		} else {
-			return Fluids.EMPTY;
-		}
-	}
-
-	@Override
-	public FluidState getFluidState(BlockState state) {
-		return state.getProperty(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
-	}
-
-	@Override
-	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
-		return !(Boolean)state.getProperty(WATERLOGGED) && fluid == Fluids.WATER;
-	}
-
-	@Override
-	public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluidState) {
-		if (!(Boolean)state.getProperty(WATERLOGGED) && fluidState.getFluid() == Fluids.WATER) {
-			if (!world.method_16390()) {
-				world.setBlockState(pos, state.withProperty(WATERLOGGED, Boolean.valueOf(true)), 3);
-				world.method_16340().schedule(pos, fluidState.getFluid(), fluidState.getFluid().method_17778(world));
+				return signBlockEntity.onActivate(playerEntity);
+			} else {
+				return false;
 			}
-
-			return true;
-		} else {
-			return false;
 		}
+	}
+
+	@Override
+	public FluidState getFluidState(BlockState blockState) {
+		return blockState.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(blockState);
 	}
 }

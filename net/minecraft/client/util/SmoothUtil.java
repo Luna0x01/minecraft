@@ -1,27 +1,29 @@
 package net.minecraft.client.util;
 
-public class SmoothUtil {
-	private double field_22256;
-	private double field_22257;
-	private double field_22258;
+import net.minecraft.util.math.MathHelper;
 
-	public double method_21530(double d, double e) {
-		this.field_22256 += d;
-		double f = this.field_22256 - this.field_22257;
-		double g = this.field_22258 + (f - this.field_22258) * 0.5;
+public class SmoothUtil {
+	private double field_15760;
+	private double field_15759;
+	private double field_15758;
+
+	public double smooth(double d, double e) {
+		this.field_15760 += d;
+		double f = this.field_15760 - this.field_15759;
+		double g = MathHelper.lerp(0.5, this.field_15758, f);
 		double h = Math.signum(f);
-		if (h * f > h * this.field_22258) {
+		if (h * f > h * this.field_15758) {
 			f = g;
 		}
 
-		this.field_22258 = g;
-		this.field_22257 += f * e;
+		this.field_15758 = g;
+		this.field_15759 += f * e;
 		return f * e;
 	}
 
 	public void clear() {
-		this.field_22256 = 0.0;
-		this.field_22257 = 0.0;
-		this.field_22258 = 0.0;
+		this.field_15760 = 0.0;
+		this.field_15759 = 0.0;
+		this.field_15758 = 0.0;
 	}
 }

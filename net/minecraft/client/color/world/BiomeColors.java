@@ -1,48 +1,56 @@
 package net.minecraft.client.color.world;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.CuboidBlockIterator;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ExtendedBlockView;
 import net.minecraft.world.biome.Biome;
 
 public class BiomeColors {
-	private static final BiomeColors.ColorProvider field_21146 = Biome::getGrassColor;
-	private static final BiomeColors.ColorProvider field_21147 = Biome::getFoliageColor;
-	private static final BiomeColors.ColorProvider field_21148 = (biome, blockPos) -> biome.getWaterColor();
-	private static final BiomeColors.ColorProvider field_21149 = (biome, blockPos) -> biome.method_16447();
+	private static final BiomeColors.Provider GRASS_COLOR = Biome::getGrassColorAt;
+	private static final BiomeColors.Provider FOLIAGE_COLOR = Biome::getFoliageColorAt;
+	private static final BiomeColors.Provider WATER_COLOR = (biome, blockPos) -> biome.getWaterColor();
+	private static final BiomeColors.Provider WATER_FOG_COLOR = (biome, blockPos) -> biome.getWaterFogColor();
 
-	private static int method_19682(RenderBlockView renderBlockView, BlockPos blockPos, BiomeColors.ColorProvider colorProvider) {
+	private static int getColor(ExtendedBlockView extendedBlockView, BlockPos blockPos, BiomeColors.Provider provider) {
 		int i = 0;
 		int j = 0;
 		int k = 0;
-		int l = MinecraftClient.getInstance().options.field_19979;
-		int m = (l * 2 + 1) * (l * 2 + 1);
+		int l = MinecraftClient.getInstance().options.biomeBlendRadius;
+		if (l == 0) {
+			return provider.getColor(extendedBlockView.getBiome(blockPos), blockPos);
+		} else {
+			int m = (l * 2 + 1) * (l * 2 + 1);
+			CuboidBlockIterator cuboidBlockIterator = new CuboidBlockIterator(
+				blockPos.getX() - l, blockPos.getY(), blockPos.getZ() - l, blockPos.getX() + l, blockPos.getY(), blockPos.getZ() + l
+			);
+			BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (BlockPos.Mutable mutable : BlockPos.mutableIterate(
-			blockPos.getX() - l, blockPos.getY(), blockPos.getZ() - l, blockPos.getX() + l, blockPos.getY(), blockPos.getZ() + l
-		)) {
-			int n = colorProvider.getColor(renderBlockView.method_8577(mutable), mutable);
-			i += (n & 0xFF0000) >> 16;
-			j += (n & 0xFF00) >> 8;
-			k += n & 0xFF;
+			while (cuboidBlockIterator.step()) {
+				mutable.set(cuboidBlockIterator.getX(), cuboidBlockIterator.getY(), cuboidBlockIterator.getZ());
+				int n = provider.getColor(extendedBlockView.getBiome(mutable), mutable);
+				i += (n & 0xFF0000) >> 16;
+				j += (n & 0xFF00) >> 8;
+				k += n & 0xFF;
+			}
+
+			return (i / m & 0xFF) << 16 | (j / m & 0xFF) << 8 | k / m & 0xFF;
 		}
-
-		return (i / m & 0xFF) << 16 | (j / m & 0xFF) << 8 | k / m & 0xFF;
 	}
 
-	public static int method_19681(RenderBlockView renderBlockView, BlockPos blockPos) {
-		return method_19682(renderBlockView, blockPos, field_21146);
+	public static int getGrassColor(ExtendedBlockView extendedBlockView, BlockPos blockPos) {
+		return getColor(extendedBlockView, blockPos, GRASS_COLOR);
 	}
 
-	public static int method_19684(RenderBlockView renderBlockView, BlockPos blockPos) {
-		return method_19682(renderBlockView, blockPos, field_21147);
+	public static int getFoliageColor(ExtendedBlockView extendedBlockView, BlockPos blockPos) {
+		return getColor(extendedBlockView, blockPos, FOLIAGE_COLOR);
 	}
 
-	public static int method_19686(RenderBlockView renderBlockView, BlockPos blockPos) {
-		return method_19682(renderBlockView, blockPos, field_21148);
+	public static int getWaterColor(ExtendedBlockView extendedBlockView, BlockPos blockPos) {
+		return getColor(extendedBlockView, blockPos, WATER_COLOR);
 	}
 
-	interface ColorProvider {
+	interface Provider {
 		int getColor(Biome biome, BlockPos blockPos);
 	}
 }

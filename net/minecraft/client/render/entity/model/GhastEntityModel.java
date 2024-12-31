@@ -2,49 +2,49 @@ package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Random;
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class GhastEntityModel extends EntityModel {
-	private final ModelPart body;
-	private final ModelPart[] tentacles = new ModelPart[9];
+public class GhastEntityModel<T extends Entity> extends EntityModel<T> {
+	private final Cuboid field_3373;
+	private final Cuboid[] field_3372 = new Cuboid[9];
 
 	public GhastEntityModel() {
 		int i = -16;
-		this.body = new ModelPart(this, 0, 0);
-		this.body.addCuboid(-8.0F, -8.0F, -8.0F, 16, 16, 16);
-		this.body.pivotY += 8.0F;
+		this.field_3373 = new Cuboid(this, 0, 0);
+		this.field_3373.addBox(-8.0F, -8.0F, -8.0F, 16, 16, 16);
+		this.field_3373.rotationPointY += 8.0F;
 		Random random = new Random(1660L);
 
-		for (int j = 0; j < this.tentacles.length; j++) {
-			this.tentacles[j] = new ModelPart(this, 0, 0);
+		for (int j = 0; j < this.field_3372.length; j++) {
+			this.field_3372[j] = new Cuboid(this, 0, 0);
 			float f = (((float)(j % 3) - (float)(j / 3 % 2) * 0.5F + 0.25F) / 2.0F * 2.0F - 1.0F) * 5.0F;
 			float g = ((float)(j / 3) / 2.0F * 2.0F - 1.0F) * 5.0F;
 			int k = random.nextInt(7) + 8;
-			this.tentacles[j].addCuboid(-1.0F, 0.0F, -1.0F, 2, k, 2);
-			this.tentacles[j].pivotX = f;
-			this.tentacles[j].pivotZ = g;
-			this.tentacles[j].pivotY = 15.0F;
+			this.field_3372[j].addBox(-1.0F, 0.0F, -1.0F, 2, k, 2);
+			this.field_3372[j].rotationPointX = f;
+			this.field_3372[j].rotationPointZ = g;
+			this.field_3372[j].rotationPointY = 15.0F;
 		}
 	}
 
 	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		for (int i = 0; i < this.tentacles.length; i++) {
-			this.tentacles[i].posX = 0.2F * MathHelper.sin(tickDelta * 0.3F + (float)i) + 0.4F;
+	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+		for (int l = 0; l < this.field_3372.length; l++) {
+			this.field_3372[l].pitch = 0.2F * MathHelper.sin(h * 0.3F + (float)l) + 0.4F;
 		}
 	}
 
 	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
+	public void render(T entity, float f, float g, float h, float i, float j, float k) {
+		this.setAngles(entity, f, g, h, i, j, k);
 		GlStateManager.pushMatrix();
-		GlStateManager.translate(0.0F, 0.6F, 0.0F);
-		this.body.render(scale);
+		GlStateManager.translatef(0.0F, 0.6F, 0.0F);
+		this.field_3373.render(k);
 
-		for (ModelPart modelPart : this.tentacles) {
-			modelPart.render(scale);
+		for (Cuboid cuboid : this.field_3372) {
+			cuboid.render(k);
 		}
 
 		GlStateManager.popMatrix();

@@ -4,77 +4,82 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import java.util.Map;
-import net.minecraft.class_3562;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.AttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.sound.Sounds;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
-public class HoeItem extends class_3562 {
-	private final float field_12298;
-	protected static final Map<Block, BlockState> field_17185 = Maps.newHashMap(
+public class HoeItem extends ToolItem {
+	private final float attackSpeed;
+	protected static final Map<Block, BlockState> TILLED_BLOCKS = Maps.newHashMap(
 		ImmutableMap.of(
-			Blocks.GRASS_BLOCK,
-			Blocks.FARMLAND.getDefaultState(),
-			Blocks.GRASS_PATH,
-			Blocks.FARMLAND.getDefaultState(),
-			Blocks.DIRT,
-			Blocks.FARMLAND.getDefaultState(),
-			Blocks.COARSE_DIRT,
-			Blocks.DIRT.getDefaultState()
+			Blocks.field_10219,
+			Blocks.field_10362.getDefaultState(),
+			Blocks.field_10194,
+			Blocks.field_10362.getDefaultState(),
+			Blocks.field_10566,
+			Blocks.field_10362.getDefaultState(),
+			Blocks.field_10253,
+			Blocks.field_10566.getDefaultState()
 		)
 	);
 
-	public HoeItem(IToolMaterial iToolMaterial, float f, Item.Settings settings) {
-		super(iToolMaterial, settings);
-		this.field_12298 = f;
+	public HoeItem(ToolMaterial toolMaterial, float f, Item.Settings settings) {
+		super(toolMaterial, settings);
+		this.attackSpeed = f;
 	}
 
 	@Override
 	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
 		World world = itemUsageContext.getWorld();
 		BlockPos blockPos = itemUsageContext.getBlockPos();
-		if (itemUsageContext.method_16151() != Direction.DOWN && world.getBlockState(blockPos.up()).isAir()) {
-			BlockState blockState = (BlockState)field_17185.get(world.getBlockState(blockPos).getBlock());
+		if (itemUsageContext.getSide() != Direction.field_11033 && world.getBlockState(blockPos.up()).isAir()) {
+			BlockState blockState = (BlockState)TILLED_BLOCKS.get(world.getBlockState(blockPos).getBlock());
 			if (blockState != null) {
 				PlayerEntity playerEntity = itemUsageContext.getPlayer();
-				world.playSound(playerEntity, blockPos, Sounds.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				world.playSound(playerEntity, blockPos, SoundEvents.field_14846, SoundCategory.field_15245, 1.0F, 1.0F);
 				if (!world.isClient) {
 					world.setBlockState(blockPos, blockState, 11);
 					if (playerEntity != null) {
-						itemUsageContext.getItemStack().damage(1, playerEntity);
+						itemUsageContext.getStack().damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(itemUsageContext.getHand()));
 					}
 				}
 
-				return ActionResult.SUCCESS;
+				return ActionResult.field_5812;
 			}
 		}
 
-		return ActionResult.PASS;
+		return ActionResult.field_5811;
 	}
 
 	@Override
-	public boolean onEntityHit(ItemStack stack, LivingEntity entity1, LivingEntity entity2) {
-		stack.damage(1, entity2);
+	public boolean postHit(ItemStack itemStack, LivingEntity livingEntity, LivingEntity livingEntity2) {
+		itemStack.damage(1, livingEntity2, livingEntityx -> livingEntityx.sendEquipmentBreakStatus(EquipmentSlot.field_6173));
 		return true;
 	}
 
 	@Override
-	public Multimap<String, AttributeModifier> method_6326(EquipmentSlot equipmentSlot) {
-		Multimap<String, AttributeModifier> multimap = super.method_6326(equipmentSlot);
-		if (equipmentSlot == EquipmentSlot.MAINHAND) {
-			multimap.put(EntityAttributes.GENERIC_ATTACK_DAMAGE.getId(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER_UUID, "Weapon modifier", 0.0, 0));
-			multimap.put(EntityAttributes.GENERIC_ATTACK_SPEED.getId(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", (double)this.field_12298, 0));
+	public Multimap<String, EntityAttributeModifier> getModifiers(EquipmentSlot equipmentSlot) {
+		Multimap<String, EntityAttributeModifier> multimap = super.getModifiers(equipmentSlot);
+		if (equipmentSlot == EquipmentSlot.field_6173) {
+			multimap.put(
+				EntityAttributes.ATTACK_DAMAGE.getId(),
+				new EntityAttributeModifier(ATTACK_DAMAGE_MODIFIER_UUID, "Weapon modifier", 0.0, EntityAttributeModifier.Operation.field_6328)
+			);
+			multimap.put(
+				EntityAttributes.ATTACK_SPEED.getId(),
+				new EntityAttributeModifier(ATTACK_SPEED_MODIFIER_UUID, "Weapon modifier", (double)this.attackSpeed, EntityAttributeModifier.Operation.field_6328)
+			);
 		}
 
 		return multimap;

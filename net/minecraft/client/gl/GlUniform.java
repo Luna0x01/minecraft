@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 
-public class GlUniform extends DummyGlUniform implements AutoCloseable {
+public class GlUniform extends Uniform implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private int loc;
 	private final int count;
@@ -17,13 +17,13 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	private final FloatBuffer floatData;
 	private final String name;
 	private boolean stateDirty;
-	private final JsonGlProgram program;
+	private final GlProgram program;
 
-	public GlUniform(String string, int i, int j, JsonGlProgram jsonGlProgram) {
+	public GlUniform(String string, int i, int j, GlProgram glProgram) {
 		this.name = string;
 		this.count = j;
 		this.dataType = i;
-		this.program = jsonGlProgram;
+		this.program = glProgram;
 		if (i <= 3) {
 			this.intData = MemoryUtil.memAllocInt(j);
 			this.floatData = null;
@@ -53,18 +53,18 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 		}
 	}
 
-	public static int getTypeIndex(String typeName) {
+	public static int getTypeIndex(String string) {
 		int i = -1;
-		if ("int".equals(typeName)) {
+		if ("int".equals(string)) {
 			i = 0;
-		} else if ("float".equals(typeName)) {
+		} else if ("float".equals(string)) {
 			i = 4;
-		} else if (typeName.startsWith("matrix")) {
-			if (typeName.endsWith("2x2")) {
+		} else if (string.startsWith("matrix")) {
+			if (string.endsWith("2x2")) {
 				i = 8;
-			} else if (typeName.endsWith("3x3")) {
+			} else if (string.endsWith("3x3")) {
 				i = 9;
-			} else if (typeName.endsWith("4x4")) {
+			} else if (string.endsWith("4x4")) {
 				i = 10;
 			}
 		}
@@ -72,8 +72,8 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 		return i;
 	}
 
-	public void setLoc(int loc) {
-		this.loc = loc;
+	public void setLoc(int i) {
+		this.loc = i;
 	}
 
 	public String getName() {
@@ -81,14 +81,14 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_6976(float f) {
+	public void set(float f) {
 		this.floatData.position(0);
 		this.floatData.put(0, f);
 		this.markStateDirty();
 	}
 
 	@Override
-	public void method_6977(float f, float g) {
+	public void set(float f, float g) {
 		this.floatData.position(0);
 		this.floatData.put(0, f);
 		this.floatData.put(1, g);
@@ -96,7 +96,7 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_6978(float f, float g, float h) {
+	public void set(float f, float g, float h) {
 		this.floatData.position(0);
 		this.floatData.put(0, f);
 		this.floatData.put(1, g);
@@ -105,7 +105,7 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_6979(float f, float g, float h, float i) {
+	public void set(float f, float g, float h, float i) {
 		this.floatData.position(0);
 		this.floatData.put(f);
 		this.floatData.put(g);
@@ -116,7 +116,7 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_6986(float f, float g, float h, float i) {
+	public void setForDataType(float f, float g, float h, float i) {
 		this.floatData.position(0);
 		if (this.dataType >= 4) {
 			this.floatData.put(0, f);
@@ -138,7 +138,7 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_6981(int i, int j, int k, int l) {
+	public void set(int i, int j, int k, int l) {
 		this.intData.position(0);
 		if (this.dataType >= 0) {
 			this.intData.put(0, i);
@@ -160,7 +160,7 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_6984(float[] fs) {
+	public void set(float[] fs) {
 		if (fs.length < this.count) {
 			LOGGER.warn("Uniform.set called with a too-small value array (expected {}, got {}). Ignoring.", this.count, fs.length);
 		} else {
@@ -172,9 +172,9 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 	}
 
 	@Override
-	public void method_19442(Matrix4f matrix4f) {
+	public void set(Matrix4f matrix4f) {
 		this.floatData.position(0);
-		matrix4f.method_19652(this.floatData);
+		matrix4f.putIntoBuffer(this.floatData);
 		this.markStateDirty();
 	}
 
@@ -201,16 +201,16 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 0:
-				GLX.gl20Uniform1(this.loc, this.intData);
+				GLX.glUniform1(this.loc, this.intData);
 				break;
 			case 1:
-				GLX.gl20Uniform2(this.loc, this.intData);
+				GLX.glUniform2(this.loc, this.intData);
 				break;
 			case 2:
-				GLX.gl20Uniform3(this.loc, this.intData);
+				GLX.glUniform3(this.loc, this.intData);
 				break;
 			case 3:
-				GLX.gl20Uniform4(this.loc, this.intData);
+				GLX.glUniform4(this.loc, this.intData);
 				break;
 			default:
 				LOGGER.warn("Uniform.upload called, but count value ({}) is  not in the range of 1 to 4. Ignoring.", this.count);
@@ -221,16 +221,16 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 4:
-				GLX.gl20Uniform(this.loc, this.floatData);
+				GLX.glUniform1(this.loc, this.floatData);
 				break;
 			case 5:
-				GLX.gl20Uniform2(this.loc, this.floatData);
+				GLX.glUniform2(this.loc, this.floatData);
 				break;
 			case 6:
-				GLX.gl20Uniform3(this.loc, this.floatData);
+				GLX.glUniform3(this.loc, this.floatData);
 				break;
 			case 7:
-				GLX.gl20Uniform4(this.loc, this.floatData);
+				GLX.glUniform4(this.loc, this.floatData);
 				break;
 			default:
 				LOGGER.warn("Uniform.upload called, but count value ({}) is not in the range of 1 to 4. Ignoring.", this.count);
@@ -241,13 +241,13 @@ public class GlUniform extends DummyGlUniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 8:
-				GLX.gl20UniformMatrix2(this.loc, false, this.floatData);
+				GLX.glUniformMatrix2(this.loc, false, this.floatData);
 				break;
 			case 9:
-				GLX.gl20UniformMatrix3(this.loc, false, this.floatData);
+				GLX.glUniformMatrix3(this.loc, false, this.floatData);
 				break;
 			case 10:
-				GLX.gl20UniformMatrix4(this.loc, false, this.floatData);
+				GLX.glUniformMatrix4(this.loc, false, this.floatData);
 		}
 	}
 }

@@ -13,30 +13,30 @@ import net.minecraft.world.World;
 public class ElytraItem extends Item {
 	public ElytraItem(Item.Settings settings) {
 		super(settings);
-		this.addProperty(new Identifier("broken"), (itemStack, world, livingEntity) -> method_11370(itemStack) ? 0.0F : 1.0F);
-		DispenserBlock.method_16665(this, ArmorItem.ARMOR_DISPENSER_BEHAVIOR);
+		this.addPropertyGetter(new Identifier("broken"), (itemStack, world, livingEntity) -> isUsable(itemStack) ? 0.0F : 1.0F);
+		DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
 	}
 
-	public static boolean method_11370(ItemStack itemStack) {
+	public static boolean isUsable(ItemStack itemStack) {
 		return itemStack.getDamage() < itemStack.getMaxDamage() - 1;
 	}
 
 	@Override
-	public boolean canRepair(ItemStack stack, ItemStack ingredient) {
-		return ingredient.getItem() == Items.PHANTOM_MEMBRANE;
+	public boolean canRepair(ItemStack itemStack, ItemStack itemStack2) {
+		return itemStack2.getItem() == Items.field_8614;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		EquipmentSlot equipmentSlot = MobEntity.method_13083(itemStack);
-		ItemStack itemStack2 = player.getStack(equipmentSlot);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		EquipmentSlot equipmentSlot = MobEntity.getPreferredEquipmentSlot(itemStack);
+		ItemStack itemStack2 = playerEntity.getEquippedStack(equipmentSlot);
 		if (itemStack2.isEmpty()) {
-			player.equipStack(equipmentSlot, itemStack.copy());
+			playerEntity.setEquippedStack(equipmentSlot, itemStack.copy());
 			itemStack.setCount(0);
-			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 		} else {
-			return new TypedActionResult<>(ActionResult.FAIL, itemStack);
+			return new TypedActionResult<>(ActionResult.field_5814, itemStack);
 		}
 	}
 }

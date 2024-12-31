@@ -11,10 +11,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.server.dedicated.ServerPropertiesHandler;
 
 public class RconServer extends RconBase {
-	private int port;
-	private final int defaultPort;
+	private final int port;
 	private String hostname;
 	private ServerSocket listener;
 	private final String password;
@@ -22,21 +22,10 @@ public class RconServer extends RconBase {
 
 	public RconServer(DedicatedServer dedicatedServer) {
 		super(dedicatedServer, "RCON Listener");
-		this.port = dedicatedServer.getIntOrDefault("rcon.port", 0);
-		this.password = dedicatedServer.getOrDefault("rcon.password", "");
+		ServerPropertiesHandler serverPropertiesHandler = dedicatedServer.getProperties();
+		this.port = serverPropertiesHandler.rconPort;
+		this.password = serverPropertiesHandler.rconPassword;
 		this.hostname = dedicatedServer.getHostname();
-		this.defaultPort = dedicatedServer.getPort();
-		if (0 == this.port) {
-			this.port = this.defaultPort + 10;
-			this.info("Setting default rcon port to " + this.port);
-			dedicatedServer.setProperty("rcon.port", this.port);
-			if (this.password.isEmpty()) {
-				dedicatedServer.setProperty("rcon.password", "");
-			}
-
-			dedicatedServer.saveAbstractPropertiesHandler();
-		}
-
 		if (this.hostname.isEmpty()) {
 			this.hostname = "0.0.0.0";
 		}
@@ -68,7 +57,7 @@ public class RconServer extends RconBase {
 				try {
 					Socket socket = this.listener.accept();
 					socket.setSoTimeout(500);
-					RconClient rconClient = new RconClient(this.server, socket);
+					RconClient rconClient = new RconClient(this.server, this.password, socket);
 					rconClient.start();
 					this.clients.put(socket.getRemoteSocketAddress(), rconClient);
 					this.removeStoppedClients();
@@ -88,9 +77,9 @@ public class RconServer extends RconBase {
 	@Override
 	public void start() {
 		if (this.password.isEmpty()) {
-			this.warn("No rcon password set in '" + this.server.getPropertiesFilePath() + "', rcon disabled!");
+			this.warn("No rcon password set in server.properties, rcon disabled!");
 		} else if (0 >= this.port || 65535 < this.port) {
-			this.warn("Invalid rcon port " + this.port + " found in '" + this.server.getPropertiesFilePath() + "', rcon disabled!");
+			this.warn("Invalid rcon port " + this.port + " found in server.properties, rcon disabled!");
 		} else if (!this.running) {
 			try {
 				this.listener = new ServerSocket(this.port, 0, InetAddress.getByName(this.hostname));
@@ -100,5 +89,17 @@ public class RconServer extends RconBase {
 				this.warn("Unable to initialise rcon on " + this.hostname + ":" + this.port + " : " + var2.getMessage());
 			}
 		}
+	}
+
+	@Override
+	public void stop() {
+		super.stop();
+
+		for (Entry<SocketAddress, RconClient> entry : this.clients.entrySet()) {
+			((RconClient)entry.getValue()).stop();
+		}
+
+		this.closeSocket(this.listener);
+		this.cleanClientList();
 	}
 }

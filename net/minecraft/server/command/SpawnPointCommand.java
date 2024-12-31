@@ -5,38 +5,40 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import java.util.Collection;
 import java.util.Collections;
-import net.minecraft.class_3915;
-import net.minecraft.class_4062;
-import net.minecraft.class_4252;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.command.arguments.BlockPosArgumentType;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 
 public class SpawnPointCommand {
-	public static void method_21005(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("spawnpoint").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("spawnpoint")
+						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.executes(
-						commandContext -> method_21004(
-								(class_3915)commandContext.getSource(),
-								Collections.singleton(((class_3915)commandContext.getSource()).method_17471()),
-								new BlockPos(((class_3915)commandContext.getSource()).method_17467())
+						commandContext -> execute(
+								(ServerCommandSource)commandContext.getSource(),
+								Collections.singleton(((ServerCommandSource)commandContext.getSource()).getPlayer()),
+								new BlockPos(((ServerCommandSource)commandContext.getSource()).getPosition())
 							)
 					))
 				.then(
-					((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4062.method_17904())
+					((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
 							.executes(
-								commandContext -> method_21004(
-										(class_3915)commandContext.getSource(),
-										class_4062.method_17907(commandContext, "targets"),
-										new BlockPos(((class_3915)commandContext.getSource()).method_17467())
+								commandContext -> execute(
+										(ServerCommandSource)commandContext.getSource(),
+										EntityArgumentType.getPlayers(commandContext, "targets"),
+										new BlockPos(((ServerCommandSource)commandContext.getSource()).getPosition())
 									)
 							))
 						.then(
-							CommandManager.method_17530("pos", class_4252.method_19358())
+							CommandManager.argument("pos", BlockPosArgumentType.blockPos())
 								.executes(
-									commandContext -> method_21004(
-											(class_3915)commandContext.getSource(), class_4062.method_17907(commandContext, "targets"), class_4252.method_19361(commandContext, "pos")
+									commandContext -> execute(
+											(ServerCommandSource)commandContext.getSource(),
+											EntityArgumentType.getPlayers(commandContext, "targets"),
+											BlockPosArgumentType.getBlockPos(commandContext, "pos")
 										)
 								)
 						)
@@ -44,20 +46,26 @@ public class SpawnPointCommand {
 		);
 	}
 
-	private static int method_21004(class_3915 arg, Collection<ServerPlayerEntity> collection, BlockPos blockPos) {
+	private static int execute(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, BlockPos blockPos) {
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
 			serverPlayerEntity.setPlayerSpawn(blockPos, true);
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
+			serverCommandSource.sendFeedback(
 				new TranslatableText(
-					"commands.spawnpoint.success.single", blockPos.getX(), blockPos.getY(), blockPos.getZ(), ((ServerPlayerEntity)collection.iterator().next()).getName()
+					"commands.spawnpoint.success.single",
+					blockPos.getX(),
+					blockPos.getY(),
+					blockPos.getZ(),
+					((ServerPlayerEntity)collection.iterator().next()).getDisplayName()
 				),
 				true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.spawnpoint.success.multiple", blockPos.getX(), blockPos.getY(), blockPos.getZ(), collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.spawnpoint.success.multiple", blockPos.getX(), blockPos.getY(), blockPos.getZ(), collection.size()), true
+			);
 		}
 
 		return collection.size();

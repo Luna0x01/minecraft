@@ -1,71 +1,111 @@
 package net.minecraft.block;
 
-import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Itemable;
-import net.minecraft.item.Items;
-import net.minecraft.stat.Stats;
+import net.minecraft.state.StateFactory;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shapes.VoxelShape;
-import net.minecraft.world.BlockView;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
-public class TallPlantBlock extends PlantBlock implements Growable {
-	protected static final VoxelShape field_18526 = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 13.0, 14.0);
+public class TallPlantBlock extends PlantBlock {
+	public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
 
-	protected TallPlantBlock(Block.Builder builder) {
-		super(builder);
+	public TallPlantBlock(Block.Settings settings) {
+		super(settings);
+		this.setDefaultState(this.stateFactory.getDefaultState().with(HALF, DoubleBlockHalf.field_12607));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18526;
-	}
-
-	@Override
-	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
-		return world.random.nextInt(8) == 0 ? Items.WHEAT_SEEDS : Items.AIR;
-	}
-
-	@Override
-	public int method_397(BlockState blockState, int i, World world, BlockPos blockPos, Random random) {
-		return 1 + random.nextInt(i * 2 + 1);
-	}
-
-	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
-		if (!world.isClient && stack.getItem() == Items.SHEARS) {
-			player.method_15932(Stats.MINED.method_21429(this));
-			player.addExhaustion(0.005F);
-			onBlockBreak(world, pos, new ItemStack(this));
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		DoubleBlockHalf doubleBlockHalf = blockState.get(HALF);
+		if (direction.getAxis() != Direction.Axis.field_11052
+			|| doubleBlockHalf == DoubleBlockHalf.field_12607 != (direction == Direction.field_11036)
+			|| blockState2.getBlock() == this && blockState2.get(HALF) != doubleBlockHalf) {
+			return doubleBlockHalf == DoubleBlockHalf.field_12607 && direction == Direction.field_11033 && !blockState.canPlaceAt(iWorld, blockPos)
+				? Blocks.field_10124.getDefaultState()
+				: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 		} else {
-			super.method_8651(world, player, pos, state, blockEntity, stack);
+			return Blocks.field_10124.getDefaultState();
 		}
 	}
 
+	@Nullable
 	@Override
-	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
-		return true;
+	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+		BlockPos blockPos = itemPlacementContext.getBlockPos();
+		return blockPos.getY() < 255 && itemPlacementContext.getWorld().getBlockState(blockPos.up()).canReplace(itemPlacementContext)
+			? super.getPlacementState(itemPlacementContext)
+			: null;
 	}
 
 	@Override
-	public boolean canBeFertilized(World world, Random random, BlockPos pos, BlockState state) {
-		return true;
+	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity, ItemStack itemStack) {
+		world.setBlockState(blockPos.up(), this.getDefaultState().with(HALF, DoubleBlockHalf.field_12609), 3);
 	}
 
 	@Override
-	public void grow(World world, Random random, BlockPos pos, BlockState state) {
-		DoublePlantBlock doublePlantBlock = (DoublePlantBlock)(this == Blocks.FERN ? Blocks.LARGE_FERN : Blocks.TALL_GRASS);
-		if (doublePlantBlock.getDefaultState().canPlaceAt(world, pos) && world.method_8579(pos.up())) {
-			doublePlantBlock.method_16669(world, pos, 2);
+	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+		if (blockState.get(HALF) != DoubleBlockHalf.field_12609) {
+			return super.canPlaceAt(blockState, viewableWorld, blockPos);
+		} else {
+			BlockState blockState2 = viewableWorld.getBlockState(blockPos.down());
+			return blockState2.getBlock() == this && blockState2.get(HALF) == DoubleBlockHalf.field_12607;
 		}
+	}
+
+	public void placeAt(IWorld iWorld, BlockPos blockPos, int i) {
+		iWorld.setBlockState(blockPos, this.getDefaultState().with(HALF, DoubleBlockHalf.field_12607), i);
+		iWorld.setBlockState(blockPos.up(), this.getDefaultState().with(HALF, DoubleBlockHalf.field_12609), i);
+	}
+
+	@Override
+	public void afterBreak(
+		World world, PlayerEntity playerEntity, BlockPos blockPos, BlockState blockState, @Nullable BlockEntity blockEntity, ItemStack itemStack
+	) {
+		super.afterBreak(world, playerEntity, blockPos, Blocks.field_10124.getDefaultState(), blockEntity, itemStack);
+	}
+
+	@Override
+	public void onBreak(World world, BlockPos blockPos, BlockState blockState, PlayerEntity playerEntity) {
+		DoubleBlockHalf doubleBlockHalf = blockState.get(HALF);
+		BlockPos blockPos2 = doubleBlockHalf == DoubleBlockHalf.field_12607 ? blockPos.up() : blockPos.down();
+		BlockState blockState2 = world.getBlockState(blockPos2);
+		if (blockState2.getBlock() == this && blockState2.get(HALF) != doubleBlockHalf) {
+			world.setBlockState(blockPos2, Blocks.field_10124.getDefaultState(), 35);
+			world.playLevelEvent(playerEntity, 2001, blockPos2, Block.getRawIdFromState(blockState2));
+			if (!world.isClient && !playerEntity.isCreative()) {
+				dropStacks(blockState, world, blockPos, null, playerEntity, playerEntity.getMainHandStack());
+				dropStacks(blockState2, world, blockPos2, null, playerEntity, playerEntity.getMainHandStack());
+			}
+		}
+
+		super.onBreak(world, blockPos, blockState, playerEntity);
+	}
+
+	@Override
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(HALF);
 	}
 
 	@Override
 	public Block.OffsetType getOffsetType() {
-		return Block.OffsetType.XYZ;
+		return Block.OffsetType.field_10657;
+	}
+
+	@Override
+	public long getRenderingSeed(BlockState blockState, BlockPos blockPos) {
+		return MathHelper.hashCode(blockPos.getX(), blockPos.down(blockState.get(HALF) == DoubleBlockHalf.field_12607 ? 0 : 1).getY(), blockPos.getZ());
 	}
 }

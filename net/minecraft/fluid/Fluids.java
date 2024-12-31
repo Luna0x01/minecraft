@@ -1,39 +1,27 @@
 package net.minecraft.fluid;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
-import net.minecraft.Bootstrap;
-import net.minecraft.util.Identifier;
+import com.google.common.collect.UnmodifiableIterator;
 import net.minecraft.util.registry.Registry;
 
 public class Fluids {
-	private static final Set<Fluid> FLUIDS;
-	public static final Fluid EMPTY;
-	public static final FlowableFluid FLOWING_WATER;
-	public static final FlowableFluid WATER;
-	public static final FlowableFluid FLOWING_LAVA;
-	public static final FlowableFluid LAVA;
+	public static final Fluid field_15906 = register("empty", new EmptyFluid());
+	public static final BaseFluid FLOWING_WATER = register("flowing_water", new WaterFluid.Flowing());
+	public static final BaseFluid WATER = register("water", new WaterFluid.Still());
+	public static final BaseFluid FLOWING_LAVA = register("flowing_lava", new LavaFluid.Flowing());
+	public static final BaseFluid LAVA = register("lava", new LavaFluid.Still());
 
-	private static Fluid register(String id) {
-		Fluid fluid = Registry.FLUID.get(new Identifier(id));
-		if (!FLUIDS.add(fluid)) {
-			throw new IllegalStateException("Invalid Fluid requested: " + id);
-		} else {
-			return fluid;
-		}
+	private static <T extends Fluid> T register(String string, T fluid) {
+		return Registry.register(Registry.FLUID, string, fluid);
 	}
 
 	static {
-		if (!Bootstrap.isInitialized()) {
-			throw new RuntimeException("Accessed Fluids before Bootstrap!");
-		} else {
-			FLUIDS = Sets.newHashSet(new Fluid[]{(Fluid)null});
-			EMPTY = register("empty");
-			FLOWING_WATER = (FlowableFluid)register("flowing_water");
-			WATER = (FlowableFluid)register("water");
-			FLOWING_LAVA = (FlowableFluid)register("flowing_lava");
-			LAVA = (FlowableFluid)register("lava");
-			FLUIDS.clear();
+		for (Fluid fluid : Registry.FLUID) {
+			UnmodifiableIterator var2 = fluid.getStateFactory().getStates().iterator();
+
+			while (var2.hasNext()) {
+				FluidState fluidState = (FluidState)var2.next();
+				Fluid.STATE_IDS.add(fluidState);
+			}
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package net.minecraft.server.dedicated.gui;
 
+import com.google.common.collect.Lists;
 import com.mojang.util.QueueLogAppender;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -8,6 +9,8 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JList;
@@ -22,8 +25,8 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
-import net.minecraft.class_4325;
 import net.minecraft.server.dedicated.MinecraftDedicatedServer;
+import net.minecraft.util.UncaughtExceptionLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,39 +34,38 @@ public class DedicatedServerGui extends JComponent {
 	private static final Font FONT_MONOSPACE = new Font("Monospaced", 0, 12);
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftDedicatedServer server;
-	private Thread field_21834;
+	private Thread consoleUpdateThread;
+	private final Collection<Runnable> stopTasks = Lists.newArrayList();
+	private final AtomicBoolean stopped = new AtomicBoolean();
 
-	public static void create(MinecraftDedicatedServer server) {
+	public static DedicatedServerGui create(MinecraftDedicatedServer minecraftDedicatedServer) {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception var3) {
 		}
 
-		DedicatedServerGui dedicatedServerGui = new DedicatedServerGui(server);
-		JFrame jFrame = new JFrame("Minecraft server");
+		final JFrame jFrame = new JFrame("Minecraft server");
+		final DedicatedServerGui dedicatedServerGui = new DedicatedServerGui(minecraftDedicatedServer);
+		jFrame.setDefaultCloseOperation(2);
 		jFrame.add(dedicatedServerGui);
 		jFrame.pack();
 		jFrame.setLocationRelativeTo(null);
 		jFrame.setVisible(true);
 		jFrame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
-				server.stopRunning();
-
-				while (!server.isStopped()) {
-					try {
-						Thread.sleep(100L);
-					} catch (InterruptedException var3) {
-						var3.printStackTrace();
-					}
+				if (!dedicatedServerGui.stopped.getAndSet(true)) {
+					jFrame.setTitle("Minecraft server - shutting down!");
+					minecraftDedicatedServer.stop(true);
+					dedicatedServerGui.runStopTasks();
 				}
-
-				System.exit(0);
 			}
 		});
-		dedicatedServerGui.method_21233();
+		dedicatedServerGui.addStopTask(jFrame::dispose);
+		dedicatedServerGui.start();
+		return dedicatedServerGui;
 	}
 
-	public DedicatedServerGui(MinecraftDedicatedServer minecraftDedicatedServer) {
+	private DedicatedServerGui(MinecraftDedicatedServer minecraftDedicatedServer) {
 		this.server = minecraftDedicatedServer;
 		this.setPreferredSize(new Dimension(854, 480));
 		this.setLayout(new BorderLayout());
@@ -76,22 +78,28 @@ public class DedicatedServerGui extends JComponent {
 		}
 	}
 
-	private JComponent createStatsPanel() throws Exception {
+	public void addStopTask(Runnable runnable) {
+		this.stopTasks.add(runnable);
+	}
+
+	private JComponent createStatsPanel() {
 		JPanel jPanel = new JPanel(new BorderLayout());
-		jPanel.add(new PlayerStatsGui(this.server), "North");
+		PlayerStatsGui playerStatsGui = new PlayerStatsGui(this.server);
+		this.stopTasks.add(playerStatsGui::stop);
+		jPanel.add(playerStatsGui, "North");
 		jPanel.add(this.createPlaysPanel(), "Center");
 		jPanel.setBorder(new TitledBorder(new EtchedBorder(), "Stats"));
 		return jPanel;
 	}
 
-	private JComponent createPlaysPanel() throws Exception {
+	private JComponent createPlaysPanel() {
 		JList<?> jList = new PlayerListGui(this.server);
 		JScrollPane jScrollPane = new JScrollPane(jList, 22, 30);
 		jScrollPane.setBorder(new TitledBorder(new EtchedBorder(), "Players"));
 		return jScrollPane;
 	}
 
-	private JComponent createLogPanel() throws Exception {
+	private JComponent createLogPanel() {
 		JPanel jPanel = new JPanel(new BorderLayout());
 		JTextArea jTextArea = new JTextArea();
 		JScrollPane jScrollPane = new JScrollPane(jTextArea, 22, 30);
@@ -101,7 +109,7 @@ public class DedicatedServerGui extends JComponent {
 		jTextField.addActionListener(actionEvent -> {
 			String string = jTextField.getText().trim();
 			if (!string.isEmpty()) {
-				this.server.method_2065(string, this.server.method_20330());
+				this.server.enqueueCommand(string, this.server.getCommandSource());
 			}
 
 			jTextField.setText("");
@@ -113,29 +121,39 @@ public class DedicatedServerGui extends JComponent {
 		jPanel.add(jScrollPane, "Center");
 		jPanel.add(jTextField, "South");
 		jPanel.setBorder(new TitledBorder(new EtchedBorder(), "Log and chat"));
-		this.field_21834 = new Thread(() -> {
+		this.consoleUpdateThread = new Thread(() -> {
 			String string;
 			while ((string = QueueLogAppender.getNextLogEvent("ServerGuiConsole")) != null) {
 				this.appendToConsole(jTextArea, jScrollPane, string);
 			}
 		});
-		this.field_21834.setUncaughtExceptionHandler(new class_4325(LOGGER));
-		this.field_21834.setDaemon(true);
+		this.consoleUpdateThread.setUncaughtExceptionHandler(new UncaughtExceptionLogger(LOGGER));
+		this.consoleUpdateThread.setDaemon(true);
 		return jPanel;
 	}
 
-	public void method_21233() {
-		this.field_21834.start();
+	public void start() {
+		this.consoleUpdateThread.start();
 	}
 
-	public void appendToConsole(JTextArea textArea, JScrollPane scrollPane, String string) {
+	public void stop() {
+		if (!this.stopped.getAndSet(true)) {
+			this.runStopTasks();
+		}
+	}
+
+	private void runStopTasks() {
+		this.stopTasks.forEach(Runnable::run);
+	}
+
+	public void appendToConsole(JTextArea jTextArea, JScrollPane jScrollPane, String string) {
 		if (!SwingUtilities.isEventDispatchThread()) {
-			SwingUtilities.invokeLater(() -> this.appendToConsole(textArea, scrollPane, string));
+			SwingUtilities.invokeLater(() -> this.appendToConsole(jTextArea, jScrollPane, string));
 		} else {
-			Document document = textArea.getDocument();
-			JScrollBar jScrollBar = scrollPane.getVerticalScrollBar();
+			Document document = jTextArea.getDocument();
+			JScrollBar jScrollBar = jScrollPane.getVerticalScrollBar();
 			boolean bl = false;
-			if (scrollPane.getViewport().getView() == textArea) {
+			if (jScrollPane.getViewport().getView() == jTextArea) {
 				bl = (double)jScrollBar.getValue() + jScrollBar.getSize().getHeight() + (double)(FONT_MONOSPACE.getSize() * 4) > (double)jScrollBar.getMaximum();
 			}
 

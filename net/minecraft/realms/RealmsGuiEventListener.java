@@ -1,6 +1,6 @@
 package net.minecraft.realms;
 
-import net.minecraft.class_4122;
+import net.minecraft.client.gui.Element;
 
 public abstract class RealmsGuiEventListener {
 	public boolean mouseClicked(double d, double e, int i) {
@@ -15,7 +15,7 @@ public abstract class RealmsGuiEventListener {
 		return false;
 	}
 
-	public boolean mouseScrolled(double d) {
+	public boolean mouseScrolled(double d, double e, double f) {
 		return false;
 	}
 
@@ -31,5 +31,5 @@ public abstract class RealmsGuiEventListener {
 		return false;
 	}
 
-	public abstract class_4122 getProxy();
+	public abstract Element getProxy();
 }

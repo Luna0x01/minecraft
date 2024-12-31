@@ -1,25 +1,26 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.tag.FluidTags;
-import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 
 public class EscapeDangerGoal extends Goal {
-	protected final PathAwareEntity mob;
-	protected double speed;
+	protected final MobEntityWithAi mob;
+	protected final double speed;
 	protected double targetX;
 	protected double targetY;
 	protected double targetZ;
 
-	public EscapeDangerGoal(PathAwareEntity pathAwareEntity, double d) {
-		this.mob = pathAwareEntity;
+	public EscapeDangerGoal(MobEntityWithAi mobEntityWithAi, double d) {
+		this.mob = mobEntityWithAi;
 		this.speed = d;
-		this.setCategoryBits(1);
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
 	}
 
 	@Override
@@ -28,7 +29,7 @@ public class EscapeDangerGoal extends Goal {
 			return false;
 		} else {
 			if (this.mob.isOnFire()) {
-				BlockPos blockPos = this.method_15698(this.mob.world, this.mob, 5, 4);
+				BlockPos blockPos = this.locateClosestWater(this.mob.world, this.mob, 5, 4);
 				if (blockPos != null) {
 					this.targetX = (double)blockPos.getX();
 					this.targetY = (double)blockPos.getY();
@@ -37,12 +38,12 @@ public class EscapeDangerGoal extends Goal {
 				}
 			}
 
-			return this.method_13953();
+			return this.findTarget();
 		}
 	}
 
-	protected boolean method_13953() {
-		Vec3d vec3d = RandomVectorGenerator.method_2799(this.mob, 5, 4);
+	protected boolean findTarget() {
+		Vec3d vec3d = PathfindingUtil.findTarget(this.mob, 5, 4);
 		if (vec3d == null) {
 			return false;
 		} else {
@@ -64,7 +65,7 @@ public class EscapeDangerGoal extends Goal {
 	}
 
 	@Nullable
-	protected BlockPos method_15698(BlockView blockView, Entity entity, int i, int j) {
+	protected BlockPos locateClosestWater(BlockView blockView, Entity entity, int i, int j) {
 		BlockPos blockPos = new BlockPos(entity);
 		int k = blockPos.getX();
 		int l = blockPos.getY();
@@ -76,8 +77,8 @@ public class EscapeDangerGoal extends Goal {
 		for (int n = k - i; n <= k + i; n++) {
 			for (int o = l - j; o <= l + j; o++) {
 				for (int p = m - i; p <= m + i; p++) {
-					mutable.setPosition(n, o, p);
-					if (blockView.getFluidState(mutable).matches(FluidTags.WATER)) {
+					mutable.set(n, o, p);
+					if (blockView.getFluidState(mutable).matches(FluidTags.field_15517)) {
 						float g = (float)((n - k) * (n - k) + (o - l) * (o - l) + (p - m) * (p - m));
 						if (g < f) {
 							f = g;

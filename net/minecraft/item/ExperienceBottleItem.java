@@ -1,9 +1,9 @@
 package net.minecraft.item;
 
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.thrown.ExperienceBottleEntity;
-import net.minecraft.sound.Sounds;
+import net.minecraft.entity.thrown.ThrownExperienceBottleEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -16,27 +16,28 @@ public class ExperienceBottleItem extends Item {
 	}
 
 	@Override
-	public boolean hasEnchantmentGlint(ItemStack stack) {
+	public boolean hasEnchantmentGlint(ItemStack itemStack) {
 		return true;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		if (!player.abilities.creativeMode) {
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (!playerEntity.abilities.creativeMode) {
 			itemStack.decrement(1);
 		}
 
 		world.playSound(
-			null, player.x, player.y, player.z, Sounds.ENTITY_EXPERIENCE_BOTTLE_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+			null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_14637, SoundCategory.field_15254, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 		);
 		if (!world.isClient) {
-			ExperienceBottleEntity experienceBottleEntity = new ExperienceBottleEntity(world, player);
-			experienceBottleEntity.setProperties(player, player.pitch, player.yaw, -20.0F, 0.7F, 1.0F);
-			world.method_3686(experienceBottleEntity);
+			ThrownExperienceBottleEntity thrownExperienceBottleEntity = new ThrownExperienceBottleEntity(world, playerEntity);
+			thrownExperienceBottleEntity.setItem(itemStack);
+			thrownExperienceBottleEntity.setProperties(playerEntity, playerEntity.pitch, playerEntity.yaw, -20.0F, 0.7F, 1.0F);
+			world.spawnEntity(thrownExperienceBottleEntity);
 		}
 
-		player.method_15932(Stats.USED.method_21429(this));
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+		playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 	}
 }

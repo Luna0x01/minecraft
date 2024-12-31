@@ -38,8 +38,8 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 	}
 
 	@Override
-	public void use(SpectatorMenu menu) {
-		menu.selectElement(this);
+	public void use(SpectatorMenu spectatorMenu) {
+		spectatorMenu.selectElement(this);
 	}
 
 	@Override
@@ -48,9 +48,9 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 	}
 
 	@Override
-	public void renderIcon(float brightness, int alpha) {
-		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEXTURE);
-		DrawableHelper.drawTexture(0, 0, 16.0F, 0.0F, 16, 16, 256.0F, 256.0F);
+	public void renderIcon(float f, int i) {
+		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEX);
+		DrawableHelper.blit(0, 0, 16.0F, 0.0F, 16, 16, 256, 256);
 	}
 
 	@Override
@@ -66,7 +66,7 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 
 	class TeleportToSpecificTeamCommand implements SpectatorMenuCommand {
 		private final Team team;
-		private final Identifier field_14944;
+		private final Identifier skinId;
 		private final List<PlayerListEntry> scoreboardEntries;
 
 		public TeleportToSpecificTeamCommand(Team team) {
@@ -81,38 +81,38 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 			}
 
 			if (this.scoreboardEntries.isEmpty()) {
-				this.field_14944 = DefaultSkinHelper.getTexture();
+				this.skinId = DefaultSkinHelper.getTexture();
 			} else {
 				String string2 = ((PlayerListEntry)this.scoreboardEntries.get(new Random().nextInt(this.scoreboardEntries.size()))).getProfile().getName();
-				this.field_14944 = AbstractClientPlayerEntity.getSkinId(string2);
-				AbstractClientPlayerEntity.loadSkin(this.field_14944, string2);
+				this.skinId = AbstractClientPlayerEntity.getSkinId(string2);
+				AbstractClientPlayerEntity.loadSkin(this.skinId, string2);
 			}
 		}
 
 		@Override
-		public void use(SpectatorMenu menu) {
-			menu.selectElement(new TeleportSpectatorMenu(this.scoreboardEntries));
+		public void use(SpectatorMenu spectatorMenu) {
+			spectatorMenu.selectElement(new TeleportSpectatorMenu(this.scoreboardEntries));
 		}
 
 		@Override
 		public Text getName() {
-			return this.team.method_18101();
+			return this.team.getDisplayName();
 		}
 
 		@Override
-		public void renderIcon(float brightness, int alpha) {
-			Integer integer = this.team.method_12130().method_15108();
+		public void renderIcon(float f, int i) {
+			Integer integer = this.team.getColor().getColorValue();
 			if (integer != null) {
-				float f = (float)(integer >> 16 & 0xFF) / 255.0F;
-				float g = (float)(integer >> 8 & 0xFF) / 255.0F;
-				float h = (float)(integer & 0xFF) / 255.0F;
-				DrawableHelper.fill(1, 1, 15, 15, MathHelper.packRgb(f * brightness, g * brightness, h * brightness) | alpha << 24);
+				float g = (float)(integer >> 16 & 0xFF) / 255.0F;
+				float h = (float)(integer >> 8 & 0xFF) / 255.0F;
+				float j = (float)(integer & 0xFF) / 255.0F;
+				DrawableHelper.fill(1, 1, 15, 15, MathHelper.packRgb(g * f, h * f, j * f) | i << 24);
 			}
 
-			MinecraftClient.getInstance().getTextureManager().bindTexture(this.field_14944);
-			GlStateManager.color(brightness, brightness, brightness, (float)alpha / 255.0F);
-			DrawableHelper.drawTexture(2, 2, 8.0F, 8.0F, 8, 8, 12, 12, 64.0F, 64.0F);
-			DrawableHelper.drawTexture(2, 2, 40.0F, 8.0F, 8, 8, 12, 12, 64.0F, 64.0F);
+			MinecraftClient.getInstance().getTextureManager().bindTexture(this.skinId);
+			GlStateManager.color4f(f, f, f, (float)i / 255.0F);
+			DrawableHelper.blit(2, 2, 12, 12, 8.0F, 8.0F, 8, 8, 64, 64);
+			DrawableHelper.blit(2, 2, 12, 12, 40.0F, 8.0F, 8, 8, 64, 64);
 		}
 
 		@Override

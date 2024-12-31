@@ -6,37 +6,39 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Collection;
-import net.minecraft.class_3915;
-import net.minecraft.class_4062;
-import net.minecraft.class_4310;
-import net.minecraft.class_4311;
-import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.arguments.ItemStackArgument;
+import net.minecraft.command.arguments.ItemStackArgumentType;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.sound.Sounds;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.TranslatableText;
 
 public class GiveCommand {
-	public static void method_20826(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("give").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("give").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
-					CommandManager.method_17530("targets", class_4062.method_17904())
+					CommandManager.argument("targets", EntityArgumentType.players())
 						.then(
-							((RequiredArgumentBuilder)CommandManager.method_17530("item", class_4310.method_19698())
+							((RequiredArgumentBuilder)CommandManager.argument("item", ItemStackArgumentType.itemStack())
 									.executes(
-										commandContext -> method_20825(
-												(class_3915)commandContext.getSource(), class_4310.method_19700(commandContext, "item"), class_4062.method_17907(commandContext, "targets"), 1
+										commandContext -> execute(
+												(ServerCommandSource)commandContext.getSource(),
+												ItemStackArgumentType.getItemStackArgument(commandContext, "item"),
+												EntityArgumentType.getPlayers(commandContext, "targets"),
+												1
 											)
 									))
 								.then(
-									CommandManager.method_17530("count", IntegerArgumentType.integer(1))
+									CommandManager.argument("count", IntegerArgumentType.integer(1))
 										.executes(
-											commandContext -> method_20825(
-													(class_3915)commandContext.getSource(),
-													class_4310.method_19700(commandContext, "item"),
-													class_4062.method_17907(commandContext, "targets"),
+											commandContext -> execute(
+													(ServerCommandSource)commandContext.getSource(),
+													ItemStackArgumentType.getItemStackArgument(commandContext, "item"),
+													EntityArgumentType.getPlayers(commandContext, "targets"),
 													IntegerArgumentType.getInteger(commandContext, "count")
 												)
 										)
@@ -46,14 +48,14 @@ public class GiveCommand {
 		);
 	}
 
-	private static int method_20825(class_3915 arg, class_4311 arg2, Collection<ServerPlayerEntity> collection, int i) throws CommandSyntaxException {
+	private static int execute(ServerCommandSource serverCommandSource, ItemStackArgument itemStackArgument, Collection<ServerPlayerEntity> collection, int i) throws CommandSyntaxException {
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
 			int j = i;
 
 			while (j > 0) {
-				int k = Math.min(arg2.method_19701().getMaxCount(), j);
+				int k = Math.min(itemStackArgument.getItem().getMaxCount(), j);
 				j -= k;
-				ItemStack itemStack = arg2.method_19702(k, false);
+				ItemStack itemStack = itemStackArgument.createStack(k, false);
 				boolean bl = serverPlayerEntity.inventory.insertStack(itemStack);
 				if (bl && itemStack.isEmpty()) {
 					itemStack.setCount(1);
@@ -68,31 +70,36 @@ public class GiveCommand {
 							serverPlayerEntity.x,
 							serverPlayerEntity.y,
 							serverPlayerEntity.z,
-							Sounds.ENTITY_ITEM_PICKUP,
+							SoundEvents.field_15197,
 							SoundCategory.PLAYERS,
 							0.2F,
-							((serverPlayerEntity.getRandom().nextFloat() - serverPlayerEntity.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F
+							((serverPlayerEntity.getRand().nextFloat() - serverPlayerEntity.getRand().nextFloat()) * 0.7F + 1.0F) * 2.0F
 						);
-					serverPlayerEntity.playerScreenHandler.sendContentUpdates();
+					serverPlayerEntity.playerContainer.sendContentUpdates();
 				} else {
 					ItemEntity itemEntity = serverPlayerEntity.dropItem(itemStack, false);
 					if (itemEntity != null) {
 						itemEntity.resetPickupDelay();
-						itemEntity.method_15847(serverPlayerEntity.getUuid());
+						itemEntity.setOwner(serverPlayerEntity.getUuid());
 					}
 				}
 			}
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
+			serverCommandSource.sendFeedback(
 				new TranslatableText(
-					"commands.give.success.single", i, arg2.method_19702(i, false).toHoverableText(), ((ServerPlayerEntity)collection.iterator().next()).getName()
+					"commands.give.success.single",
+					i,
+					itemStackArgument.createStack(i, false).toHoverableText(),
+					((ServerPlayerEntity)collection.iterator().next()).getDisplayName()
 				),
 				true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.give.success.single", i, arg2.method_19702(i, false).toHoverableText(), collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.give.success.single", i, itemStackArgument.createStack(i, false).toHoverableText(), collection.size()), true
+			);
 		}
 
 		return collection.size();

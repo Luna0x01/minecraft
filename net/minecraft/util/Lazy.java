@@ -3,18 +3,18 @@ package net.minecraft.util;
 import java.util.function.Supplier;
 
 public class Lazy<T> {
-	private Supplier<T> field_22249;
+	private Supplier<T> supplier;
 	private T value;
 
 	public Lazy(Supplier<T> supplier) {
-		this.field_22249 = supplier;
+		this.supplier = supplier;
 	}
 
 	public T get() {
-		Supplier<T> supplier = this.field_22249;
+		Supplier<T> supplier = this.supplier;
 		if (supplier != null) {
 			this.value = (T)supplier.get();
-			this.field_22249 = null;
+			this.supplier = null;
 		}
 
 		return this.value;

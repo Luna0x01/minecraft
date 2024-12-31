@@ -6,163 +6,90 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.class_3632;
-import net.minecraft.class_3633;
-import net.minecraft.class_3659;
-import net.minecraft.class_3660;
-import net.minecraft.client.ClientException;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ProgressListener;
-import net.minecraft.world.AnvilWorldSaveHandler;
-import net.minecraft.world.SaveHandler;
-import net.minecraft.world.biome.BiomeSourceType;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.WorldSaveHandler;
 import net.minecraft.world.biome.Biomes;
-import net.minecraft.world.biome.SingletonBiomeSource;
-import net.minecraft.world.chunk.RegionFileFormat;
-import net.minecraft.world.chunk.RegionIo;
+import net.minecraft.world.biome.source.BiomeSource;
+import net.minecraft.world.biome.source.BiomeSourceType;
+import net.minecraft.world.biome.source.FixedBiomeSource;
+import net.minecraft.world.biome.source.FixedBiomeSourceConfig;
+import net.minecraft.world.biome.source.VanillaLayeredBiomeSource;
+import net.minecraft.world.biome.source.VanillaLayeredBiomeSourceConfig;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelProperties;
-import org.apache.commons.lang3.StringUtils;
+import net.minecraft.world.storage.RegionFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AnvilLevelStorage extends LevelStorage {
+public class AnvilLevelStorage {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	public AnvilLevelStorage(Path path, Path path2, DataFixer dataFixer) {
-		super(path, path2, dataFixer);
-	}
-
-	@Override
-	public String getFormat() {
-		return "Anvil";
-	}
-
-	@Override
-	public List<LevelSummary> getLevelList() throws ClientException {
-		if (!Files.isDirectory(this.field_19759, new LinkOption[0])) {
-			throw new ClientException(new TranslatableText("selectWorld.load_folder_access").getString());
-		} else {
-			List<LevelSummary> list = Lists.newArrayList();
-			File[] files = this.field_19759.toFile().listFiles();
-
-			for (File file : files) {
-				if (file.isDirectory()) {
-					String string = file.getName();
-					LevelProperties levelProperties = this.getLevelProperties(string);
-					if (levelProperties != null && (levelProperties.getVersion() == 19132 || levelProperties.getVersion() == 19133)) {
-						boolean bl = levelProperties.getVersion() != this.getCurrentVersion();
-						String string2 = levelProperties.getLevelName();
-						if (StringUtils.isEmpty(string2)) {
-							string2 = string;
-						}
-
-						long l = 0L;
-						list.add(new LevelSummary(levelProperties, string, string2, 0L, bl));
-					}
-				}
-			}
-
-			return list;
-		}
-	}
-
-	protected int getCurrentVersion() {
-		return 19133;
-	}
-
-	@Override
-	public void clearAll() {
-		RegionIo.clearRegionFormats();
-	}
-
-	@Override
-	public SaveHandler method_250(String string, @Nullable MinecraftServer minecraftServer) {
-		return new AnvilWorldSaveHandler(this.field_19759.toFile(), string, minecraftServer, this.field_19761);
-	}
-
-	@Override
-	public boolean isConvertible(String worldName) {
-		LevelProperties levelProperties = this.getLevelProperties(worldName);
-		return levelProperties != null && levelProperties.getVersion() == 19132;
-	}
-
-	@Override
-	public boolean needsConversion(String worldName) {
-		LevelProperties levelProperties = this.getLevelProperties(worldName);
-		return levelProperties != null && levelProperties.getVersion() != this.getCurrentVersion();
-	}
-
-	@Override
-	public boolean convert(String worldName, ProgressListener progressListener) {
-		progressListener.setProgressPercentage(0);
+	static boolean convertLevel(Path path, DataFixer dataFixer, String string, ProgressListener progressListener) {
+		progressListener.progressStagePercentage(0);
 		List<File> list = Lists.newArrayList();
 		List<File> list2 = Lists.newArrayList();
 		List<File> list3 = Lists.newArrayList();
-		File file = new File(this.field_19759.toFile(), worldName);
-		File file2 = DimensionType.THE_NETHER.method_17197(file);
-		File file3 = DimensionType.THE_END.method_17197(file);
+		File file = new File(path.toFile(), string);
+		File file2 = DimensionType.field_13076.getFile(file);
+		File file3 = DimensionType.field_13078.getFile(file);
 		LOGGER.info("Scanning folders...");
-		this.addRegionFiles(file, list);
+		addRegionFiles(file, list);
 		if (file2.exists()) {
-			this.addRegionFiles(file2, list2);
+			addRegionFiles(file2, list2);
 		}
 
 		if (file3.exists()) {
-			this.addRegionFiles(file3, list3);
+			addRegionFiles(file3, list3);
 		}
 
 		int i = list.size() + list2.size() + list3.size();
 		LOGGER.info("Total conversion count is {}", i);
-		LevelProperties levelProperties = this.getLevelProperties(worldName);
-		BiomeSourceType<class_3633, class_3632> biomeSourceType = BiomeSourceType.FIXED;
-		BiomeSourceType<class_3660, class_3659> biomeSourceType2 = BiomeSourceType.VANILLA_LAYERED;
-		SingletonBiomeSource singletonBiomeSource;
+		LevelProperties levelProperties = LevelStorage.getLevelProperties(path, dataFixer, string);
+		BiomeSourceType<FixedBiomeSourceConfig, FixedBiomeSource> biomeSourceType = BiomeSourceType.FIXED;
+		BiomeSourceType<VanillaLayeredBiomeSourceConfig, VanillaLayeredBiomeSource> biomeSourceType2 = BiomeSourceType.VANILLA_LAYERED;
+		BiomeSource biomeSource;
 		if (levelProperties != null && levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {
-			singletonBiomeSource = biomeSourceType.method_16484(biomeSourceType.method_16486().method_16498(Biomes.PLAINS));
+			biomeSource = biomeSourceType.applyConfig(biomeSourceType.getConfig().setBiome(Biomes.field_9451));
 		} else {
-			singletonBiomeSource = biomeSourceType2.method_16484(
-				biomeSourceType2.method_16486().method_16535(levelProperties).method_16534(ChunkGeneratorType.SURFACE.method_17040())
+			biomeSource = biomeSourceType2.applyConfig(
+				biomeSourceType2.getConfig().setLevelProperties(levelProperties).setGeneratorSettings(ChunkGeneratorType.field_12769.createSettings())
 			);
 		}
 
-		this.method_193(new File(file, "region"), list, singletonBiomeSource, 0, i, progressListener);
-		this.method_193(
-			new File(file2, "region"), list2, biomeSourceType.method_16484(biomeSourceType.method_16486().method_16498(Biomes.NETHER)), list.size(), i, progressListener
+		convertRegions(new File(file, "region"), list, biomeSource, 0, i, progressListener);
+		convertRegions(
+			new File(file2, "region"), list2, biomeSourceType.applyConfig(biomeSourceType.getConfig().setBiome(Biomes.field_9461)), list.size(), i, progressListener
 		);
-		this.method_193(
+		convertRegions(
 			new File(file3, "region"),
 			list3,
-			biomeSourceType.method_16484(biomeSourceType.method_16486().method_16498(Biomes.SKY)),
+			biomeSourceType.applyConfig(biomeSourceType.getConfig().setBiome(Biomes.field_9411)),
 			list.size() + list2.size(),
 			i,
 			progressListener
 		);
 		levelProperties.setVersion(19133);
 		if (levelProperties.getGeneratorType() == LevelGeneratorType.DEFAULT_1_1) {
-			levelProperties.setLevelGeneratorType(LevelGeneratorType.DEFAULT);
+			levelProperties.setGeneratorType(LevelGeneratorType.DEFAULT);
 		}
 
-		this.makeMcrLevelDatBackup(worldName);
-		SaveHandler saveHandler = this.method_250(worldName, null);
-		saveHandler.saveWorld(levelProperties);
+		makeMcrLevelDatBackup(path, string);
+		WorldSaveHandler worldSaveHandler = LevelStorage.createSaveHandler(path, dataFixer, string, null);
+		worldSaveHandler.saveWorld(levelProperties);
 		return true;
 	}
 
-	private void makeMcrLevelDatBackup(String worldName) {
-		File file = new File(this.field_19759.toFile(), worldName);
+	private static void makeMcrLevelDatBackup(Path path, String string) {
+		File file = new File(path.toFile(), string);
 		if (!file.exists()) {
 			LOGGER.warn("Unable to create level.dat_mcr backup");
 		} else {
@@ -178,39 +105,85 @@ public class AnvilLevelStorage extends LevelStorage {
 		}
 	}
 
-	private void method_193(File file, Iterable<File> iterable, SingletonBiomeSource singletonBiomeSource, int i, int j, ProgressListener progressListener) {
+	private static void convertRegions(File file, Iterable<File> iterable, BiomeSource biomeSource, int i, int j, ProgressListener progressListener) {
 		for (File file2 : iterable) {
-			this.method_192(file, file2, singletonBiomeSource, i, j, progressListener);
+			convertRegion(file, file2, biomeSource, i, j, progressListener);
 			i++;
 			int k = (int)Math.round(100.0 * (double)i / (double)j);
-			progressListener.setProgressPercentage(k);
+			progressListener.progressStagePercentage(k);
 		}
 	}
 
-	private void method_192(File file, File file2, SingletonBiomeSource singletonBiomeSource, int i, int j, ProgressListener progressListener) {
-		try {
-			String string = file2.getName();
-			RegionFileFormat regionFileFormat = new RegionFileFormat(file2);
-			RegionFileFormat regionFileFormat2 = new RegionFileFormat(new File(file, string.substring(0, string.length() - ".mcr".length()) + ".mca"));
+	private static void convertRegion(File file, File file2, BiomeSource biomeSource, int i, int j, ProgressListener progressListener) {
+		String string = file2.getName();
 
+		try (
+			RegionFile regionFile = new RegionFile(file2);
+			RegionFile regionFile2 = new RegionFile(new File(file, string.substring(0, string.length() - ".mcr".length()) + ".mca"));
+		) {
 			for (int k = 0; k < 32; k++) {
 				for (int l = 0; l < 32; l++) {
-					if (regionFileFormat.chunkExists(k, l) && !regionFileFormat2.chunkExists(k, l)) {
-						DataInputStream dataInputStream = regionFileFormat.getChunkInputStream(k, l);
-						if (dataInputStream == null) {
-							LOGGER.warn("Failed to fetch input stream");
-						} else {
-							NbtCompound nbtCompound = NbtIo.read(dataInputStream);
-							dataInputStream.close();
-							NbtCompound nbtCompound2 = nbtCompound.getCompound("Level");
-							AlphaChunkIo.AlphaChunk alphaChunk = AlphaChunkIo.readAlphaChunk(nbtCompound2);
-							NbtCompound nbtCompound3 = new NbtCompound();
-							NbtCompound nbtCompound4 = new NbtCompound();
-							nbtCompound3.put("Level", nbtCompound4);
-							AlphaChunkIo.method_3956(alphaChunk, nbtCompound4, singletonBiomeSource);
-							DataOutputStream dataOutputStream = regionFileFormat2.getChunkOutputStream(k, l);
-							NbtIo.write(nbtCompound3, dataOutputStream);
-							dataOutputStream.close();
+					ChunkPos chunkPos = new ChunkPos(k, l);
+					if (regionFile.hasChunk(chunkPos) && !regionFile2.hasChunk(chunkPos)) {
+						CompoundTag compoundTag;
+						try {
+							DataInputStream dataInputStream = regionFile.getChunkDataInputStream(chunkPos);
+							Throwable alphaChunk = null;
+
+							try {
+								if (dataInputStream == null) {
+									LOGGER.warn("Failed to fetch input stream for chunk {}", chunkPos);
+									continue;
+								}
+
+								compoundTag = NbtIo.read(dataInputStream);
+							} catch (Throwable var104) {
+								alphaChunk = var104;
+								throw var104;
+							} finally {
+								if (dataInputStream != null) {
+									if (alphaChunk != null) {
+										try {
+											dataInputStream.close();
+										} catch (Throwable var101) {
+											alphaChunk.addSuppressed(var101);
+										}
+									} else {
+										dataInputStream.close();
+									}
+								}
+							}
+						} catch (IOException var106) {
+							LOGGER.warn("Failed to read data for chunk {}", chunkPos, var106);
+							continue;
+						}
+
+						CompoundTag compoundTag4 = compoundTag.getCompound("Level");
+						AlphaChunkIo.AlphaChunk alphaChunk = AlphaChunkIo.readAlphaChunk(compoundTag4);
+						CompoundTag compoundTag5 = new CompoundTag();
+						CompoundTag compoundTag6 = new CompoundTag();
+						compoundTag5.put("Level", compoundTag6);
+						AlphaChunkIo.convertAlphaChunk(alphaChunk, compoundTag6, biomeSource);
+						DataOutputStream dataOutputStream = regionFile2.getChunkDataOutputStream(chunkPos);
+						Throwable var20 = null;
+
+						try {
+							NbtIo.write(compoundTag5, dataOutputStream);
+						} catch (Throwable var102) {
+							var20 = var102;
+							throw var102;
+						} finally {
+							if (dataOutputStream != null) {
+								if (var20 != null) {
+									try {
+										dataOutputStream.close();
+									} catch (Throwable var100) {
+										var20.addSuppressed(var100);
+									}
+								} else {
+									dataOutputStream.close();
+								}
+							}
 						}
 					}
 				}
@@ -218,22 +191,19 @@ public class AnvilLevelStorage extends LevelStorage {
 				int m = (int)Math.round(100.0 * (double)(i * 1024) / (double)(j * 1024));
 				int n = (int)Math.round(100.0 * (double)((k + 1) * 32 + i * 1024) / (double)(j * 1024));
 				if (n > m) {
-					progressListener.setProgressPercentage(n);
+					progressListener.progressStagePercentage(n);
 				}
 			}
-
-			regionFileFormat.close();
-			regionFileFormat2.close();
-		} catch (IOException var19) {
-			var19.printStackTrace();
+		} catch (IOException var111) {
+			LOGGER.error("Failed to upgrade region file {}", file2, var111);
 		}
 	}
 
-	private void addRegionFiles(File worldDirectory, Collection<File> files) {
-		File file = new File(worldDirectory, "region");
-		File[] files2 = file.listFiles((filex, string) -> string.endsWith(".mcr"));
-		if (files2 != null) {
-			Collections.addAll(files, files2);
+	private static void addRegionFiles(File file, Collection<File> collection) {
+		File file2 = new File(file, "region");
+		File[] files = file2.listFiles((filex, string) -> string.endsWith(".mcr"));
+		if (files != null) {
+			Collections.addAll(collection, files);
 		}
 	}
 }

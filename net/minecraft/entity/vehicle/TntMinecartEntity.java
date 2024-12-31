@@ -1,41 +1,42 @@
 package net.minecraft.entity.vehicle;
 
-import net.minecraft.class_4342;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.projectile.AbstractArrowEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.sound.Sounds;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 
 public class TntMinecartEntity extends AbstractMinecartEntity {
 	private int fuseTicks = -1;
 
-	public TntMinecartEntity(World world) {
-		super(EntityType.TNT_MINECART, world);
+	public TntMinecartEntity(EntityType<? extends TntMinecartEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	public TntMinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.TNT_MINECART, world, d, e, f);
+		super(EntityType.field_6053, world, d, e, f);
 	}
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.TNT;
+		return AbstractMinecartEntity.Type.field_7675;
 	}
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.TNT.getDefaultState();
+		return Blocks.field_10375.getDefaultState();
 	}
 
 	@Override
@@ -43,13 +44,13 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		super.tick();
 		if (this.fuseTicks > 0) {
 			this.fuseTicks--;
-			this.world.method_16343(class_4342.field_21363, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.field_11251, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
 		} else if (this.fuseTicks == 0) {
-			this.explode(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+			this.explode(squaredHorizontalLength(this.getVelocity()));
 		}
 
 		if (this.horizontalCollision) {
-			double d = this.velocityX * this.velocityX + this.velocityZ * this.velocityZ;
+			double d = squaredHorizontalLength(this.getVelocity());
 			if (d >= 0.01F) {
 				this.explode(d);
 			}
@@ -57,29 +58,25 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource source, float amount) {
-		Entity entity = source.getSource();
-		if (entity instanceof AbstractArrowEntity) {
-			AbstractArrowEntity abstractArrowEntity = (AbstractArrowEntity)entity;
-			if (abstractArrowEntity.isOnFire()) {
-				this.explode(
-					abstractArrowEntity.velocityX * abstractArrowEntity.velocityX
-						+ abstractArrowEntity.velocityY * abstractArrowEntity.velocityY
-						+ abstractArrowEntity.velocityZ * abstractArrowEntity.velocityZ
-				);
+	public boolean damage(DamageSource damageSource, float f) {
+		Entity entity = damageSource.getSource();
+		if (entity instanceof ProjectileEntity) {
+			ProjectileEntity projectileEntity = (ProjectileEntity)entity;
+			if (projectileEntity.isOnFire()) {
+				this.explode(projectileEntity.getVelocity().lengthSquared());
 			}
 		}
 
-		return super.damage(source, amount);
+		return super.damage(damageSource, f);
 	}
 
 	@Override
 	public void dropItems(DamageSource damageSource) {
-		double d = this.velocityX * this.velocityX + this.velocityZ * this.velocityZ;
+		double d = squaredHorizontalLength(this.getVelocity());
 		if (!damageSource.isFire() && !damageSource.isExplosive() && !(d >= 0.01F)) {
 			super.dropItems(damageSource);
-			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean("doEntityDrops")) {
-				this.method_15560(Blocks.TNT);
+			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.field_19393)) {
+				this.dropItem(Blocks.field_10375);
 			}
 		} else {
 			if (this.fuseTicks < 0) {
@@ -89,41 +86,41 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		}
 	}
 
-	protected void explode(double velocity) {
+	protected void explode(double d) {
 		if (!this.world.isClient) {
-			double d = Math.sqrt(velocity);
-			if (d > 5.0) {
-				d = 5.0;
+			double e = Math.sqrt(d);
+			if (e > 5.0) {
+				e = 5.0;
 			}
 
-			this.world.createExplosion(this, this.x, this.y, this.z, (float)(4.0 + this.random.nextDouble() * 1.5 * d), true);
+			this.world.createExplosion(this, this.x, this.y, this.z, (float)(4.0 + this.random.nextDouble() * 1.5 * e), Explosion.DestructionType.field_18686);
 			this.remove();
 		}
 	}
 
 	@Override
-	public void handleFallDamage(float fallDistance, float damageMultiplier) {
-		if (fallDistance >= 3.0F) {
-			float f = fallDistance / 10.0F;
-			this.explode((double)(f * f));
+	public void handleFallDamage(float f, float g) {
+		if (f >= 3.0F) {
+			float h = f / 10.0F;
+			this.explode((double)(h * h));
 		}
 
-		super.handleFallDamage(fallDistance, damageMultiplier);
+		super.handleFallDamage(f, g);
 	}
 
 	@Override
-	public void onActivatorRail(int x, int y, int z, boolean powered) {
-		if (powered && this.fuseTicks < 0) {
+	public void onActivatorRail(int i, int j, int k, boolean bl) {
+		if (bl && this.fuseTicks < 0) {
 			this.prime();
 		}
 	}
 
 	@Override
-	public void handleStatus(byte status) {
-		if (status == 10) {
+	public void handleStatus(byte b) {
+		if (b == 10) {
 			this.prime();
 		} else {
-			super.handleStatus(status);
+			super.handleStatus(b);
 		}
 	}
 
@@ -132,7 +129,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		if (!this.world.isClient) {
 			this.world.sendEntityStatus(this, (byte)10);
 			if (!this.isSilent()) {
-				this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_TNT_PRIMED, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				this.world.playSound(null, this.x, this.y, this.z, SoundEvents.field_15079, SoundCategory.field_15245, 1.0F, 1.0F);
 			}
 		}
 	}
@@ -146,30 +143,32 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public float method_10932(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState, float f) {
-		return !this.isPrimed() || !blockState.isIn(BlockTags.RAILS) && !blockView.getBlockState(blockPos.up()).isIn(BlockTags.RAILS)
-			? super.method_10932(explosion, blockView, blockPos, blockState, fluidState, f)
+	public float getEffectiveExplosionResistance(
+		Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState, float f
+	) {
+		return !this.isPrimed() || !blockState.matches(BlockTags.field_15463) && !blockView.getBlockState(blockPos.up()).matches(BlockTags.field_15463)
+			? super.getEffectiveExplosionResistance(explosion, blockView, blockPos, blockState, fluidState, f)
 			: 0.0F;
 	}
 
 	@Override
-	public boolean method_10933(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, float f) {
-		return !this.isPrimed() || !blockState.isIn(BlockTags.RAILS) && !blockView.getBlockState(blockPos.up()).isIn(BlockTags.RAILS)
-			? super.method_10933(explosion, blockView, blockPos, blockState, f)
+	public boolean canExplosionDestroyBlock(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, float f) {
+		return !this.isPrimed() || !blockState.matches(BlockTags.field_15463) && !blockView.getBlockState(blockPos.up()).matches(BlockTags.field_15463)
+			? super.canExplosionDestroyBlock(explosion, blockView, blockPos, blockState, f)
 			: false;
 	}
 
 	@Override
-	protected void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		if (nbt.contains("TNTFuse", 99)) {
-			this.fuseTicks = nbt.getInt("TNTFuse");
+	protected void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		if (compoundTag.containsKey("TNTFuse", 99)) {
+			this.fuseTicks = compoundTag.getInt("TNTFuse");
 		}
 	}
 
 	@Override
-	protected void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("TNTFuse", this.fuseTicks);
+	protected void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		compoundTag.putInt("TNTFuse", this.fuseTicks);
 	}
 }

@@ -7,70 +7,70 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
 import java.util.Collections;
-import net.minecraft.class_3915;
-import net.minecraft.class_4062;
-import net.minecraft.class_4181;
-import net.minecraft.class_4327;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.recipe.RecipeType;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.arguments.IdentifierArgumentType;
+import net.minecraft.command.suggestion.SuggestionProviders;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
 
 public class RecipeCommand {
-	private static final SimpleCommandExceptionType field_21769 = new SimpleCommandExceptionType(new TranslatableText("commands.recipe.give.failed"));
-	private static final SimpleCommandExceptionType field_21770 = new SimpleCommandExceptionType(new TranslatableText("commands.recipe.take.failed"));
+	private static final SimpleCommandExceptionType GIVE_FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.recipe.give.failed"));
+	private static final SimpleCommandExceptionType TAKE_FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.recipe.take.failed"));
 
-	public static void method_20912(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("recipe").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("recipe")
+						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.then(
-						CommandManager.method_17529("give")
+						CommandManager.literal("give")
 							.then(
-								((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4062.method_17904())
+								((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
 										.then(
-											CommandManager.method_17530("recipe", class_4181.method_18904())
-												.suggests(class_4327.field_21255)
+											CommandManager.argument("recipe", IdentifierArgumentType.identifier())
+												.suggests(SuggestionProviders.ALL_RECIPES)
 												.executes(
-													commandContext -> method_20911(
-															(class_3915)commandContext.getSource(),
-															class_4062.method_17907(commandContext, "targets"),
-															Collections.singleton(class_4181.method_18908(commandContext, "recipe"))
+													commandContext -> executeGive(
+															(ServerCommandSource)commandContext.getSource(),
+															EntityArgumentType.getPlayers(commandContext, "targets"),
+															Collections.singleton(IdentifierArgumentType.getRecipeArgument(commandContext, "recipe"))
 														)
 												)
 										))
 									.then(
-										CommandManager.method_17529("*")
+										CommandManager.literal("*")
 											.executes(
-												commandContext -> method_20911(
-														(class_3915)commandContext.getSource(),
-														class_4062.method_17907(commandContext, "targets"),
-														((class_3915)commandContext.getSource()).method_17473().method_20331().method_16208()
+												commandContext -> executeGive(
+														(ServerCommandSource)commandContext.getSource(),
+														EntityArgumentType.getPlayers(commandContext, "targets"),
+														((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getRecipeManager().values()
 													)
 											)
 									)
 							)
 					))
 				.then(
-					CommandManager.method_17529("take")
+					CommandManager.literal("take")
 						.then(
-							((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4062.method_17904())
+							((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.players())
 									.then(
-										CommandManager.method_17530("recipe", class_4181.method_18904())
-											.suggests(class_4327.field_21255)
+										CommandManager.argument("recipe", IdentifierArgumentType.identifier())
+											.suggests(SuggestionProviders.ALL_RECIPES)
 											.executes(
-												commandContext -> method_20914(
-														(class_3915)commandContext.getSource(),
-														class_4062.method_17907(commandContext, "targets"),
-														Collections.singleton(class_4181.method_18908(commandContext, "recipe"))
+												commandContext -> executeTake(
+														(ServerCommandSource)commandContext.getSource(),
+														EntityArgumentType.getPlayers(commandContext, "targets"),
+														Collections.singleton(IdentifierArgumentType.getRecipeArgument(commandContext, "recipe"))
 													)
 											)
 									))
 								.then(
-									CommandManager.method_17529("*")
+									CommandManager.literal("*")
 										.executes(
-											commandContext -> method_20914(
-													(class_3915)commandContext.getSource(),
-													class_4062.method_17907(commandContext, "targets"),
-													((class_3915)commandContext.getSource()).method_17473().method_20331().method_16208()
+											commandContext -> executeTake(
+													(ServerCommandSource)commandContext.getSource(),
+													EntityArgumentType.getPlayers(commandContext, "targets"),
+													((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getRecipeManager().values()
 												)
 										)
 								)
@@ -79,44 +79,44 @@ public class RecipeCommand {
 		);
 	}
 
-	private static int method_20911(class_3915 arg, Collection<ServerPlayerEntity> collection, Collection<RecipeType> collection2) throws CommandSyntaxException {
+	private static int executeGive(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, Collection<Recipe<?>> collection2) throws CommandSyntaxException {
 		int i = 0;
 
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			i += serverPlayerEntity.method_15927(collection2);
+			i += serverPlayerEntity.unlockRecipes(collection2);
 		}
 
 		if (i == 0) {
-			throw field_21769.create();
+			throw GIVE_FAILED_EXCEPTION.create();
 		} else {
 			if (collection.size() == 1) {
-				arg.method_17459(
-					new TranslatableText("commands.recipe.give.success.single", collection2.size(), ((ServerPlayerEntity)collection.iterator().next()).getName()), true
+				serverCommandSource.sendFeedback(
+					new TranslatableText("commands.recipe.give.success.single", collection2.size(), ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
 				);
 			} else {
-				arg.method_17459(new TranslatableText("commands.recipe.give.success.multiple", collection2.size(), collection.size()), true);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.recipe.give.success.multiple", collection2.size(), collection.size()), true);
 			}
 
 			return i;
 		}
 	}
 
-	private static int method_20914(class_3915 arg, Collection<ServerPlayerEntity> collection, Collection<RecipeType> collection2) throws CommandSyntaxException {
+	private static int executeTake(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, Collection<Recipe<?>> collection2) throws CommandSyntaxException {
 		int i = 0;
 
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			i += serverPlayerEntity.method_15931(collection2);
+			i += serverPlayerEntity.lockRecipes(collection2);
 		}
 
 		if (i == 0) {
-			throw field_21770.create();
+			throw TAKE_FAILED_EXCEPTION.create();
 		} else {
 			if (collection.size() == 1) {
-				arg.method_17459(
-					new TranslatableText("commands.recipe.take.success.single", collection2.size(), ((ServerPlayerEntity)collection.iterator().next()).getName()), true
+				serverCommandSource.sendFeedback(
+					new TranslatableText("commands.recipe.take.success.single", collection2.size(), ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
 				);
 			} else {
-				arg.method_17459(new TranslatableText("commands.recipe.take.success.multiple", collection2.size(), collection.size()), true);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.recipe.take.success.multiple", collection2.size(), collection.size()), true);
 			}
 
 			return i;

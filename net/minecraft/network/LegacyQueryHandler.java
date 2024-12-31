@@ -14,10 +14,10 @@ import org.apache.logging.log4j.Logger;
 
 public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final ServerNetworkIo field_8898;
+	private final ServerNetworkIo networkIo;
 
 	public LegacyQueryHandler(ServerNetworkIo serverNetworkIo) {
-		this.field_8898 = serverNetworkIo;
+		this.networkIo = serverNetworkIo;
 	}
 
 	public void channelRead(ChannelHandlerContext channelHandlerContext, Object object) throws Exception {
@@ -32,7 +32,7 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 				}
 
 				InetSocketAddress inetSocketAddress = (InetSocketAddress)channelHandlerContext.channel().remoteAddress();
-				MinecraftServer minecraftServer = this.field_8898.getServer();
+				MinecraftServer minecraftServer = this.networkIo.getServer();
 				int i = byteBuf.readableBytes();
 				switch (i) {
 					case 0:
@@ -100,14 +100,14 @@ public class LegacyQueryHandler extends ChannelInboundHandlerAdapter {
 		}
 	}
 
-	private void reply(ChannelHandlerContext ctx, ByteBuf buf) {
-		ctx.pipeline().firstContext().writeAndFlush(buf).addListener(ChannelFutureListener.CLOSE);
+	private void reply(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) {
+		channelHandlerContext.pipeline().firstContext().writeAndFlush(byteBuf).addListener(ChannelFutureListener.CLOSE);
 	}
 
-	private ByteBuf toBuffer(String s) {
+	private ByteBuf toBuffer(String string) {
 		ByteBuf byteBuf = Unpooled.buffer();
 		byteBuf.writeByte(255);
-		char[] cs = s.toCharArray();
+		char[] cs = string.toCharArray();
 		byteBuf.writeShort(cs.length);
 
 		for (char c : cs) {

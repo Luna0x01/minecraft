@@ -1,6 +1,5 @@
 package net.minecraft.client.util;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -17,11 +16,12 @@ import java.net.URL;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
-import net.minecraft.class_4325;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ProgressListener;
+import net.minecraft.util.UncaughtExceptionLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -31,34 +31,32 @@ public class NetworkUtils {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final ListeningExecutorService downloadExecutor = MoreExecutors.listeningDecorator(
 		Executors.newCachedThreadPool(
-			new ThreadFactoryBuilder().setDaemon(true).setUncaughtExceptionHandler(new class_4325(LOGGER)).setNameFormat("Downloader %d").build()
+			new ThreadFactoryBuilder().setDaemon(true).setUncaughtExceptionHandler(new UncaughtExceptionLogger(LOGGER)).setNameFormat("Downloader %d").build()
 		)
 	);
 
-	public static ListenableFuture<?> downloadResourcePack(
-		File resourcePackFile, String url, Map<String, String> sessionInfo, int timeout, @Nullable ProgressListener progressListener, Proxy clientProxy
-	) {
-		return downloadExecutor.submit(() -> {
+	public static CompletableFuture<?> download(File file, String string, Map<String, String> map, int i, @Nullable ProgressListener progressListener, Proxy proxy) {
+		return CompletableFuture.supplyAsync(() -> {
 			HttpURLConnection httpURLConnection = null;
 			InputStream inputStream = null;
 			OutputStream outputStream = null;
 			if (progressListener != null) {
-				progressListener.method_21525(new TranslatableText("resourcepack.downloading"));
-				progressListener.method_21526(new TranslatableText("resourcepack.requesting"));
+				progressListener.method_15413(new TranslatableText("resourcepack.downloading"));
+				progressListener.method_15414(new TranslatableText("resourcepack.requesting"));
 			}
 
 			try {
 				byte[] bs = new byte[4096];
-				URL uRL = new URL(url);
-				httpURLConnection = (HttpURLConnection)uRL.openConnection(clientProxy);
+				URL uRL = new URL(string);
+				httpURLConnection = (HttpURLConnection)uRL.openConnection(proxy);
 				httpURLConnection.setInstanceFollowRedirects(true);
 				float f = 0.0F;
-				float g = (float)sessionInfo.entrySet().size();
+				float g = (float)map.entrySet().size();
 
-				for (Entry<String, String> entry : sessionInfo.entrySet()) {
+				for (Entry<String, String> entry : map.entrySet()) {
 					httpURLConnection.setRequestProperty((String)entry.getKey(), (String)entry.getValue());
 					if (progressListener != null) {
-						progressListener.setProgressPercentage((int)(++f / g * 100.0F));
+						progressListener.progressStagePercentage((int)(++f / g * 100.0F));
 					}
 				}
 
@@ -66,76 +64,75 @@ public class NetworkUtils {
 				g = (float)httpURLConnection.getContentLength();
 				int j = httpURLConnection.getContentLength();
 				if (progressListener != null) {
-					progressListener.method_21526(new TranslatableText("resourcepack.progress", String.format(Locale.ROOT, "%.2f", g / 1000.0F / 1000.0F)));
+					progressListener.method_15414(new TranslatableText("resourcepack.progress", String.format(Locale.ROOT, "%.2f", g / 1000.0F / 1000.0F)));
 				}
 
-				if (resourcePackFile.exists()) {
-					long l = resourcePackFile.length();
+				if (file.exists()) {
+					long l = file.length();
 					if (l == (long)j) {
 						if (progressListener != null) {
 							progressListener.setDone();
 						}
 
-						return;
+						return null;
 					}
 
-					LOGGER.warn("Deleting {} as it does not match what we currently have ({} vs our {}).", resourcePackFile, j, l);
-					FileUtils.deleteQuietly(resourcePackFile);
-				} else if (resourcePackFile.getParentFile() != null) {
-					resourcePackFile.getParentFile().mkdirs();
+					LOGGER.warn("Deleting {} as it does not match what we currently have ({} vs our {}).", file, j, l);
+					FileUtils.deleteQuietly(file);
+				} else if (file.getParentFile() != null) {
+					file.getParentFile().mkdirs();
 				}
 
-				outputStream = new DataOutputStream(new FileOutputStream(resourcePackFile));
-				if (timeout > 0 && g > (float)timeout) {
+				outputStream = new DataOutputStream(new FileOutputStream(file));
+				if (i > 0 && g > (float)i) {
 					if (progressListener != null) {
 						progressListener.setDone();
 					}
 
-					throw new IOException("Filesize is bigger than maximum allowed (file is " + f + ", limit is " + timeout + ")");
-				}
-
-				while (true) {
+					throw new IOException("Filesize is bigger than maximum allowed (file is " + f + ", limit is " + i + ")");
+				} else {
 					int k;
-					if ((k = inputStream.read(bs)) < 0) {
+					while ((k = inputStream.read(bs)) >= 0) {
+						f += (float)k;
 						if (progressListener != null) {
-							progressListener.setDone();
+							progressListener.progressStagePercentage((int)(f / g * 100.0F));
 						}
 
-						return;
+						if (i > 0 && f > (float)i) {
+							if (progressListener != null) {
+								progressListener.setDone();
+							}
+
+							throw new IOException("Filesize was bigger than maximum allowed (got >= " + f + ", limit was " + i + ")");
+						}
+
+						if (Thread.interrupted()) {
+							LOGGER.error("INTERRUPTED");
+							if (progressListener != null) {
+								progressListener.setDone();
+							}
+
+							return null;
+						}
+
+						outputStream.write(bs, 0, k);
 					}
 
-					f += (float)k;
 					if (progressListener != null) {
-						progressListener.setProgressPercentage((int)(f / g * 100.0F));
+						progressListener.setDone();
 					}
 
-					if (timeout > 0 && f > (float)timeout) {
-						if (progressListener != null) {
-							progressListener.setDone();
-						}
-
-						throw new IOException("Filesize was bigger than maximum allowed (got >= " + f + ", limit was " + timeout + ")");
-					}
-
-					if (Thread.interrupted()) {
-						LOGGER.error("INTERRUPTED");
-						if (progressListener != null) {
-							progressListener.setDone();
-						}
-						break;
-					}
-
-					outputStream.write(bs, 0, k);
+					return null;
 				}
-			} catch (Throwable var21) {
-				var21.printStackTrace();
+			} catch (Throwable var22) {
+				var22.printStackTrace();
 				if (httpURLConnection != null) {
 					InputStream inputStream2 = httpURLConnection.getErrorStream();
 
 					try {
 						LOGGER.error(IOUtils.toString(inputStream2));
-					} catch (IOException var20) {
-						var20.printStackTrace();
+					} catch (IOException var21) {
+						var21.printStackTrace();
 					}
 				}
 
@@ -143,15 +140,15 @@ public class NetworkUtils {
 					progressListener.setDone();
 				}
 
-				return;
+				return null;
 			} finally {
 				IOUtils.closeQuietly(inputStream);
 				IOUtils.closeQuietly(outputStream);
 			}
-		});
+		}, downloadExecutor);
 	}
 
-	public static int getFreePort() {
+	public static int findLocalPort() {
 		try {
 			ServerSocket serverSocket = new ServerSocket(0);
 			Throwable var1 = null;

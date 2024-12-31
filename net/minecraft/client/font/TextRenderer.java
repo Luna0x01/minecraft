@@ -8,10 +8,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.class_4131;
-import net.minecraft.class_4134;
-import net.minecraft.class_4136;
-import net.minecraft.class_4142;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
@@ -19,72 +15,69 @@ import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class TextRenderer implements AutoCloseable {
-	private static final Logger field_20051 = LogManager.getLogger();
-	public int fontHeight = 9;
-	public Random random = new Random();
+	public final int fontHeight = 9;
+	public final Random random = new Random();
 	private final TextureManager textureManager;
-	private final class_4131 field_20052;
+	private final FontStorage fontStorage;
 	private boolean rightToLeft;
 
-	public TextRenderer(TextureManager textureManager, class_4131 arg) {
+	public TextRenderer(TextureManager textureManager, FontStorage fontStorage) {
 		this.textureManager = textureManager;
-		this.field_20052 = arg;
+		this.fontStorage = fontStorage;
 	}
 
-	public void method_18354(List<class_4142> list) {
-		this.field_20052.method_18463(list);
+	public void setFonts(List<Font> list) {
+		this.fontStorage.setFonts(list);
 	}
 
 	public void close() {
-		this.field_20052.close();
+		this.fontStorage.close();
 	}
 
-	public int drawWithShadow(String text, float x, float y, int color) {
+	public int drawWithShadow(String string, float f, float g, int i) {
 		GlStateManager.enableAlphaTest();
-		return this.drawLayer(text, x, y, color, true);
+		return this.draw(string, f, g, i, true);
 	}
 
-	public int method_18355(String string, float f, float g, int i) {
+	public int draw(String string, float f, float g, int i) {
 		GlStateManager.enableAlphaTest();
-		return this.drawLayer(string, f, g, i, false);
+		return this.draw(string, f, g, i, false);
 	}
 
-	private String mirror(String text) {
+	public String mirror(String string) {
 		try {
-			Bidi bidi = new Bidi(new ArabicShaping(8).shape(text), 127);
+			Bidi bidi = new Bidi(new ArabicShaping(8).shape(string), 127);
 			bidi.setReorderingMode(0);
 			return bidi.writeReordered(2);
 		} catch (ArabicShapingException var3) {
-			return text;
+			return string;
 		}
 	}
 
-	private int drawLayer(String text, float x, float y, int color, boolean shadow) {
-		if (text == null) {
+	private int draw(String string, float f, float g, int i, boolean bl) {
+		if (string == null) {
 			return 0;
 		} else {
 			if (this.rightToLeft) {
-				text = this.mirror(text);
+				string = this.mirror(string);
 			}
 
-			if ((color & -67108864) == 0) {
-				color |= -16777216;
+			if ((i & -67108864) == 0) {
+				i |= -16777216;
 			}
 
-			if (shadow) {
-				this.method_18356(text, x, y, color, true);
+			if (bl) {
+				this.drawLayer(string, f, g, i, true);
 			}
 
-			x = this.method_18356(text, x, y, color, false);
-			return (int)x + (shadow ? 1 : 0);
+			f = this.drawLayer(string, f, g, i, false);
+			return (int)f + (bl ? 1 : 0);
 		}
 	}
 
-	private float method_18356(String string, float f, float g, int i, boolean bl) {
+	private float drawLayer(String string, float f, float g, int i, boolean bl) {
 		float h = bl ? 0.25F : 1.0F;
 		float j = (float)(i >> 16 & 0xFF) / 255.0F * h;
 		float k = (float)(i >> 8 & 0xFF) / 255.0F * h;
@@ -94,22 +87,22 @@ public class TextRenderer implements AutoCloseable {
 		float o = l;
 		float p = (float)(i >> 24 & 0xFF) / 255.0F;
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
 		Identifier identifier = null;
-		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+		bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
 		boolean bl2 = false;
 		boolean bl3 = false;
 		boolean bl4 = false;
 		boolean bl5 = false;
 		boolean bl6 = false;
-		List<TextRenderer.class_4118> list = Lists.newArrayList();
+		List<TextRenderer.Rectangle> list = Lists.newArrayList();
 
 		for (int q = 0; q < string.length(); q++) {
 			char c = string.charAt(q);
 			if (c == 167 && q + 1 < string.length()) {
-				Formatting formatting = Formatting.method_15104(string.charAt(q + 1));
+				Formatting formatting = Formatting.byCode(string.charAt(q + 1));
 				if (formatting != null) {
-					if (formatting.method_15109()) {
+					if (formatting.affectsGlyphWidth()) {
 						bl2 = false;
 						bl3 = false;
 						bl6 = false;
@@ -120,52 +113,50 @@ public class TextRenderer implements AutoCloseable {
 						o = l;
 					}
 
-					if (formatting.method_15108() != null) {
-						int r = formatting.method_15108();
+					if (formatting.getColorValue() != null) {
+						int r = formatting.getColorValue();
 						m = (float)(r >> 16 & 0xFF) / 255.0F * h;
 						n = (float)(r >> 8 & 0xFF) / 255.0F * h;
 						o = (float)(r & 0xFF) / 255.0F * h;
-					} else if (formatting == Formatting.OBFUSCATED) {
+					} else if (formatting == Formatting.field_1051) {
 						bl2 = true;
-					} else if (formatting == Formatting.BOLD) {
+					} else if (formatting == Formatting.field_1067) {
 						bl3 = true;
-					} else if (formatting == Formatting.STRIKETHROUGH) {
+					} else if (formatting == Formatting.field_1055) {
 						bl6 = true;
-					} else if (formatting == Formatting.UNDERLINE) {
+					} else if (formatting == Formatting.field_1073) {
 						bl5 = true;
-					} else if (formatting == Formatting.ITALIC) {
+					} else if (formatting == Formatting.field_1056) {
 						bl4 = true;
 					}
 				}
 
 				q++;
 			} else {
-				class_4134 lv = this.field_20052.method_18459(c);
-				class_4136 lv2 = bl2 && c != ' ' ? this.field_20052.method_18461(lv) : this.field_20052.method_18465(c);
-				Identifier identifier2 = lv2.method_18481();
+				Glyph glyph = this.fontStorage.getGlyph(c);
+				GlyphRenderer glyphRenderer = bl2 && c != ' ' ? this.fontStorage.getObfuscatedGlyphRenderer(glyph) : this.fontStorage.getGlyphRenderer(c);
+				Identifier identifier2 = glyphRenderer.getId();
 				if (identifier2 != null) {
 					if (identifier != identifier2) {
 						tessellator.draw();
 						this.textureManager.bindTexture(identifier2);
-						bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+						bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
 						identifier = identifier2;
 					}
 
-					float s = bl3 ? lv.getBoldOffset() : 0.0F;
-					float t = bl ? lv.getShadowOffset() : 0.0F;
-					this.method_18353(lv2, bl3, bl4, s, f + t, g + t, bufferBuilder, m, n, o, p);
+					float s = bl3 ? glyph.getBoldOffset() : 0.0F;
+					float t = bl ? glyph.getShadowOffset() : 0.0F;
+					this.drawGlyph(glyphRenderer, bl3, bl4, s, f + t, g + t, bufferBuilder, m, n, o, p);
 				}
 
-				float u = lv.getAdvance(bl3);
+				float u = glyph.getAdvance(bl3);
 				float v = bl ? 1.0F : 0.0F;
 				if (bl6) {
-					list.add(
-						new TextRenderer.class_4118(f + v - 1.0F, g + v + (float)this.fontHeight / 2.0F, f + v + u, g + v + (float)this.fontHeight / 2.0F - 1.0F, m, n, o, p)
-					);
+					list.add(new TextRenderer.Rectangle(f + v - 1.0F, g + v + 4.5F, f + v + u, g + v + 4.5F - 1.0F, m, n, o, p));
 				}
 
 				if (bl5) {
-					list.add(new TextRenderer.class_4118(f + v - 1.0F, g + v + (float)this.fontHeight, f + v + u, g + v + (float)this.fontHeight - 1.0F, m, n, o, p));
+					list.add(new TextRenderer.Rectangle(f + v - 1.0F, g + v + 9.0F, f + v + u, g + v + 9.0F - 1.0F, m, n, o, p));
 				}
 
 				f += u;
@@ -177,8 +168,8 @@ public class TextRenderer implements AutoCloseable {
 			GlStateManager.disableTexture();
 			bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
 
-			for (TextRenderer.class_4118 lv3 : list) {
-				lv3.method_18358(bufferBuilder);
+			for (TextRenderer.Rectangle rectangle : list) {
+				rectangle.draw(bufferBuilder);
 			}
 
 			tessellator.draw();
@@ -188,31 +179,33 @@ public class TextRenderer implements AutoCloseable {
 		return f;
 	}
 
-	private void method_18353(class_4136 arg, boolean bl, boolean bl2, float f, float g, float h, BufferBuilder bufferBuilder, float i, float j, float k, float l) {
-		arg.method_18482(this.textureManager, bl2, g, h, bufferBuilder, i, j, k, l);
+	private void drawGlyph(
+		GlyphRenderer glyphRenderer, boolean bl, boolean bl2, float f, float g, float h, BufferBuilder bufferBuilder, float i, float j, float k, float l
+	) {
+		glyphRenderer.draw(this.textureManager, bl2, g, h, bufferBuilder, i, j, k, l);
 		if (bl) {
-			arg.method_18482(this.textureManager, bl2, g + f, h, bufferBuilder, i, j, k, l);
+			glyphRenderer.draw(this.textureManager, bl2, g + f, h, bufferBuilder, i, j, k, l);
 		}
 	}
 
-	public int getStringWidth(String text) {
-		if (text == null) {
+	public int getStringWidth(String string) {
+		if (string == null) {
 			return 0;
 		} else {
 			float f = 0.0F;
 			boolean bl = false;
 
-			for (int i = 0; i < text.length(); i++) {
-				char c = text.charAt(i);
-				if (c == 167 && i < text.length() - 1) {
-					Formatting formatting = Formatting.method_15104(text.charAt(++i));
-					if (formatting == Formatting.BOLD) {
+			for (int i = 0; i < string.length(); i++) {
+				char c = string.charAt(i);
+				if (c == 167 && i < string.length() - 1) {
+					Formatting formatting = Formatting.byCode(string.charAt(++i));
+					if (formatting == Formatting.field_1067) {
 						bl = true;
-					} else if (formatting != null && formatting.method_15109()) {
+					} else if (formatting != null && formatting.affectsGlyphWidth()) {
 						bl = false;
 					}
 				} else {
-					f += this.field_20052.method_18459(c).getAdvance(bl);
+					f += this.fontStorage.getGlyph(c).getAdvance(bl);
 				}
 			}
 
@@ -220,46 +213,46 @@ public class TextRenderer implements AutoCloseable {
 		}
 	}
 
-	private float method_18352(char c) {
-		return c == 167 ? 0.0F : (float)MathHelper.ceil(this.field_20052.method_18459(c).getAdvance(false));
+	public float getCharWidth(char c) {
+		return c == 167 ? 0.0F : this.fontStorage.getGlyph(c).getAdvance(false);
 	}
 
-	public String trimToWidth(String text, int width) {
-		return this.trimToWidth(text, width, false);
+	public String trimToWidth(String string, int i) {
+		return this.trimToWidth(string, i, false);
 	}
 
-	public String trimToWidth(String text, int width, boolean backwards) {
+	public String trimToWidth(String string, int i, boolean bl) {
 		StringBuilder stringBuilder = new StringBuilder();
 		float f = 0.0F;
-		int i = backwards ? text.length() - 1 : 0;
-		int j = backwards ? -1 : 1;
-		boolean bl = false;
+		int j = bl ? string.length() - 1 : 0;
+		int k = bl ? -1 : 1;
 		boolean bl2 = false;
+		boolean bl3 = false;
 
-		for (int k = i; k >= 0 && k < text.length() && f < (float)width; k += j) {
-			char c = text.charAt(k);
-			if (bl) {
-				bl = false;
-				Formatting formatting = Formatting.method_15104(c);
-				if (formatting == Formatting.BOLD) {
-					bl2 = true;
-				} else if (formatting != null && formatting.method_15109()) {
-					bl2 = false;
+		for (int l = j; l >= 0 && l < string.length() && f < (float)i; l += k) {
+			char c = string.charAt(l);
+			if (bl2) {
+				bl2 = false;
+				Formatting formatting = Formatting.byCode(c);
+				if (formatting == Formatting.field_1067) {
+					bl3 = true;
+				} else if (formatting != null && formatting.affectsGlyphWidth()) {
+					bl3 = false;
 				}
 			} else if (c == 167) {
-				bl = true;
+				bl2 = true;
 			} else {
-				f += this.method_18352(c);
-				if (bl2) {
+				f += this.getCharWidth(c);
+				if (bl3) {
 					f++;
 				}
 			}
 
-			if (f > (float)width) {
+			if (f > (float)i) {
 				break;
 			}
 
-			if (backwards) {
+			if (bl) {
 				stringBuilder.insert(0, c);
 			} else {
 				stringBuilder.append(c);
@@ -269,154 +262,187 @@ public class TextRenderer implements AutoCloseable {
 		return stringBuilder.toString();
 	}
 
-	private String trimEndNewlines(String text) {
-		while (text != null && text.endsWith("\n")) {
-			text = text.substring(0, text.length() - 1);
+	private String trimEndNewlines(String string) {
+		while (string != null && string.endsWith("\n")) {
+			string = string.substring(0, string.length() - 1);
 		}
 
-		return text;
+		return string;
 	}
 
-	public void drawTrimmed(String text, int x, int y, int maxWidth, int color) {
-		text = this.trimEndNewlines(text);
-		this.method_18357(text, x, y, maxWidth, color);
+	public void drawStringBounded(String string, int i, int j, int k, int l) {
+		string = this.trimEndNewlines(string);
+		this.renderStringBounded(string, i, j, k, l);
 	}
 
-	private void method_18357(String string, int i, int j, int k, int l) {
-		for (String string2 : this.wrapLines(string, k)) {
+	private void renderStringBounded(String string, int i, int j, int k, int l) {
+		for (String string2 : this.wrapStringToWidthAsList(string, k)) {
 			float f = (float)i;
 			if (this.rightToLeft) {
 				int m = this.getStringWidth(this.mirror(string2));
 				f += (float)(k - m);
 			}
 
-			this.drawLayer(string2, f, (float)j, l, false);
-			j += this.fontHeight;
+			this.draw(string2, f, (float)j, l, false);
+			j += 9;
 		}
 	}
 
-	public int getHeightSplit(String text, int width) {
-		return this.fontHeight * this.wrapLines(text, width).size();
+	public int getStringBoundedHeight(String string, int i) {
+		return 9 * this.wrapStringToWidthAsList(string, i).size();
 	}
 
-	public void setRightToLeft(boolean rightToLeft) {
-		this.rightToLeft = rightToLeft;
+	public void setRightToLeft(boolean bl) {
+		this.rightToLeft = bl;
 	}
 
-	public List<String> wrapLines(String text, int width) {
-		return Arrays.asList(this.wrapStringToWidth(text, width).split("\n"));
+	public List<String> wrapStringToWidthAsList(String string, int i) {
+		return Arrays.asList(this.wrapStringToWidth(string, i).split("\n"));
 	}
 
-	public String wrapStringToWidth(String text, int width) {
-		String string = "";
+	public String wrapStringToWidth(String string, int i) {
+		String string2 = "";
 
-		while (!text.isEmpty()) {
-			int i = this.getCharacterCountForWidth(text, width);
-			if (text.length() <= i) {
-				return string + text;
+		while (!string.isEmpty()) {
+			int j = this.getCharacterCountForWidth(string, i);
+			if (string.length() <= j) {
+				return string2 + string;
 			}
 
-			String string2 = text.substring(0, i);
-			char c = text.charAt(i);
+			String string3 = string.substring(0, j);
+			char c = string.charAt(j);
 			boolean bl = c == ' ' || c == '\n';
-			text = Formatting.method_15106(string2) + text.substring(i + (bl ? 1 : 0));
-			string = string + string2 + "\n";
+			string = Formatting.getFormatAtEnd(string3) + string.substring(j + (bl ? 1 : 0));
+			string2 = string2 + string3 + "\n";
 		}
 
-		return string;
+		return string2;
 	}
 
-	private int getCharacterCountForWidth(String text, int offset) {
-		int i = Math.max(1, offset);
-		int j = text.length();
+	public int getCharacterCountForWidth(String string, int i) {
+		int j = Math.max(1, i);
+		int k = string.length();
 		float f = 0.0F;
-		int k = 0;
-		int l = -1;
+		int l = 0;
+		int m = -1;
 		boolean bl = false;
 
-		for (boolean bl2 = true; k < j; k++) {
-			char c = text.charAt(k);
+		for (boolean bl2 = true; l < k; l++) {
+			char c = string.charAt(l);
 			switch (c) {
 				case '\n':
-					k--;
+					l--;
 					break;
 				case ' ':
-					l = k;
+					m = l;
 				default:
 					if (f != 0.0F) {
 						bl2 = false;
 					}
 
-					f += this.method_18352(c);
+					f += this.getCharWidth(c);
 					if (bl) {
 						f++;
 					}
 					break;
 				case '§':
-					if (k < j - 1) {
-						Formatting formatting = Formatting.method_15104(text.charAt(++k));
-						if (formatting == Formatting.BOLD) {
+					if (l < k - 1) {
+						Formatting formatting = Formatting.byCode(string.charAt(++l));
+						if (formatting == Formatting.field_1067) {
 							bl = true;
-						} else if (formatting != null && formatting.method_15109()) {
+						} else if (formatting != null && formatting.affectsGlyphWidth()) {
 							bl = false;
 						}
 					}
 			}
 
 			if (c == '\n') {
-				l = ++k;
+				m = ++l;
 				break;
 			}
 
-			if (f > (float)i) {
+			if (f > (float)j) {
 				if (bl2) {
-					k++;
+					l++;
 				}
 				break;
 			}
 		}
 
-		return k != j && l != -1 && l < k ? l : k;
+		return l != k && m != -1 && m < l ? m : l;
+	}
+
+	public int findWordEdge(String string, int i, int j, boolean bl) {
+		int k = j;
+		boolean bl2 = i < 0;
+		int l = Math.abs(i);
+
+		for (int m = 0; m < l; m++) {
+			if (bl2) {
+				while (bl && k > 0 && (string.charAt(k - 1) == ' ' || string.charAt(k - 1) == '\n')) {
+					k--;
+				}
+
+				while (k > 0 && string.charAt(k - 1) != ' ' && string.charAt(k - 1) != '\n') {
+					k--;
+				}
+			} else {
+				int n = string.length();
+				int o = string.indexOf(32, k);
+				int p = string.indexOf(10, k);
+				if (o == -1 && p == -1) {
+					k = -1;
+				} else if (o != -1 && p != -1) {
+					k = Math.min(o, p);
+				} else if (o != -1) {
+					k = o;
+				} else {
+					k = p;
+				}
+
+				if (k == -1) {
+					k = n;
+				} else {
+					while (bl && k < n && (string.charAt(k) == ' ' || string.charAt(k) == '\n')) {
+						k++;
+					}
+				}
+			}
+		}
+
+		return k;
 	}
 
 	public boolean isRightToLeft() {
 		return this.rightToLeft;
 	}
 
-	static class class_4118 {
-		protected final float field_20053;
-		protected final float field_20054;
-		protected final float field_20055;
-		protected final float field_20056;
-		protected final float field_20057;
-		protected final float field_20058;
-		protected final float field_20059;
-		protected final float field_20060;
+	static class Rectangle {
+		protected final float xMin;
+		protected final float yMin;
+		protected final float xMax;
+		protected final float yMax;
+		protected final float red;
+		protected final float green;
+		protected final float blue;
+		protected final float alpha;
 
-		private class_4118(float f, float g, float h, float i, float j, float k, float l, float m) {
-			this.field_20053 = f;
-			this.field_20054 = g;
-			this.field_20055 = h;
-			this.field_20056 = i;
-			this.field_20057 = j;
-			this.field_20058 = k;
-			this.field_20059 = l;
-			this.field_20060 = m;
+		private Rectangle(float f, float g, float h, float i, float j, float k, float l, float m) {
+			this.xMin = f;
+			this.yMin = g;
+			this.xMax = h;
+			this.yMax = i;
+			this.red = j;
+			this.green = k;
+			this.blue = l;
+			this.alpha = m;
 		}
 
-		public void method_18358(BufferBuilder bufferBuilder) {
-			bufferBuilder.vertex((double)this.field_20053, (double)this.field_20054, 0.0)
-				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
-				.next();
-			bufferBuilder.vertex((double)this.field_20055, (double)this.field_20054, 0.0)
-				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
-				.next();
-			bufferBuilder.vertex((double)this.field_20055, (double)this.field_20056, 0.0)
-				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
-				.next();
-			bufferBuilder.vertex((double)this.field_20053, (double)this.field_20056, 0.0)
-				.color(this.field_20057, this.field_20058, this.field_20059, this.field_20060)
-				.next();
+		public void draw(BufferBuilder bufferBuilder) {
+			bufferBuilder.vertex((double)this.xMin, (double)this.yMin, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
+			bufferBuilder.vertex((double)this.xMax, (double)this.yMin, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
+			bufferBuilder.vertex((double)this.xMax, (double)this.yMax, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
+			bufferBuilder.vertex((double)this.xMin, (double)this.yMax, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
 		}
 	}
 }

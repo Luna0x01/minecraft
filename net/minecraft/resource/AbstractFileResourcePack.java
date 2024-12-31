@@ -9,15 +9,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import javax.annotation.Nullable;
-import net.minecraft.class_4454;
-import net.minecraft.class_4455;
-import net.minecraft.class_4457;
+import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class AbstractFileResourcePack implements class_4454 {
+public abstract class AbstractFileResourcePack implements ResourcePack {
 	private static final Logger LOGGER = LogManager.getLogger();
 	protected final File base;
 
@@ -25,28 +23,28 @@ public abstract class AbstractFileResourcePack implements class_4454 {
 		this.base = file;
 	}
 
-	private static String method_21325(class_4455 arg, Identifier identifier) {
-		return String.format("%s/%s/%s", arg.method_21331(), identifier.getNamespace(), identifier.getPath());
+	private static String getFilename(ResourceType resourceType, Identifier identifier) {
+		return String.format("%s/%s/%s", resourceType.getName(), identifier.getNamespace(), identifier.getPath());
 	}
 
-	protected static String relativize(File base, File target) {
-		return base.toURI().relativize(target.toURI()).getPath();
-	}
-
-	@Override
-	public InputStream method_5897(class_4455 arg, Identifier identifier) throws IOException {
-		return this.openFile(method_21325(arg, identifier));
+	protected static String relativize(File file, File file2) {
+		return file.toURI().relativize(file2.toURI()).getPath();
 	}
 
 	@Override
-	public boolean method_5900(class_4455 arg, Identifier identifier) {
-		return this.containsFile(method_21325(arg, identifier));
+	public InputStream open(ResourceType resourceType, Identifier identifier) throws IOException {
+		return this.openFile(getFilename(resourceType, identifier));
 	}
 
-	protected abstract InputStream openFile(String name) throws IOException;
+	@Override
+	public boolean contains(ResourceType resourceType, Identifier identifier) {
+		return this.containsFile(getFilename(resourceType, identifier));
+	}
+
+	protected abstract InputStream openFile(String string) throws IOException;
 
 	@Override
-	public InputStream method_21330(String string) throws IOException {
+	public InputStream openRoot(String string) throws IOException {
 		if (!string.contains("/") && !string.contains("\\")) {
 			return this.openFile(string);
 		} else {
@@ -54,27 +52,50 @@ public abstract class AbstractFileResourcePack implements class_4454 {
 		}
 	}
 
-	protected abstract boolean containsFile(String name);
+	protected abstract boolean containsFile(String string);
 
-	protected void warnNonLowercaseNamespace(String namespace) {
-		LOGGER.warn("ResourcePack: ignored non-lowercase namespace: {} in {}", namespace, this.base);
+	protected void warnNonLowercaseNamespace(String string) {
+		LOGGER.warn("ResourcePack: ignored non-lowercase namespace: {} in {}", string, this.base);
 	}
 
 	@Nullable
 	@Override
-	public <T> T method_21329(class_4457<T> arg) throws IOException {
-		return method_21324(arg, this.openFile("pack.mcmeta"));
+	public <T> T parseMetadata(ResourceMetadataReader<T> resourceMetadataReader) throws IOException {
+		InputStream inputStream = this.openFile("pack.mcmeta");
+		Throwable var3 = null;
+
+		Object var4;
+		try {
+			var4 = parseMetadata(resourceMetadataReader, inputStream);
+		} catch (Throwable var13) {
+			var3 = var13;
+			throw var13;
+		} finally {
+			if (inputStream != null) {
+				if (var3 != null) {
+					try {
+						inputStream.close();
+					} catch (Throwable var12) {
+						var3.addSuppressed(var12);
+					}
+				} else {
+					inputStream.close();
+				}
+			}
+		}
+
+		return (T)var4;
 	}
 
 	@Nullable
-	public static <T> T method_21324(class_4457<T> arg, InputStream inputStream) {
+	public static <T> T parseMetadata(ResourceMetadataReader<T> resourceMetadataReader, InputStream inputStream) {
 		JsonObject jsonObject;
 		try {
 			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 			Throwable var4 = null;
 
 			try {
-				jsonObject = JsonHelper.method_21500(bufferedReader);
+				jsonObject = JsonHelper.deserialize(bufferedReader);
 			} catch (Throwable var16) {
 				var4 = var16;
 				throw var16;
@@ -92,24 +113,24 @@ public abstract class AbstractFileResourcePack implements class_4454 {
 				}
 			}
 		} catch (JsonParseException | IOException var18) {
-			LOGGER.error("Couldn't load {} metadata", arg.method_5956(), var18);
+			LOGGER.error("Couldn't load {} metadata", resourceMetadataReader.getKey(), var18);
 			return null;
 		}
 
-		if (!jsonObject.has(arg.method_5956())) {
+		if (!jsonObject.has(resourceMetadataReader.getKey())) {
 			return null;
 		} else {
 			try {
-				return arg.method_21335(JsonHelper.getObject(jsonObject, arg.method_5956()));
+				return resourceMetadataReader.fromJson(JsonHelper.getObject(jsonObject, resourceMetadataReader.getKey()));
 			} catch (JsonParseException var15) {
-				LOGGER.error("Couldn't load {} metadata", arg.method_5956(), var15);
+				LOGGER.error("Couldn't load {} metadata", resourceMetadataReader.getKey(), var15);
 				return null;
 			}
 		}
 	}
 
 	@Override
-	public String method_5899() {
+	public String getName() {
 		return this.base.getName();
 	}
 }

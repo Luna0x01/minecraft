@@ -1,268 +1,250 @@
 package net.minecraft.entity.ai.pathing;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.network.DebugRendererInfoManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.Util;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkCache;
 
 public abstract class EntityNavigation {
-	protected MobEntity mob;
-	protected World world;
+	protected final MobEntity entity;
+	protected final World world;
 	@Nullable
-	protected PathMinHeap field_14599;
+	protected Path currentPath;
 	protected double speed;
 	private final EntityAttributeInstance followRange;
 	protected int tickCount;
-	protected int pathStartTime;
-	protected Vec3d pathStartPos = Vec3d.ZERO;
-	protected Vec3d field_14602 = Vec3d.ZERO;
-	protected long field_14603;
-	protected long field_14604;
-	protected double field_14605;
-	protected float field_11967 = 0.5F;
-	protected boolean field_14606;
-	protected long field_14607;
-	protected class_2771 field_14600;
-	private BlockPos field_14608;
-	private PathNodeNavigator navigator;
+	protected int field_6674;
+	protected Vec3d field_6672 = Vec3d.ZERO;
+	protected Vec3d field_6680 = Vec3d.ZERO;
+	protected long field_6670;
+	protected long field_6669;
+	protected double field_6682;
+	protected float field_6683 = 0.5F;
+	protected boolean shouldRecalculate;
+	protected long lastRecalculateTime;
+	protected PathNodeMaker nodeMaker;
+	private BlockPos field_20293;
+	private int field_20294;
+	private PathNodeNavigator pathNodeNavigator;
 
 	public EntityNavigation(MobEntity mobEntity, World world) {
-		this.mob = mobEntity;
+		this.entity = mobEntity;
 		this.world = world;
-		this.followRange = mobEntity.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE);
-		this.navigator = this.createNavigator();
+		this.followRange = mobEntity.getAttributeInstance(EntityAttributes.FOLLOW_RANGE);
+		this.pathNodeNavigator = this.createPathNodeNavigator(MathHelper.floor(this.followRange.getValue() * 16.0));
 	}
 
-	public BlockPos method_15710() {
-		return this.field_14608;
+	public BlockPos getTargetPos() {
+		return this.field_20293;
 	}
 
-	protected abstract PathNodeNavigator createNavigator();
+	protected abstract PathNodeNavigator createPathNodeNavigator(int i);
 
-	public void setSpeed(double speed) {
-		this.speed = speed;
+	public void setSpeed(double d) {
+		this.speed = d;
 	}
 
 	public float getFollowRange() {
 		return (float)this.followRange.getValue();
 	}
 
-	public boolean method_13111() {
-		return this.field_14606;
+	public boolean shouldRecalculatePath() {
+		return this.shouldRecalculate;
 	}
 
-	public void method_13112() {
-		if (this.world.getLastUpdateTime() - this.field_14607 > 20L) {
-			if (this.field_14608 != null) {
-				this.field_14599 = null;
-				this.field_14599 = this.method_13108(this.field_14608);
-				this.field_14607 = this.world.getLastUpdateTime();
-				this.field_14606 = false;
+	public void recalculatePath() {
+		if (this.world.getTime() - this.lastRecalculateTime > 20L) {
+			if (this.field_20293 != null) {
+				this.currentPath = null;
+				this.currentPath = this.findPathTo(this.field_20293, this.field_20294);
+				this.lastRecalculateTime = this.world.getTime();
+				this.shouldRecalculate = false;
 			}
 		} else {
-			this.field_14606 = true;
+			this.shouldRecalculate = true;
 		}
 	}
 
 	@Nullable
-	public final PathMinHeap method_2772(double d, double e, double f) {
-		return this.method_13108(new BlockPos(d, e, f));
+	public final Path findPathTo(double d, double e, double f, int i) {
+		return this.findPathTo(new BlockPos(d, e, f), i);
 	}
 
 	@Nullable
-	public PathMinHeap method_13108(BlockPos blockPos) {
-		if (!this.isAtValidPosition()) {
+	public Path method_21643(Stream<BlockPos> stream, int i) {
+		return this.findPathTo((Set<BlockPos>)stream.collect(Collectors.toSet()), 8, false, i);
+	}
+
+	@Nullable
+	public Path findPathTo(BlockPos blockPos, int i) {
+		return this.findPathTo(ImmutableSet.of(blockPos), 8, false, i);
+	}
+
+	@Nullable
+	public Path findPathTo(Entity entity, int i) {
+		return this.findPathTo(ImmutableSet.of(new BlockPos(entity)), 16, true, i);
+	}
+
+	@Nullable
+	protected Path findPathTo(Set<BlockPos> set, int i, boolean bl, int j) {
+		if (set.isEmpty()) {
 			return null;
-		} else if (this.field_14599 != null && !this.field_14599.method_11930() && blockPos.equals(this.field_14608)) {
-			return this.field_14599;
+		} else if (this.entity.y < 0.0) {
+			return null;
+		} else if (!this.isAtValidPosition()) {
+			return null;
+		} else if (this.currentPath != null && !this.currentPath.isFinished() && set.contains(this.field_20293)) {
+			return this.currentPath;
 		} else {
-			this.field_14608 = blockPos;
+			this.world.getProfiler().push("pathfind");
 			float f = this.getFollowRange();
-			this.world.profiler.push("pathfind");
-			BlockPos blockPos2 = new BlockPos(this.mob);
-			int i = (int)(f + 8.0F);
-			BlockView blockView = new ChunkCache(this.world, blockPos2.add(-i, -i, -i), blockPos2.add(i, i, i), 0);
-			PathMinHeap pathMinHeap = this.navigator.method_11940(blockView, this.mob, this.field_14608, f);
-			this.world.profiler.pop();
-			return pathMinHeap;
-		}
-	}
-
-	@Nullable
-	public PathMinHeap method_13109(Entity entity) {
-		if (!this.isAtValidPosition()) {
-			return null;
-		} else {
-			BlockPos blockPos = new BlockPos(entity);
-			if (this.field_14599 != null && !this.field_14599.method_11930() && blockPos.equals(this.field_14608)) {
-				return this.field_14599;
-			} else {
-				this.field_14608 = blockPos;
-				float f = this.getFollowRange();
-				this.world.profiler.push("pathfind");
-				BlockPos blockPos2 = new BlockPos(this.mob).up();
-				int i = (int)(f + 16.0F);
-				BlockView blockView = new ChunkCache(this.world, blockPos2.add(-i, -i, -i), blockPos2.add(i, i, i), 0);
-				PathMinHeap pathMinHeap = this.navigator.method_11941(blockView, this.mob, entity, f);
-				this.world.profiler.pop();
-				return pathMinHeap;
+			BlockPos blockPos = bl ? new BlockPos(this.entity).up() : new BlockPos(this.entity);
+			int k = (int)(f + (float)i);
+			ViewableWorld viewableWorld = new ChunkCache(this.world, blockPos.add(-k, -k, -k), blockPos.add(k, k, k));
+			Path path = this.pathNodeNavigator.pathfind(viewableWorld, this.entity, set, f, j);
+			this.world.getProfiler().pop();
+			if (path != null && path.method_48() != null) {
+				this.field_20293 = path.method_48();
+				this.field_20294 = j;
 			}
+
+			return path;
 		}
 	}
 
-	public boolean startMovingTo(double x, double y, double z, double speed) {
-		return this.method_13107(this.method_2772(x, y, z), speed);
+	public boolean startMovingTo(double d, double e, double f, double g) {
+		return this.startMovingAlong(this.findPathTo(d, e, f, 1), g);
 	}
 
-	public boolean startMovingTo(Entity entity, double speed) {
-		PathMinHeap pathMinHeap = this.method_13109(entity);
-		return pathMinHeap != null && this.method_13107(pathMinHeap, speed);
+	public boolean startMovingTo(Entity entity, double d) {
+		Path path = this.findPathTo(entity, 1);
+		return path != null && this.startMovingAlong(path, d);
 	}
 
-	public boolean method_13107(@Nullable PathMinHeap pathMinHeap, double d) {
-		if (pathMinHeap == null) {
-			this.field_14599 = null;
+	public boolean startMovingAlong(@Nullable Path path, double d) {
+		if (path == null) {
+			this.currentPath = null;
 			return false;
 		} else {
-			if (!pathMinHeap.method_11927(this.field_14599)) {
-				this.field_14599 = pathMinHeap;
+			if (!path.equalsPath(this.currentPath)) {
+				this.currentPath = path;
 			}
 
-			this.adjustPath();
-			if (this.field_14599.method_11936() <= 0) {
+			this.method_6359();
+			if (this.currentPath.getLength() <= 0) {
 				return false;
 			} else {
 				this.speed = d;
 				Vec3d vec3d = this.getPos();
-				this.pathStartTime = this.tickCount;
-				this.pathStartPos = vec3d;
+				this.field_6674 = this.tickCount;
+				this.field_6672 = vec3d;
 				return true;
 			}
 		}
 	}
 
 	@Nullable
-	public PathMinHeap method_13113() {
-		return this.field_14599;
+	public Path getCurrentPath() {
+		return this.currentPath;
 	}
 
 	public void tick() {
 		this.tickCount++;
-		if (this.field_14606) {
-			this.method_13112();
+		if (this.shouldRecalculate) {
+			this.recalculatePath();
 		}
 
 		if (!this.isIdle()) {
 			if (this.isAtValidPosition()) {
-				this.continueFollowingPath();
-			} else if (this.field_14599 != null && this.field_14599.method_11937() < this.field_14599.method_11936()) {
+				this.method_6339();
+			} else if (this.currentPath != null && this.currentPath.getCurrentNodeIndex() < this.currentPath.getLength()) {
 				Vec3d vec3d = this.getPos();
-				Vec3d vec3d2 = this.field_14599.method_11929(this.mob, this.field_14599.method_11937());
+				Vec3d vec3d2 = this.currentPath.getNodePosition(this.entity, this.currentPath.getCurrentNodeIndex());
 				if (vec3d.y > vec3d2.y
-					&& !this.mob.onGround
+					&& !this.entity.onGround
 					&& MathHelper.floor(vec3d.x) == MathHelper.floor(vec3d2.x)
 					&& MathHelper.floor(vec3d.z) == MathHelper.floor(vec3d2.z)) {
-					this.field_14599.method_11935(this.field_14599.method_11937() + 1);
+					this.currentPath.setCurrentNodeIndex(this.currentPath.getCurrentNodeIndex() + 1);
 				}
 			}
 
-			this.method_15102();
+			DebugRendererInfoManager.sendPathfindingData(this.world, this.entity, this.currentPath, this.field_6683);
 			if (!this.isIdle()) {
-				Vec3d vec3d3 = this.field_14599.method_11928(this.mob);
+				Vec3d vec3d3 = this.currentPath.getNodePosition(this.entity);
 				BlockPos blockPos = new BlockPos(vec3d3);
-				this.mob
-					.getMotionHelper()
-					.moveTo(
-						vec3d3.x, this.world.getBlockState(blockPos.down()).isAir() ? vec3d3.y : LandPathNodeMaker.method_17913(this.world, blockPos), vec3d3.z, this.speed
-					);
+				this.entity
+					.getMoveControl()
+					.moveTo(vec3d3.x, this.world.getBlockState(blockPos.down()).isAir() ? vec3d3.y : LandPathNodeMaker.method_60(this.world, blockPos), vec3d3.z, this.speed);
 			}
 		}
 	}
 
-	protected void method_15102() {
-	}
-
-	protected void continueFollowingPath() {
+	protected void method_6339() {
 		Vec3d vec3d = this.getPos();
-		int i = this.field_14599.method_11936();
-
-		for (int j = this.field_14599.method_11937(); j < this.field_14599.method_11936(); j++) {
-			if ((double)this.field_14599.method_11925(j).posY != Math.floor(vec3d.y)) {
-				i = j;
-				break;
-			}
+		this.field_6683 = this.entity.getWidth() > 0.75F ? this.entity.getWidth() / 2.0F : 0.75F - this.entity.getWidth() / 2.0F;
+		Vec3d vec3d2 = this.currentPath.getCurrentPosition();
+		if (Math.abs(this.entity.x - (vec3d2.x + 0.5)) < (double)this.field_6683
+			&& Math.abs(this.entity.z - (vec3d2.z + 0.5)) < (double)this.field_6683
+			&& Math.abs(this.entity.y - vec3d2.y) < 1.0) {
+			this.currentPath.setCurrentNodeIndex(this.currentPath.getCurrentNodeIndex() + 1);
 		}
 
-		this.field_11967 = this.mob.width > 0.75F ? this.mob.width / 2.0F : 0.75F - this.mob.width / 2.0F;
-		Vec3d vec3d2 = this.field_14599.method_11938();
-		if (MathHelper.abs((float)(this.mob.x - (vec3d2.x + 0.5))) < this.field_11967
-			&& MathHelper.abs((float)(this.mob.z - (vec3d2.z + 0.5))) < this.field_11967
-			&& Math.abs(this.mob.y - vec3d2.y) < 1.0) {
-			this.field_14599.method_11935(this.field_14599.method_11937() + 1);
-		}
-
-		int k = MathHelper.ceil(this.mob.width);
-		int l = MathHelper.ceil(this.mob.height);
-		int m = k;
-
-		for (int n = i - 1; n >= this.field_14599.method_11937(); n--) {
-			if (this.canPathDirectlyThrough(vec3d, this.field_14599.method_11929(this.mob, n), k, l, m)) {
-				this.field_14599.method_11935(n);
-				break;
-			}
-		}
-
-		this.checkTimeouts(vec3d);
+		this.method_6346(vec3d);
 	}
 
-	protected void checkTimeouts(Vec3d currentPos) {
-		if (this.tickCount - this.pathStartTime > 100) {
-			if (currentPos.squaredDistanceTo(this.pathStartPos) < 2.25) {
+	protected void method_6346(Vec3d vec3d) {
+		if (this.tickCount - this.field_6674 > 100) {
+			if (vec3d.squaredDistanceTo(this.field_6672) < 2.25) {
 				this.stop();
 			}
 
-			this.pathStartTime = this.tickCount;
-			this.pathStartPos = currentPos;
+			this.field_6674 = this.tickCount;
+			this.field_6672 = vec3d;
 		}
 
-		if (this.field_14599 != null && !this.field_14599.method_11930()) {
-			Vec3d vec3d = this.field_14599.method_11938();
-			if (vec3d.equals(this.field_14602)) {
-				this.field_14603 = this.field_14603 + (Util.method_20227() - this.field_14604);
+		if (this.currentPath != null && !this.currentPath.isFinished()) {
+			Vec3d vec3d2 = this.currentPath.getCurrentPosition();
+			if (vec3d2.equals(this.field_6680)) {
+				this.field_6670 = this.field_6670 + (SystemUtil.getMeasuringTimeMs() - this.field_6669);
 			} else {
-				this.field_14602 = vec3d;
-				double d = currentPos.distanceTo(this.field_14602);
-				this.field_14605 = this.mob.getMovementSpeed() > 0.0F ? d / (double)this.mob.getMovementSpeed() * 1000.0 : 0.0;
+				this.field_6680 = vec3d2;
+				double d = vec3d.distanceTo(this.field_6680);
+				this.field_6682 = this.entity.getMovementSpeed() > 0.0F ? d / (double)this.entity.getMovementSpeed() * 1000.0 : 0.0;
 			}
 
-			if (this.field_14605 > 0.0 && (double)this.field_14603 > this.field_14605 * 3.0) {
-				this.field_14602 = Vec3d.ZERO;
-				this.field_14603 = 0L;
-				this.field_14605 = 0.0;
+			if (this.field_6682 > 0.0 && (double)this.field_6670 > this.field_6682 * 3.0) {
+				this.field_6680 = Vec3d.ZERO;
+				this.field_6670 = 0L;
+				this.field_6682 = 0.0;
 				this.stop();
 			}
 
-			this.field_14604 = Util.method_20227();
+			this.field_6669 = SystemUtil.getMeasuringTimeMs();
 		}
 	}
 
 	public boolean isIdle() {
-		return this.field_14599 == null || this.field_14599.method_11930();
+		return this.currentPath == null || this.currentPath.isFinished();
 	}
 
 	public void stop() {
-		this.field_14599 = null;
+		this.currentPath = null;
 	}
 
 	protected abstract Vec3d getPos();
@@ -270,42 +252,52 @@ public abstract class EntityNavigation {
 	protected abstract boolean isAtValidPosition();
 
 	protected boolean isInLiquid() {
-		return this.mob.method_15575() || this.mob.isTouchingLava();
+		return this.entity.isInsideWaterOrBubbleColumn() || this.entity.isInLava();
 	}
 
-	protected void adjustPath() {
-		if (this.field_14599 != null) {
-			for (int i = 0; i < this.field_14599.method_11936(); i++) {
-				PathNode pathNode = this.field_14599.method_11925(i);
-				PathNode pathNode2 = i + 1 < this.field_14599.method_11936() ? this.field_14599.method_11925(i + 1) : null;
-				BlockState blockState = this.world.getBlockState(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ));
+	protected void method_6359() {
+		if (this.currentPath != null) {
+			for (int i = 0; i < this.currentPath.getLength(); i++) {
+				PathNode pathNode = this.currentPath.getNode(i);
+				PathNode pathNode2 = i + 1 < this.currentPath.getLength() ? this.currentPath.getNode(i + 1) : null;
+				BlockState blockState = this.world.getBlockState(new BlockPos(pathNode.x, pathNode.y, pathNode.z));
 				Block block = blockState.getBlock();
-				if (block == Blocks.CAULDRON) {
-					this.field_14599.method_11926(i, pathNode.method_11907(pathNode.posX, pathNode.posY + 1, pathNode.posZ));
-					if (pathNode2 != null && pathNode.posY >= pathNode2.posY) {
-						this.field_14599.method_11926(i + 1, pathNode2.method_11907(pathNode2.posX, pathNode.posY + 1, pathNode2.posZ));
+				if (block == Blocks.field_10593) {
+					this.currentPath.setNode(i, pathNode.copyWithNewPosition(pathNode.x, pathNode.y + 1, pathNode.z));
+					if (pathNode2 != null && pathNode.y >= pathNode2.y) {
+						this.currentPath.setNode(i + 1, pathNode2.copyWithNewPosition(pathNode2.x, pathNode.y + 1, pathNode2.z));
 					}
 				}
 			}
 		}
 	}
 
-	protected abstract boolean canPathDirectlyThrough(Vec3d origin, Vec3d target, int sizeX, int sizeY, int sizeZ);
+	protected abstract boolean canPathDirectlyThrough(Vec3d vec3d, Vec3d vec3d2, int i, int j, int k);
 
-	public boolean method_13110(BlockPos blockPos) {
+	public boolean isValidPosition(BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
 		return this.world.getBlockState(blockPos2).isFullOpaque(this.world, blockPos2);
 	}
 
-	public class_2771 method_13114() {
-		return this.field_14600;
+	public PathNodeMaker getNodeMaker() {
+		return this.nodeMaker;
 	}
 
-	public void method_15709(boolean bl) {
-		this.field_14600.method_11921(bl);
+	public void setCanSwim(boolean bl) {
+		this.nodeMaker.setCanSwim(bl);
 	}
 
-	public boolean method_15711() {
-		return this.field_14600.method_11923();
+	public boolean canSwim() {
+		return this.nodeMaker.canSwim();
+	}
+
+	public void method_18053(BlockPos blockPos) {
+		if (this.currentPath != null && !this.currentPath.isFinished() && this.currentPath.getLength() != 0) {
+			PathNode pathNode = this.currentPath.getEnd();
+			Vec3d vec3d = new Vec3d(((double)pathNode.x + this.entity.x) / 2.0, ((double)pathNode.y + this.entity.y) / 2.0, ((double)pathNode.z + this.entity.z) / 2.0);
+			if (blockPos.isWithinDistance(vec3d, (double)(this.currentPath.getLength() - this.currentPath.getCurrentNodeIndex()))) {
+				this.recalculatePath();
+			}
+		}
 	}
 }

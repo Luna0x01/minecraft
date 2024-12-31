@@ -23,17 +23,17 @@ public class BlockPatternBuilder {
 		this.charMap.put(' ', Predicates.alwaysTrue());
 	}
 
-	public BlockPatternBuilder aisle(String... args) {
-		if (!ArrayUtils.isEmpty(args) && !StringUtils.isEmpty(args[0])) {
+	public BlockPatternBuilder aisle(String... strings) {
+		if (!ArrayUtils.isEmpty(strings) && !StringUtils.isEmpty(strings[0])) {
 			if (this.aisles.isEmpty()) {
-				this.height = args.length;
-				this.width = args[0].length();
+				this.height = strings.length;
+				this.width = strings[0].length();
 			}
 
-			if (args.length != this.height) {
-				throw new IllegalArgumentException("Expected aisle with height of " + this.height + ", but was given one with a height of " + args.length + ")");
+			if (strings.length != this.height) {
+				throw new IllegalArgumentException("Expected aisle with height of " + this.height + ", but was given one with a height of " + strings.length + ")");
 			} else {
-				for (String string : args) {
+				for (String string : strings) {
 					if (string.length() != this.width) {
 						throw new IllegalArgumentException(
 							"Not all rows in the given aisle are the correct width (expected " + this.width + ", found one with " + string.length() + ")"
@@ -47,7 +47,7 @@ public class BlockPatternBuilder {
 					}
 				}
 
-				this.aisles.add(args);
+				this.aisles.add(strings);
 				return this;
 			}
 		} else {
@@ -59,16 +59,16 @@ public class BlockPatternBuilder {
 		return new BlockPatternBuilder();
 	}
 
-	public BlockPatternBuilder method_16940(char c, Predicate<CachedBlockPosition> predicate) {
+	public BlockPatternBuilder where(char c, Predicate<CachedBlockPosition> predicate) {
 		this.charMap.put(c, predicate);
 		return this;
 	}
 
 	public BlockPattern build() {
-		return new BlockPattern(this.method_16941());
+		return new BlockPattern(this.bakePredicates());
 	}
 
-	private Predicate<CachedBlockPosition>[][][] method_16941() {
+	private Predicate<CachedBlockPosition>[][][] bakePredicates() {
 		this.validate();
 		Predicate<CachedBlockPosition>[][][] predicates = (Predicate<CachedBlockPosition>[][][])Array.newInstance(
 			Predicate.class, new int[]{this.aisles.size(), this.height, this.width}

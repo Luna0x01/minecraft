@@ -1,16 +1,16 @@
 package net.minecraft.client.sound;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.class_2906;
-import net.minecraft.sound.Sound;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public abstract class AbstractSoundInstance implements SoundInstance {
-	protected class_2906 field_13678;
+	protected Sound sound;
 	@Nullable
-	private SoundContainerImpl field_13680;
-	protected SoundCategory category;
-	protected Identifier identifier;
+	private WeightedSoundSet soundSet;
+	protected final SoundCategory category;
+	protected final Identifier id;
 	protected float volume = 1.0F;
 	protected float pitch = 1.0F;
 	protected float x;
@@ -18,38 +18,39 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 	protected float z;
 	protected boolean repeat;
 	protected int repeatDelay;
-	protected SoundInstance.AttenuationType attenuationType = SoundInstance.AttenuationType.LINEAR;
-	protected boolean field_21096;
+	protected SoundInstance.AttenuationType attenuationType = SoundInstance.AttenuationType.field_5476;
+	protected boolean field_18935;
+	protected boolean looping;
 
-	protected AbstractSoundInstance(Sound sound, SoundCategory soundCategory) {
-		this(sound.getId(), soundCategory);
+	protected AbstractSoundInstance(SoundEvent soundEvent, SoundCategory soundCategory) {
+		this(soundEvent.getId(), soundCategory);
 	}
 
 	protected AbstractSoundInstance(Identifier identifier, SoundCategory soundCategory) {
-		this.identifier = identifier;
+		this.id = identifier;
 		this.category = soundCategory;
 	}
 
 	@Override
-	public Identifier getIdentifier() {
-		return this.identifier;
+	public Identifier getId() {
+		return this.id;
 	}
 
 	@Override
-	public SoundContainerImpl method_12532(SoundManager soundManager) {
-		this.field_13680 = soundManager.method_12545(this.identifier);
-		if (this.field_13680 == null) {
-			this.field_13678 = SoundManager.field_13702;
+	public WeightedSoundSet getSoundSet(SoundManager soundManager) {
+		this.soundSet = soundManager.get(this.id);
+		if (this.soundSet == null) {
+			this.sound = SoundManager.MISSING_SOUND;
 		} else {
-			this.field_13678 = this.field_13680.getSound();
+			this.sound = this.soundSet.method_4887();
 		}
 
-		return this.field_13680;
+		return this.soundSet;
 	}
 
 	@Override
-	public class_2906 method_12533() {
-		return this.field_13678;
+	public Sound getSound() {
+		return this.sound;
 	}
 
 	@Override
@@ -69,12 +70,12 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 
 	@Override
 	public float getVolume() {
-		return this.volume * this.field_13678.method_12524();
+		return this.volume * this.sound.getVolume();
 	}
 
 	@Override
 	public float getPitch() {
-		return this.pitch * this.field_13678.method_12525();
+		return this.pitch * this.sound.getPitch();
 	}
 
 	@Override
@@ -98,7 +99,7 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 	}
 
 	@Override
-	public boolean method_19604() {
-		return this.field_21096;
+	public boolean isLooping() {
+		return this.looping;
 	}
 }

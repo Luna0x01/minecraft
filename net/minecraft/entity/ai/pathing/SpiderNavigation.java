@@ -3,36 +3,35 @@ package net.minecraft.entity.ai.pathing;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class SpiderNavigation extends MobNavigation {
-	private BlockPos targetPos;
+	private BlockPos field_6687;
 
 	public SpiderNavigation(MobEntity mobEntity, World world) {
 		super(mobEntity, world);
 	}
 
 	@Override
-	public PathMinHeap method_13108(BlockPos blockPos) {
-		this.targetPos = blockPos;
-		return super.method_13108(blockPos);
+	public Path findPathTo(BlockPos blockPos, int i) {
+		this.field_6687 = blockPos;
+		return super.findPathTo(blockPos, i);
 	}
 
 	@Override
-	public PathMinHeap method_13109(Entity entity) {
-		this.targetPos = new BlockPos(entity);
-		return super.method_13109(entity);
+	public Path findPathTo(Entity entity, int i) {
+		this.field_6687 = new BlockPos(entity);
+		return super.findPathTo(entity, i);
 	}
 
 	@Override
-	public boolean startMovingTo(Entity entity, double speed) {
-		PathMinHeap pathMinHeap = this.method_13109(entity);
-		if (pathMinHeap != null) {
-			return this.method_13107(pathMinHeap, speed);
+	public boolean startMovingTo(Entity entity, double d) {
+		Path path = this.findPathTo(entity, 0);
+		if (path != null) {
+			return this.startMovingAlong(path, d);
 		} else {
-			this.targetPos = new BlockPos(entity);
-			this.speed = speed;
+			this.field_6687 = new BlockPos(entity);
+			this.speed = d;
 			return true;
 		}
 	}
@@ -42,16 +41,16 @@ public class SpiderNavigation extends MobNavigation {
 		if (!this.isIdle()) {
 			super.tick();
 		} else {
-			if (this.targetPos != null) {
-				double d = (double)(this.mob.width * this.mob.width);
-				if (!(this.mob.squaredDistanceToCenter(this.targetPos) < d)
+			if (this.field_6687 != null) {
+				if (!this.field_6687.isWithinDistance(this.entity.getPos(), (double)this.entity.getWidth())
 					&& (
-						!(this.mob.y > (double)this.targetPos.getY())
-							|| !(this.mob.squaredDistanceToCenter(new BlockPos(this.targetPos.getX(), MathHelper.floor(this.mob.y), this.targetPos.getZ())) < d)
+						!(this.entity.y > (double)this.field_6687.getY())
+							|| !new BlockPos((double)this.field_6687.getX(), this.entity.y, (double)this.field_6687.getZ())
+								.isWithinDistance(this.entity.getPos(), (double)this.entity.getWidth())
 					)) {
-					this.mob.getMotionHelper().moveTo((double)this.targetPos.getX(), (double)this.targetPos.getY(), (double)this.targetPos.getZ(), this.speed);
+					this.entity.getMoveControl().moveTo((double)this.field_6687.getX(), (double)this.field_6687.getY(), (double)this.field_6687.getZ(), this.speed);
 				} else {
-					this.targetPos = null;
+					this.field_6687 = null;
 				}
 			}
 		}

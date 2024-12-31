@@ -1,20 +1,16 @@
 package net.minecraft.entity.passive;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.loot.LootTables;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.world.World;
 
-public class SalmonEntity extends SchoolableFishEntity {
-	public SalmonEntity(World world) {
-		super(EntityType.SALMON, world);
-		this.setBounds(0.7F, 0.4F);
+public class SalmonEntity extends SchoolingFishEntity {
+	public SalmonEntity(EntityType<? extends SalmonEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
@@ -22,34 +18,28 @@ public class SalmonEntity extends SchoolableFishEntity {
 		return 5;
 	}
 
-	@Nullable
 	@Override
-	protected Identifier getLootTableId() {
-		return LootTables.SALMON_ENTITIE;
+	protected ItemStack getFishBucketItem() {
+		return new ItemStack(Items.field_8714);
 	}
 
 	@Override
-	protected ItemStack method_15726() {
-		return new ItemStack(Items.SALMON_BUCKET);
+	protected SoundEvent getAmbientSound() {
+		return SoundEvents.field_15033;
 	}
 
 	@Override
-	protected Sound ambientSound() {
-		return Sounds.ENTITY_SALMON_AMBIENT;
+	protected SoundEvent getDeathSound() {
+		return SoundEvents.field_15123;
 	}
 
 	@Override
-	protected Sound deathSound() {
-		return Sounds.ENTITY_SALMON_DEATH;
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
+		return SoundEvents.field_14638;
 	}
 
 	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_SALMON_HURT;
-	}
-
-	@Override
-	protected Sound method_15724() {
-		return Sounds.ENTITY_SALMON_FLOP;
+	protected SoundEvent getFlopSound() {
+		return SoundEvents.field_14563;
 	}
 }

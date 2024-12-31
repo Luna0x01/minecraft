@@ -1,22 +1,22 @@
 package net.minecraft.client.sound;
 
 import javax.annotation.Nullable;
-import net.minecraft.client.class_2906;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.Identifier;
 
 public interface SoundInstance {
-	Identifier getIdentifier();
+	Identifier getId();
 
 	@Nullable
-	SoundContainerImpl method_12532(SoundManager soundManager);
+	WeightedSoundSet getSoundSet(SoundManager soundManager);
 
-	class_2906 method_12533();
+	Sound getSound();
 
 	SoundCategory getCategory();
 
 	boolean isRepeatable();
 
-	boolean method_19604();
+	boolean isLooping();
 
 	int getRepeatDelay();
 
@@ -32,22 +32,12 @@ public interface SoundInstance {
 
 	SoundInstance.AttenuationType getAttenuationType();
 
-	default boolean method_19605() {
+	default boolean shouldAlwaysPlay() {
 		return false;
 	}
 
 	public static enum AttenuationType {
-		NONE(0),
-		LINEAR(2);
-
-		private final int integer;
-
-		private AttenuationType(int j) {
-			this.integer = j;
-		}
-
-		public int getInteger() {
-			return this.integer;
-		}
+		field_5478,
+		field_5476;
 	}
 }

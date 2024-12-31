@@ -1,9 +1,8 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 
-public class ArmorStandArmorEntityModel extends BiPedModel {
+public class ArmorStandArmorEntityModel extends BipedEntityModel<ArmorStandEntity> {
 	public ArmorStandArmorEntityModel() {
 		this(0.0F);
 	}
@@ -16,32 +15,28 @@ public class ArmorStandArmorEntityModel extends BiPedModel {
 		super(f, 0.0F, i, j);
 	}
 
-	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		if (entity instanceof ArmorStandEntity) {
-			ArmorStandEntity armorStandEntity = (ArmorStandEntity)entity;
-			this.head.posX = (float) (Math.PI / 180.0) * armorStandEntity.getHeadAngle().getPitch();
-			this.head.posY = (float) (Math.PI / 180.0) * armorStandEntity.getHeadAngle().getYaw();
-			this.head.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getHeadAngle().getRoll();
-			this.head.setPivot(0.0F, 1.0F, 0.0F);
-			this.body.posX = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getPitch();
-			this.body.posY = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getYaw();
-			this.body.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getBodyAngle().getRoll();
-			this.leftArm.posX = (float) (Math.PI / 180.0) * armorStandEntity.getLeftArmAngle().getPitch();
-			this.leftArm.posY = (float) (Math.PI / 180.0) * armorStandEntity.getLeftArmAngle().getYaw();
-			this.leftArm.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getLeftArmAngle().getRoll();
-			this.rightArm.posX = (float) (Math.PI / 180.0) * armorStandEntity.getRightArmAngle().getPitch();
-			this.rightArm.posY = (float) (Math.PI / 180.0) * armorStandEntity.getRightArmAngle().getYaw();
-			this.rightArm.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getRightArmAngle().getRoll();
-			this.leftLeg.posX = (float) (Math.PI / 180.0) * armorStandEntity.getLeftLegAngle().getPitch();
-			this.leftLeg.posY = (float) (Math.PI / 180.0) * armorStandEntity.getLeftLegAngle().getYaw();
-			this.leftLeg.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getLeftLegAngle().getRoll();
-			this.leftLeg.setPivot(1.9F, 11.0F, 0.0F);
-			this.rightLeg.posX = (float) (Math.PI / 180.0) * armorStandEntity.getRightLegAngle().getPitch();
-			this.rightLeg.posY = (float) (Math.PI / 180.0) * armorStandEntity.getRightLegAngle().getYaw();
-			this.rightLeg.posZ = (float) (Math.PI / 180.0) * armorStandEntity.getRightLegAngle().getRoll();
-			this.rightLeg.setPivot(-1.9F, 11.0F, 0.0F);
-			copyModelPart(this.head, this.hat);
-		}
+	public void method_17066(ArmorStandEntity armorStandEntity, float f, float g, float h, float i, float j, float k) {
+		this.head.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getHeadRotation().getPitch();
+		this.head.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getHeadRotation().getYaw();
+		this.head.roll = (float) (Math.PI / 180.0) * armorStandEntity.getHeadRotation().getRoll();
+		this.head.setRotationPoint(0.0F, 1.0F, 0.0F);
+		this.body.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getPitch();
+		this.body.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getYaw();
+		this.body.roll = (float) (Math.PI / 180.0) * armorStandEntity.getBodyRotation().getRoll();
+		this.leftArm.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getLeftArmRotation().getPitch();
+		this.leftArm.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getLeftArmRotation().getYaw();
+		this.leftArm.roll = (float) (Math.PI / 180.0) * armorStandEntity.getLeftArmRotation().getRoll();
+		this.rightArm.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getRightArmRotation().getPitch();
+		this.rightArm.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getRightArmRotation().getYaw();
+		this.rightArm.roll = (float) (Math.PI / 180.0) * armorStandEntity.getRightArmRotation().getRoll();
+		this.leftLeg.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getLeftLegRotation().getPitch();
+		this.leftLeg.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getLeftLegRotation().getYaw();
+		this.leftLeg.roll = (float) (Math.PI / 180.0) * armorStandEntity.getLeftLegRotation().getRoll();
+		this.leftLeg.setRotationPoint(1.9F, 11.0F, 0.0F);
+		this.rightLeg.pitch = (float) (Math.PI / 180.0) * armorStandEntity.getRightLegRotation().getPitch();
+		this.rightLeg.yaw = (float) (Math.PI / 180.0) * armorStandEntity.getRightLegRotation().getYaw();
+		this.rightLeg.roll = (float) (Math.PI / 180.0) * armorStandEntity.getRightLegRotation().getRoll();
+		this.rightLeg.setRotationPoint(-1.9F, 11.0F, 0.0F);
+		this.headwear.copyRotation(this.head);
 	}
 }

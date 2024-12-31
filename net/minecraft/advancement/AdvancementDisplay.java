@@ -9,7 +9,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -20,31 +20,31 @@ import net.minecraft.util.registry.Registry;
 public class AdvancementDisplay {
 	private final Text title;
 	private final Text description;
-	private final ItemStack displayStack;
-	private final Identifier field_16477;
-	private final AdvancementType type;
-	private final boolean field_16479;
-	private final boolean field_16480;
-	private final boolean field_16481;
-	private float field_16482;
-	private float field_16483;
+	private final ItemStack icon;
+	private final Identifier background;
+	private final AdvancementFrame frame;
+	private final boolean showToast;
+	private final boolean announceToChat;
+	private final boolean hidden;
+	private float xPos;
+	private float yPos;
 
 	public AdvancementDisplay(
-		ItemStack itemStack, Text text, Text text2, @Nullable Identifier identifier, AdvancementType advancementType, boolean bl, boolean bl2, boolean bl3
+		ItemStack itemStack, Text text, Text text2, @Nullable Identifier identifier, AdvancementFrame advancementFrame, boolean bl, boolean bl2, boolean bl3
 	) {
 		this.title = text;
 		this.description = text2;
-		this.displayStack = itemStack;
-		this.field_16477 = identifier;
-		this.type = advancementType;
-		this.field_16479 = bl;
-		this.field_16480 = bl2;
-		this.field_16481 = bl3;
+		this.icon = itemStack;
+		this.background = identifier;
+		this.frame = advancementFrame;
+		this.showToast = bl;
+		this.announceToChat = bl2;
+		this.hidden = bl3;
 	}
 
-	public void method_15003(float f, float g) {
-		this.field_16482 = f;
-		this.field_16483 = g;
+	public void setPosition(float f, float g) {
+		this.xPos = f;
+		this.yPos = g;
 	}
 
 	public Text getTitle() {
@@ -55,68 +55,70 @@ public class AdvancementDisplay {
 		return this.description;
 	}
 
-	public ItemStack getDisplayStack() {
-		return this.displayStack;
+	public ItemStack getIcon() {
+		return this.icon;
 	}
 
 	@Nullable
-	public Identifier method_15010() {
-		return this.field_16477;
+	public Identifier getBackground() {
+		return this.background;
 	}
 
-	public AdvancementType getAdvancementType() {
-		return this.type;
+	public AdvancementFrame getFrame() {
+		return this.frame;
 	}
 
-	public float method_15012() {
-		return this.field_16482;
+	public float getX() {
+		return this.xPos;
 	}
 
-	public float method_15013() {
-		return this.field_16483;
+	public float getY() {
+		return this.yPos;
 	}
 
-	public boolean method_15014() {
-		return this.field_16479;
+	public boolean shouldShowToast() {
+		return this.showToast;
 	}
 
-	public boolean method_15015() {
-		return this.field_16480;
+	public boolean shouldAnnounceToChat() {
+		return this.announceToChat;
 	}
 
-	public boolean method_15016() {
-		return this.field_16481;
+	public boolean isHidden() {
+		return this.hidden;
 	}
 
-	public static AdvancementDisplay fromJson(JsonObject object, JsonDeserializationContext ctx) {
-		Text text = JsonHelper.deserialize(object, "title", ctx, Text.class);
-		Text text2 = JsonHelper.deserialize(object, "description", ctx, Text.class);
+	public static AdvancementDisplay fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		Text text = JsonHelper.deserialize(jsonObject, "title", jsonDeserializationContext, Text.class);
+		Text text2 = JsonHelper.deserialize(jsonObject, "description", jsonDeserializationContext, Text.class);
 		if (text != null && text2 != null) {
-			ItemStack itemStack = getIconStack(JsonHelper.getObject(object, "icon"));
-			Identifier identifier = object.has("background") ? new Identifier(JsonHelper.getString(object, "background")) : null;
-			AdvancementType advancementType = object.has("frame") ? AdvancementType.fromString(JsonHelper.getString(object, "frame")) : AdvancementType.TASK;
-			boolean bl = JsonHelper.getBoolean(object, "show_toast", true);
-			boolean bl2 = JsonHelper.getBoolean(object, "announce_to_chat", true);
-			boolean bl3 = JsonHelper.getBoolean(object, "hidden", false);
-			return new AdvancementDisplay(itemStack, text, text2, identifier, advancementType, bl, bl2, bl3);
+			ItemStack itemStack = iconFromJson(JsonHelper.getObject(jsonObject, "icon"));
+			Identifier identifier = jsonObject.has("background") ? new Identifier(JsonHelper.getString(jsonObject, "background")) : null;
+			AdvancementFrame advancementFrame = jsonObject.has("frame")
+				? AdvancementFrame.forName(JsonHelper.getString(jsonObject, "frame"))
+				: AdvancementFrame.field_1254;
+			boolean bl = JsonHelper.getBoolean(jsonObject, "show_toast", true);
+			boolean bl2 = JsonHelper.getBoolean(jsonObject, "announce_to_chat", true);
+			boolean bl3 = JsonHelper.getBoolean(jsonObject, "hidden", false);
+			return new AdvancementDisplay(itemStack, text, text2, identifier, advancementFrame, bl, bl2, bl3);
 		} else {
 			throw new JsonSyntaxException("Both title and description must be set");
 		}
 	}
 
-	private static ItemStack getIconStack(JsonObject object) {
-		if (!object.has("item")) {
+	private static ItemStack iconFromJson(JsonObject jsonObject) {
+		if (!jsonObject.has("item")) {
 			throw new JsonSyntaxException("Unsupported icon type, currently only items are supported (add 'item' key)");
 		} else {
-			Item item = JsonHelper.getItem(object, "item");
-			if (object.has("data")) {
+			Item item = JsonHelper.getItem(jsonObject, "item");
+			if (jsonObject.has("data")) {
 				throw new JsonParseException("Disallowed data tag found");
 			} else {
 				ItemStack itemStack = new ItemStack(item);
-				if (object.has("nbt")) {
+				if (jsonObject.has("nbt")) {
 					try {
-						NbtCompound nbtCompound = StringNbtReader.parse(JsonHelper.asString(object.get("nbt"), "nbt"));
-						itemStack.setNbt(nbtCompound);
+						CompoundTag compoundTag = StringNbtReader.parse(JsonHelper.asString(jsonObject.get("nbt"), "nbt"));
+						itemStack.setTag(compoundTag);
 					} catch (CommandSyntaxException var4) {
 						throw new JsonSyntaxException("Invalid nbt tag: " + var4.getMessage());
 					}
@@ -127,66 +129,70 @@ public class AdvancementDisplay {
 		}
 	}
 
-	public void writeTo(PacketByteBuf buf) {
-		buf.writeText(this.title);
-		buf.writeText(this.description);
-		buf.writeItemStack(this.displayStack);
-		buf.writeEnumConstant(this.type);
+	public void toPacket(PacketByteBuf packetByteBuf) {
+		packetByteBuf.writeText(this.title);
+		packetByteBuf.writeText(this.description);
+		packetByteBuf.writeItemStack(this.icon);
+		packetByteBuf.writeEnumConstant(this.frame);
 		int i = 0;
-		if (this.field_16477 != null) {
+		if (this.background != null) {
 			i |= 1;
 		}
 
-		if (this.field_16479) {
+		if (this.showToast) {
 			i |= 2;
 		}
 
-		if (this.field_16481) {
+		if (this.hidden) {
 			i |= 4;
 		}
 
-		buf.writeInt(i);
-		if (this.field_16477 != null) {
-			buf.writeIdentifier(this.field_16477);
+		packetByteBuf.writeInt(i);
+		if (this.background != null) {
+			packetByteBuf.writeIdentifier(this.background);
 		}
 
-		buf.writeFloat(this.field_16482);
-		buf.writeFloat(this.field_16483);
+		packetByteBuf.writeFloat(this.xPos);
+		packetByteBuf.writeFloat(this.yPos);
 	}
 
-	public static AdvancementDisplay fromPacketByteBuf(PacketByteBuf buf) {
-		Text text = buf.readText();
-		Text text2 = buf.readText();
-		ItemStack itemStack = buf.readItemStack();
-		AdvancementType advancementType = buf.readEnumConstant(AdvancementType.class);
-		int i = buf.readInt();
-		Identifier identifier = (i & 1) != 0 ? buf.readIdentifier() : null;
+	public static AdvancementDisplay fromPacket(PacketByteBuf packetByteBuf) {
+		Text text = packetByteBuf.readText();
+		Text text2 = packetByteBuf.readText();
+		ItemStack itemStack = packetByteBuf.readItemStack();
+		AdvancementFrame advancementFrame = packetByteBuf.readEnumConstant(AdvancementFrame.class);
+		int i = packetByteBuf.readInt();
+		Identifier identifier = (i & 1) != 0 ? packetByteBuf.readIdentifier() : null;
 		boolean bl = (i & 2) != 0;
 		boolean bl2 = (i & 4) != 0;
-		AdvancementDisplay advancementDisplay = new AdvancementDisplay(itemStack, text, text2, identifier, advancementType, bl, false, bl2);
-		advancementDisplay.method_15003(buf.readFloat(), buf.readFloat());
+		AdvancementDisplay advancementDisplay = new AdvancementDisplay(itemStack, text, text2, identifier, advancementFrame, bl, false, bl2);
+		advancementDisplay.setPosition(packetByteBuf.readFloat(), packetByteBuf.readFloat());
 		return advancementDisplay;
 	}
 
-	public JsonElement method_21313() {
+	public JsonElement toJson() {
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.add("icon", this.method_21314());
-		jsonObject.add("title", Text.Serializer.method_20183(this.title));
-		jsonObject.add("description", Text.Serializer.method_20183(this.description));
-		jsonObject.addProperty("frame", this.type.getType());
-		jsonObject.addProperty("show_toast", this.field_16479);
-		jsonObject.addProperty("announce_to_chat", this.field_16480);
-		jsonObject.addProperty("hidden", this.field_16481);
-		if (this.field_16477 != null) {
-			jsonObject.addProperty("background", this.field_16477.toString());
+		jsonObject.add("icon", this.iconToJson());
+		jsonObject.add("title", Text.Serializer.toJsonTree(this.title));
+		jsonObject.add("description", Text.Serializer.toJsonTree(this.description));
+		jsonObject.addProperty("frame", this.frame.getId());
+		jsonObject.addProperty("show_toast", this.showToast);
+		jsonObject.addProperty("announce_to_chat", this.announceToChat);
+		jsonObject.addProperty("hidden", this.hidden);
+		if (this.background != null) {
+			jsonObject.addProperty("background", this.background.toString());
 		}
 
 		return jsonObject;
 	}
 
-	private JsonObject method_21314() {
+	private JsonObject iconToJson() {
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty("item", Registry.ITEM.getId(this.displayStack.getItem()).toString());
+		jsonObject.addProperty("item", Registry.ITEM.getId(this.icon.getItem()).toString());
+		if (this.icon.hasTag()) {
+			jsonObject.addProperty("nbt", this.icon.getTag().toString());
+		}
+
 		return jsonObject;
 	}
 }

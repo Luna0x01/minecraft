@@ -14,17 +14,20 @@ public class ModelElementFace {
 	public final Direction cullFace;
 	public final int tintIndex;
 	public final String textureId;
-	public final ModelElementTexture textureReference;
+	public final ModelElementTexture textureData;
 
 	public ModelElementFace(@Nullable Direction direction, int i, String string, ModelElementTexture modelElementTexture) {
 		this.cullFace = direction;
 		this.tintIndex = i;
 		this.textureId = string;
-		this.textureReference = modelElementTexture;
+		this.textureData = modelElementTexture;
 	}
 
-	static class Deserializer implements JsonDeserializer<ModelElementFace> {
-		public ModelElementFace deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+	public static class Deserializer implements JsonDeserializer<ModelElementFace> {
+		protected Deserializer() {
+		}
+
+		public ModelElementFace method_3397(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Direction direction = this.deserializeCullFace(jsonObject);
 			int i = this.deserializeTintIndex(jsonObject);
@@ -33,17 +36,17 @@ public class ModelElementFace {
 			return new ModelElementFace(direction, i, string, modelElementTexture);
 		}
 
-		protected int deserializeTintIndex(JsonObject object) {
-			return JsonHelper.getInt(object, "tintindex", -1);
+		protected int deserializeTintIndex(JsonObject jsonObject) {
+			return JsonHelper.getInt(jsonObject, "tintindex", -1);
 		}
 
-		private String deserializeTexture(JsonObject object) {
-			return JsonHelper.getString(object, "texture");
+		private String deserializeTexture(JsonObject jsonObject) {
+			return JsonHelper.getString(jsonObject, "texture");
 		}
 
 		@Nullable
-		private Direction deserializeCullFace(JsonObject object) {
-			String string = JsonHelper.getString(object, "cullface", "");
+		private Direction deserializeCullFace(JsonObject jsonObject) {
+			String string = JsonHelper.getString(jsonObject, "cullface", "");
 			return Direction.byName(string);
 		}
 	}

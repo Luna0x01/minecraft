@@ -46,7 +46,7 @@ public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 		this.reason = jsonObject.has("reason") ? jsonObject.get("reason").getAsString() : "Banned by an operator.";
 	}
 
-	public String method_21378() {
+	public String getSource() {
 		return this.source;
 	}
 
@@ -58,7 +58,7 @@ public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 		return this.reason;
 	}
 
-	public abstract Text method_21379();
+	public abstract Text toText();
 
 	@Override
 	boolean isInvalid() {

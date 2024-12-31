@@ -8,125 +8,125 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
-import net.minecraft.class_3915;
-import net.minecraft.class_4062;
-import net.minecraft.class_4168;
-import net.minecraft.class_4287;
-import net.minecraft.client.particle.ParticleType;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.arguments.ParticleArgumentType;
+import net.minecraft.command.arguments.Vec3ArgumentType;
 import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 
 public class ParticleCommand {
-	private static final SimpleCommandExceptionType field_21765 = new SimpleCommandExceptionType(new TranslatableText("commands.particle.failed"));
+	private static final SimpleCommandExceptionType FAILED_EXCPETION = new SimpleCommandExceptionType(new TranslatableText("commands.particle.failed"));
 
-	public static void method_20887(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("particle").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("particle")
+					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
-					((RequiredArgumentBuilder)CommandManager.method_17530("name", class_4168.method_18780())
+					((RequiredArgumentBuilder)CommandManager.argument("name", ParticleArgumentType.particle())
 							.executes(
-								commandContext -> method_20886(
-										(class_3915)commandContext.getSource(),
-										class_4168.method_18783(commandContext, "name"),
-										((class_3915)commandContext.getSource()).method_17467(),
+								commandContext -> execute(
+										(ServerCommandSource)commandContext.getSource(),
+										ParticleArgumentType.getParticle(commandContext, "name"),
+										((ServerCommandSource)commandContext.getSource()).getPosition(),
 										Vec3d.ZERO,
 										0.0F,
 										0,
 										false,
-										((class_3915)commandContext.getSource()).method_17473().getPlayerManager().getPlayers()
+										((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getPlayerList()
 									)
 							))
 						.then(
-							((RequiredArgumentBuilder)CommandManager.method_17530("pos", class_4287.method_19562())
+							((RequiredArgumentBuilder)CommandManager.argument("pos", Vec3ArgumentType.vec3())
 									.executes(
-										commandContext -> method_20886(
-												(class_3915)commandContext.getSource(),
-												class_4168.method_18783(commandContext, "name"),
-												class_4287.method_19564(commandContext, "pos"),
+										commandContext -> execute(
+												(ServerCommandSource)commandContext.getSource(),
+												ParticleArgumentType.getParticle(commandContext, "name"),
+												Vec3ArgumentType.getVec3(commandContext, "pos"),
 												Vec3d.ZERO,
 												0.0F,
 												0,
 												false,
-												((class_3915)commandContext.getSource()).method_17473().getPlayerManager().getPlayers()
+												((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getPlayerList()
 											)
 									))
 								.then(
-									CommandManager.method_17530("delta", class_4287.method_19565(false))
+									CommandManager.argument("delta", Vec3ArgumentType.vec3(false))
 										.then(
-											CommandManager.method_17530("speed", FloatArgumentType.floatArg(0.0F))
+											CommandManager.argument("speed", FloatArgumentType.floatArg(0.0F))
 												.then(
-													((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.method_17530("count", IntegerArgumentType.integer(0))
+													((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument("count", IntegerArgumentType.integer(0))
 																.executes(
-																	commandContext -> method_20886(
-																			(class_3915)commandContext.getSource(),
-																			class_4168.method_18783(commandContext, "name"),
-																			class_4287.method_19564(commandContext, "pos"),
-																			class_4287.method_19564(commandContext, "delta"),
+																	commandContext -> execute(
+																			(ServerCommandSource)commandContext.getSource(),
+																			ParticleArgumentType.getParticle(commandContext, "name"),
+																			Vec3ArgumentType.getVec3(commandContext, "pos"),
+																			Vec3ArgumentType.getVec3(commandContext, "delta"),
 																			FloatArgumentType.getFloat(commandContext, "speed"),
 																			IntegerArgumentType.getInteger(commandContext, "count"),
 																			false,
-																			((class_3915)commandContext.getSource()).method_17473().getPlayerManager().getPlayers()
+																			((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getPlayerList()
 																		)
 																))
 															.then(
-																((LiteralArgumentBuilder)CommandManager.method_17529("force")
+																((LiteralArgumentBuilder)CommandManager.literal("force")
 																		.executes(
-																			commandContext -> method_20886(
-																					(class_3915)commandContext.getSource(),
-																					class_4168.method_18783(commandContext, "name"),
-																					class_4287.method_19564(commandContext, "pos"),
-																					class_4287.method_19564(commandContext, "delta"),
+																			commandContext -> execute(
+																					(ServerCommandSource)commandContext.getSource(),
+																					ParticleArgumentType.getParticle(commandContext, "name"),
+																					Vec3ArgumentType.getVec3(commandContext, "pos"),
+																					Vec3ArgumentType.getVec3(commandContext, "delta"),
 																					FloatArgumentType.getFloat(commandContext, "speed"),
 																					IntegerArgumentType.getInteger(commandContext, "count"),
 																					true,
-																					((class_3915)commandContext.getSource()).method_17473().getPlayerManager().getPlayers()
+																					((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getPlayerList()
 																				)
 																		))
 																	.then(
-																		CommandManager.method_17530("viewers", class_4062.method_17904())
+																		CommandManager.argument("viewers", EntityArgumentType.players())
 																			.executes(
-																				commandContext -> method_20886(
-																						(class_3915)commandContext.getSource(),
-																						class_4168.method_18783(commandContext, "name"),
-																						class_4287.method_19564(commandContext, "pos"),
-																						class_4287.method_19564(commandContext, "delta"),
+																				commandContext -> execute(
+																						(ServerCommandSource)commandContext.getSource(),
+																						ParticleArgumentType.getParticle(commandContext, "name"),
+																						Vec3ArgumentType.getVec3(commandContext, "pos"),
+																						Vec3ArgumentType.getVec3(commandContext, "delta"),
 																						FloatArgumentType.getFloat(commandContext, "speed"),
 																						IntegerArgumentType.getInteger(commandContext, "count"),
 																						true,
-																						class_4062.method_17907(commandContext, "viewers")
+																						EntityArgumentType.getPlayers(commandContext, "viewers")
 																					)
 																			)
 																	)
 															))
 														.then(
-															((LiteralArgumentBuilder)CommandManager.method_17529("normal")
+															((LiteralArgumentBuilder)CommandManager.literal("normal")
 																	.executes(
-																		commandContext -> method_20886(
-																				(class_3915)commandContext.getSource(),
-																				class_4168.method_18783(commandContext, "name"),
-																				class_4287.method_19564(commandContext, "pos"),
-																				class_4287.method_19564(commandContext, "delta"),
+																		commandContext -> execute(
+																				(ServerCommandSource)commandContext.getSource(),
+																				ParticleArgumentType.getParticle(commandContext, "name"),
+																				Vec3ArgumentType.getVec3(commandContext, "pos"),
+																				Vec3ArgumentType.getVec3(commandContext, "delta"),
 																				FloatArgumentType.getFloat(commandContext, "speed"),
 																				IntegerArgumentType.getInteger(commandContext, "count"),
 																				false,
-																				((class_3915)commandContext.getSource()).method_17473().getPlayerManager().getPlayers()
+																				((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager().getPlayerList()
 																			)
 																	))
 																.then(
-																	CommandManager.method_17530("viewers", class_4062.method_17904())
+																	CommandManager.argument("viewers", EntityArgumentType.players())
 																		.executes(
-																			commandContext -> method_20886(
-																					(class_3915)commandContext.getSource(),
-																					class_4168.method_18783(commandContext, "name"),
-																					class_4287.method_19564(commandContext, "pos"),
-																					class_4287.method_19564(commandContext, "delta"),
+																			commandContext -> execute(
+																					(ServerCommandSource)commandContext.getSource(),
+																					ParticleArgumentType.getParticle(commandContext, "name"),
+																					Vec3ArgumentType.getVec3(commandContext, "pos"),
+																					Vec3ArgumentType.getVec3(commandContext, "delta"),
 																					FloatArgumentType.getFloat(commandContext, "speed"),
 																					IntegerArgumentType.getInteger(commandContext, "count"),
 																					false,
-																					class_4062.method_17907(commandContext, "viewers")
+																					EntityArgumentType.getPlayers(commandContext, "viewers")
 																				)
 																		)
 																)
@@ -139,24 +139,30 @@ public class ParticleCommand {
 		);
 	}
 
-	private static int method_20886(
-		class_3915 arg, ParticleEffect particleEffect, Vec3d vec3d, Vec3d vec3d2, float f, int i, boolean bl, Collection<ServerPlayerEntity> collection
+	private static int execute(
+		ServerCommandSource serverCommandSource,
+		ParticleEffect particleEffect,
+		Vec3d vec3d,
+		Vec3d vec3d2,
+		float f,
+		int i,
+		boolean bl,
+		Collection<ServerPlayerEntity> collection
 	) throws CommandSyntaxException {
 		int j = 0;
 
 		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			if (arg.method_17468().method_21262(serverPlayerEntity, particleEffect, bl, vec3d.x, vec3d.y, vec3d.z, i, vec3d2.x, vec3d2.y, vec3d2.z, (double)f)) {
+			if (serverCommandSource.getWorld()
+				.spawnParticles(serverPlayerEntity, particleEffect, bl, vec3d.x, vec3d.y, vec3d.z, i, vec3d2.x, vec3d2.y, vec3d2.z, (double)f)) {
 				j++;
 			}
 		}
 
 		if (j == 0) {
-			throw field_21765.create();
+			throw FAILED_EXCPETION.create();
 		} else {
-			arg.method_17459(
-				new TranslatableText(
-					"commands.particle.success", Registry.PARTICLE_TYPE.getId((ParticleType<? extends ParticleEffect>)particleEffect.particleType()).toString()
-				),
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.particle.success", Registry.PARTICLE_TYPE.getId((ParticleType<? extends ParticleEffect>)particleEffect.getType()).toString()),
 				true
 			);
 			return j;

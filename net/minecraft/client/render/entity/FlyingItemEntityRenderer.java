@@ -1,51 +1,51 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.item.HeldItemRenderer;
+import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.entity.FlyingItemEntity;
 import net.minecraft.util.Identifier;
 
-public class FlyingItemEntityRenderer<T extends Entity> extends EntityRenderer<T> {
-	protected final Item item;
-	private final HeldItemRenderer field_20945;
+public class FlyingItemEntityRenderer<T extends Entity & FlyingItemEntity> extends EntityRenderer<T> {
+	private final ItemRenderer item;
+	private final float scale;
 
-	public FlyingItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, Item item, HeldItemRenderer heldItemRenderer) {
+	public FlyingItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer, float f) {
 		super(entityRenderDispatcher);
-		this.item = item;
-		this.field_20945 = heldItemRenderer;
+		this.item = itemRenderer;
+		this.scale = f;
+	}
+
+	public FlyingItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer) {
+		this(entityRenderDispatcher, itemRenderer, 1.0F);
 	}
 
 	@Override
-	public void render(T entity, double x, double y, double z, float yaw, float tickDelta) {
+	public void render(T entity, double d, double e, double f, float g, float h) {
 		GlStateManager.pushMatrix();
-		GlStateManager.translate((float)x, (float)y, (float)z);
+		GlStateManager.translatef((float)d, (float)e, (float)f);
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.rotate(-this.dispatcher.yaw, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate((float)(this.dispatcher.options.perspective == 2 ? -1 : 1) * this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
-		GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+		GlStateManager.scalef(this.scale, this.scale, this.scale);
+		GlStateManager.rotatef(-this.renderManager.cameraYaw, 0.0F, 1.0F, 0.0F);
+		GlStateManager.rotatef((float)(this.renderManager.gameOptions.perspective == 2 ? -1 : 1) * this.renderManager.cameraPitch, 1.0F, 0.0F, 0.0F);
+		GlStateManager.rotatef(180.0F, 0.0F, 1.0F, 0.0F);
 		this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-		if (this.field_13631) {
+		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
-			GlStateManager.method_12309(this.method_12454(entity));
+			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(entity));
 		}
 
-		this.field_20945.method_19380(this.createStack(entity), ModelTransformation.Mode.GROUND);
-		if (this.field_13631) {
-			GlStateManager.method_12315();
+		this.item.renderItem(entity.getStack(), ModelTransformation.Type.field_4318);
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();
-		super.render(entity, x, y, z, yaw, tickDelta);
-	}
-
-	public ItemStack createStack(T entity) {
-		return new ItemStack(this.item);
+		super.render(entity, d, e, f, g, h);
 	}
 
 	@Override

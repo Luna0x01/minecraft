@@ -1,50 +1,40 @@
 package net.minecraft.entity.passive;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.loot.LootTables;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.world.World;
 
-public class CodEntity extends SchoolableFishEntity {
-	public CodEntity(World world) {
-		super(EntityType.COD, world);
-		this.setBounds(0.5F, 0.3F);
+public class CodEntity extends SchoolingFishEntity {
+	public CodEntity(EntityType<? extends CodEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	@Override
-	protected ItemStack method_15726() {
-		return new ItemStack(Items.COD_BUCKET);
-	}
-
-	@Nullable
-	@Override
-	protected Identifier getLootTableId() {
-		return LootTables.COD_ENTITIE;
+	protected ItemStack getFishBucketItem() {
+		return new ItemStack(Items.field_8666);
 	}
 
 	@Override
-	protected Sound ambientSound() {
-		return Sounds.ENTITY_COD_AMBIENT;
+	protected SoundEvent getAmbientSound() {
+		return SoundEvents.field_15083;
 	}
 
 	@Override
-	protected Sound deathSound() {
-		return Sounds.ENTITY_COD_DEATH;
+	protected SoundEvent getDeathSound() {
+		return SoundEvents.field_15003;
 	}
 
 	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_COD_HURT;
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
+		return SoundEvents.field_14851;
 	}
 
 	@Override
-	protected Sound method_15724() {
-		return Sounds.ENTITY_COD_FLOP;
+	protected SoundEvent getFlopSound() {
+		return SoundEvents.field_14918;
 	}
 }

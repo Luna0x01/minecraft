@@ -3,11 +3,11 @@ package net.minecraft.entity.ai.control;
 import net.minecraft.entity.mob.MobEntity;
 
 public class JumpControl {
-	private final MobEntity mob;
+	private final MobEntity entity;
 	protected boolean active;
 
 	public JumpControl(MobEntity mobEntity) {
-		this.mob = mobEntity;
+		this.entity = mobEntity;
 	}
 
 	public void setActive() {
@@ -15,7 +15,7 @@ public class JumpControl {
 	}
 
 	public void tick() {
-		this.mob.setJumping(this.active);
+		this.entity.setJumping(this.active);
 		this.active = false;
 	}
 }

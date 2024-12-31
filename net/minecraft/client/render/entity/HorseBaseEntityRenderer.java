@@ -1,32 +1,19 @@
 package net.minecraft.client.render.entity;
 
-import com.google.common.collect.Maps;
-import java.util.Map;
-import net.minecraft.class_3099;
-import net.minecraft.class_4180;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.LayeredTexture;
-import net.minecraft.entity.AbstractHorseEntity;
+import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.entity.model.HorseEntityModel;
 import net.minecraft.entity.passive.HorseBaseEntity;
-import net.minecraft.util.Identifier;
 
-public class HorseBaseEntityRenderer extends class_3099<HorseBaseEntity> {
-	private static final Map<String, Identifier> MODEL_IDENTIFIERS = Maps.newHashMap();
+public abstract class HorseBaseEntityRenderer<T extends HorseBaseEntity, M extends HorseEntityModel<T>> extends MobEntityRenderer<T, M> {
+	private final float scale;
 
-	public HorseBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new class_4180(), 1.1F);
+	public HorseBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, M horseEntityModel, float f) {
+		super(entityRenderDispatcher, horseEntityModel, 0.75F);
+		this.scale = f;
 	}
 
-	protected Identifier getTexture(AbstractHorseEntity abstractHorseEntity) {
-		HorseBaseEntity horseBaseEntity = (HorseBaseEntity)abstractHorseEntity;
-		String string = horseBaseEntity.method_6272();
-		Identifier identifier = (Identifier)MODEL_IDENTIFIERS.get(string);
-		if (identifier == null) {
-			identifier = new Identifier(string);
-			MinecraftClient.getInstance().getTextureManager().loadTexture(identifier, new LayeredTexture(horseBaseEntity.method_6273()));
-			MODEL_IDENTIFIERS.put(string, identifier);
-		}
-
-		return identifier;
+	protected void method_3874(T horseBaseEntity, float f) {
+		GlStateManager.scalef(this.scale, this.scale, this.scale);
+		super.scale(horseBaseEntity, f);
 	}
 }

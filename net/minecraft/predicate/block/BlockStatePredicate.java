@@ -7,28 +7,28 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.state.StateManager;
+import net.minecraft.state.StateFactory;
 import net.minecraft.state.property.Property;
 
 public class BlockStatePredicate implements Predicate<BlockState> {
-	public static final Predicate<BlockState> TRUE = state -> true;
-	private final StateManager<Block, BlockState> stateManager;
-	private final Map<Property<?>, Predicate<Object>> properties = Maps.newHashMap();
+	public static final Predicate<BlockState> ANY = blockState -> true;
+	private final StateFactory<Block, BlockState> factory;
+	private final Map<Property<?>, Predicate<Object>> propertyTests = Maps.newHashMap();
 
-	private BlockStatePredicate(StateManager<Block, BlockState> stateManager) {
-		this.stateManager = stateManager;
+	private BlockStatePredicate(StateFactory<Block, BlockState> stateFactory) {
+		this.factory = stateFactory;
 	}
 
-	public static BlockStatePredicate create(Block block) {
-		return new BlockStatePredicate(block.getStateManager());
+	public static BlockStatePredicate forBlock(Block block) {
+		return new BlockStatePredicate(block.getStateFactory());
 	}
 
-	public boolean test(@Nullable BlockState blockState) {
-		if (blockState != null && blockState.getBlock().equals(this.stateManager.method_16924())) {
-			if (this.properties.isEmpty()) {
+	public boolean method_11760(@Nullable BlockState blockState) {
+		if (blockState != null && blockState.getBlock().equals(this.factory.getBaseObject())) {
+			if (this.propertyTests.isEmpty()) {
 				return true;
 			} else {
-				for (Entry<Property<?>, Predicate<Object>> entry : this.properties.entrySet()) {
+				for (Entry<Property<?>, Predicate<Object>> entry : this.propertyTests.entrySet()) {
 					if (!this.testProperty(blockState, (Property)entry.getKey(), (Predicate<Object>)entry.getValue())) {
 						return false;
 					}
@@ -41,16 +41,16 @@ public class BlockStatePredicate implements Predicate<BlockState> {
 		}
 	}
 
-	protected <T extends Comparable<T>> boolean testProperty(BlockState state, Property<T> property, Predicate<Object> predicate) {
-		T comparable = state.getProperty(property);
+	protected <T extends Comparable<T>> boolean testProperty(BlockState blockState, Property<T> property, Predicate<Object> predicate) {
+		T comparable = blockState.get(property);
 		return predicate.test(comparable);
 	}
 
-	public <V extends Comparable<V>> BlockStatePredicate addTest(Property<V> property, Predicate<Object> predicate) {
-		if (!this.stateManager.getProperties().contains(property)) {
-			throw new IllegalArgumentException(this.stateManager + " cannot support property " + property);
+	public <V extends Comparable<V>> BlockStatePredicate with(Property<V> property, Predicate<Object> predicate) {
+		if (!this.factory.getProperties().contains(property)) {
+			throw new IllegalArgumentException(this.factory + " cannot support property " + property);
 		} else {
-			this.properties.put(property, predicate);
+			this.propertyTests.put(property, predicate);
 			return this;
 		}
 	}

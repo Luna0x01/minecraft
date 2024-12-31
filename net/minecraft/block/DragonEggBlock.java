@@ -1,41 +1,41 @@
 package net.minecraft.block;
 
-import net.minecraft.class_4342;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
 public class DragonEggBlock extends FallingBlock {
-	protected static final VoxelShape field_18303 = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
 
-	public DragonEggBlock(Block.Builder builder) {
-		super(builder);
+	public DragonEggBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18303;
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return SHAPE;
 	}
 
 	@Override
-	public boolean onUse(
-		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
-	) {
-		this.method_8759(state, world, pos);
+	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		this.teleport(blockState, world, blockPos);
 		return true;
 	}
 
 	@Override
-	public void method_420(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity) {
-		this.method_8759(blockState, world, blockPos);
+	public void onBlockBreakStart(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity) {
+		this.teleport(blockState, world, blockPos);
 	}
 
-	private void method_8759(BlockState blockState, World world, BlockPos blockPos) {
+	private void teleport(BlockState blockState, World world, BlockPos blockPos) {
 		for (int i = 0; i < 1000; i++) {
 			BlockPos blockPos2 = blockPos.add(
 				world.random.nextInt(16) - world.random.nextInt(16), world.random.nextInt(8) - world.random.nextInt(8), world.random.nextInt(16) - world.random.nextInt(16)
@@ -47,14 +47,14 @@ public class DragonEggBlock extends FallingBlock {
 						float f = (world.random.nextFloat() - 0.5F) * 0.2F;
 						float g = (world.random.nextFloat() - 0.5F) * 0.2F;
 						float h = (world.random.nextFloat() - 0.5F) * 0.2F;
-						double e = (double)blockPos2.getX() + (double)(blockPos.getX() - blockPos2.getX()) * d + (world.random.nextDouble() - 0.5) + 0.5;
-						double k = (double)blockPos2.getY() + (double)(blockPos.getY() - blockPos2.getY()) * d + world.random.nextDouble() - 0.5;
-						double l = (double)blockPos2.getZ() + (double)(blockPos.getZ() - blockPos2.getZ()) * d + (world.random.nextDouble() - 0.5) + 0.5;
-						world.method_16343(class_4342.field_21361, e, k, l, (double)f, (double)g, (double)h);
+						double e = MathHelper.lerp(d, (double)blockPos2.getX(), (double)blockPos.getX()) + (world.random.nextDouble() - 0.5) + 0.5;
+						double k = MathHelper.lerp(d, (double)blockPos2.getY(), (double)blockPos.getY()) + world.random.nextDouble() - 0.5;
+						double l = MathHelper.lerp(d, (double)blockPos2.getZ(), (double)blockPos.getZ()) + (world.random.nextDouble() - 0.5) + 0.5;
+						world.addParticle(ParticleTypes.field_11214, e, k, l, (double)f, (double)g, (double)h);
 					}
 				} else {
 					world.setBlockState(blockPos2, blockState, 2);
-					world.method_8553(blockPos);
+					world.clearBlockState(blockPos, false);
 				}
 
 				return;
@@ -63,22 +63,12 @@ public class DragonEggBlock extends FallingBlock {
 	}
 
 	@Override
-	public int getTickDelay(RenderBlockView world) {
+	public int getTickRate(ViewableWorld viewableWorld) {
 		return 5;
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
-	}
-
-	@Override
-	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
 		return false;
 	}
 }

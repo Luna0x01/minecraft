@@ -1,21 +1,22 @@
 package net.minecraft.entity.ai.goal;
 
-import net.minecraft.entity.PathAwareEntity;
-import net.minecraft.util.RandomVectorGenerator;
+import java.util.EnumSet;
+import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class GoToWalkTargetGoal extends Goal {
-	private final PathAwareEntity mob;
+	private final MobEntityWithAi mob;
 	private double x;
 	private double y;
 	private double z;
 	private final double speed;
 
-	public GoToWalkTargetGoal(PathAwareEntity pathAwareEntity, double d) {
-		this.mob = pathAwareEntity;
+	public GoToWalkTargetGoal(MobEntityWithAi mobEntityWithAi, double d) {
+		this.mob = mobEntityWithAi;
 		this.speed = d;
-		this.setCategoryBits(1);
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
 	}
 
 	@Override
@@ -23,8 +24,8 @@ public class GoToWalkTargetGoal extends Goal {
 		if (this.mob.isInWalkTargetRange()) {
 			return false;
 		} else {
-			BlockPos blockPos = this.mob.getPositionTarget();
-			Vec3d vec3d = RandomVectorGenerator.method_2800(this.mob, 16, 7, new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ()));
+			BlockPos blockPos = this.mob.getWalkTarget();
+			Vec3d vec3d = PathfindingUtil.method_6373(this.mob, 16, 7, new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ()));
 			if (vec3d == null) {
 				return false;
 			} else {

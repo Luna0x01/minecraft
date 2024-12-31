@@ -3,7 +3,6 @@ package net.minecraft.client.sound;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,27 +13,25 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-import net.minecraft.client.class_2906;
-import net.minecraft.client.class_2907;
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
-import net.minecraft.sound.SoundEntry;
+import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.Tickable;
+import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SoundManager implements Tickable, ResourceReloadListener {
-	public static final class_2906 field_13702 = new class_2906("meta:missing_sound", 1.0F, 1.0F, 1, class_2906.class_1898.FILE, false, false, 16);
+public class SoundManager extends SinglePreparationResourceReloadListener<SoundManager.SoundList> {
+	public static final Sound MISSING_SOUND = new Sound("meta:missing_sound", 1.0F, 1.0F, 1, Sound.RegistrationType.field_5474, false, false, 16);
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson GSON = new GsonBuilder()
 		.registerTypeHierarchyAdapter(Text.class, new Text.Serializer())
@@ -53,49 +50,68 @@ public class SoundManager implements Tickable, ResourceReloadListener {
 			return null;
 		}
 	};
-	private final Map<Identifier, SoundContainerImpl> field_21133 = Maps.newHashMap();
+	private final Map<Identifier, WeightedSoundSet> sounds = Maps.newHashMap();
 	private final SoundSystem soundSystem;
-	private final ResourceManager resourceManager;
 
 	public SoundManager(ResourceManager resourceManager, GameOptions gameOptions) {
-		this.resourceManager = resourceManager;
-		this.soundSystem = new SoundSystem(this, gameOptions);
+		this.soundSystem = new SoundSystem(this, gameOptions, resourceManager);
 	}
 
-	@Override
-	public void reload(ResourceManager resourceManager) {
-		this.field_21133.clear();
+	protected SoundManager.SoundList method_18180(ResourceManager resourceManager, Profiler profiler) {
+		SoundManager.SoundList soundList = new SoundManager.SoundList();
+		profiler.startTick();
 
 		for (String string : resourceManager.getAllNamespaces()) {
+			profiler.push(string);
+
 			try {
 				for (Resource resource : resourceManager.getAllResources(new Identifier(string, "sounds.json"))) {
+					profiler.push(resource.getResourcePackName());
+
 					try {
-						Map<String, SoundEntry> map = this.readSounds(resource.getInputStream());
+						profiler.push("parse");
+						Map<String, SoundEntry> map = readSounds(resource.getInputStream());
+						profiler.swap("register");
 
 						for (Entry<String, SoundEntry> entry : map.entrySet()) {
-							this.register(new Identifier(string, (String)entry.getKey()), (SoundEntry)entry.getValue());
+							soundList.register(new Identifier(string, (String)entry.getKey()), (SoundEntry)entry.getValue(), resourceManager);
 						}
-					} catch (RuntimeException var10) {
-						LOGGER.warn("Invalid sounds.json in resourcepack: '{}'", resource.getResourcePackName(), var10);
+
+						profiler.pop();
+					} catch (RuntimeException var12) {
+						LOGGER.warn("Invalid sounds.json in resourcepack: '{}'", resource.getResourcePackName(), var12);
 					}
+
+					profiler.pop();
 				}
-			} catch (IOException var11) {
+			} catch (IOException var13) {
+			}
+
+			profiler.pop();
+		}
+
+		profiler.endTick();
+		return soundList;
+	}
+
+	protected void method_18182(SoundManager.SoundList soundList, ResourceManager resourceManager, Profiler profiler) {
+		soundList.addTo(this.sounds, this.soundSystem);
+
+		for (Identifier identifier : this.sounds.keySet()) {
+			WeightedSoundSet weightedSoundSet = (WeightedSoundSet)this.sounds.get(identifier);
+			if (weightedSoundSet.getSubtitle() instanceof TranslatableText) {
+				String string = ((TranslatableText)weightedSoundSet.getSubtitle()).getKey();
+				if (!I18n.hasTranslation(string)) {
+					LOGGER.debug("Missing subtitle {} for event: {}", string, identifier);
+				}
 			}
 		}
 
-		for (Identifier identifier : this.field_21133.keySet()) {
-			SoundContainerImpl soundContainerImpl = (SoundContainerImpl)this.field_21133.get(identifier);
-			if (soundContainerImpl.method_12551() instanceof TranslatableText) {
-				String string2 = ((TranslatableText)soundContainerImpl.method_12551()).getKey();
-				if (!I18n.method_12500(string2)) {
-					LOGGER.debug("Missing subtitle {} for event: {}", string2, identifier);
+		if (LOGGER.isDebugEnabled()) {
+			for (Identifier identifier2 : this.sounds.keySet()) {
+				if (!Registry.SOUND_EVENT.containsId(identifier2)) {
+					LOGGER.debug("Not having sound event for: {}", identifier2);
 				}
-			}
-		}
-
-		for (Identifier identifier2 : this.field_21133.keySet()) {
-			if (Registry.SOUND_EVENT.getByIdentifier(identifier2) == null) {
-				LOGGER.debug("Not having sound event for: {}", identifier2);
 			}
 		}
 
@@ -103,121 +119,46 @@ public class SoundManager implements Tickable, ResourceReloadListener {
 	}
 
 	@Nullable
-	protected Map<String, SoundEntry> readSounds(InputStream inputStream) {
-		Map var2;
+	protected static Map<String, SoundEntry> readSounds(InputStream inputStream) {
+		Map var1;
 		try {
-			var2 = JsonHelper.deserialize(GSON, new InputStreamReader(inputStream, StandardCharsets.UTF_8), TYPE);
+			var1 = JsonHelper.deserialize(GSON, new InputStreamReader(inputStream, StandardCharsets.UTF_8), TYPE);
 		} finally {
 			IOUtils.closeQuietly(inputStream);
 		}
 
-		return var2;
+		return var1;
 	}
 
-	private void register(Identifier id, SoundEntry entry) {
-		SoundContainerImpl soundContainerImpl = (SoundContainerImpl)this.field_21133.get(id);
-		boolean bl = soundContainerImpl == null;
-		if (bl || entry.canReplace()) {
-			if (!bl) {
-				LOGGER.debug("Replaced sound event location {}", id);
-			}
-
-			soundContainerImpl = new SoundContainerImpl(id, entry.method_7058());
-			this.field_21133.put(id, soundContainerImpl);
-		}
-
-		for (final class_2906 lv : entry.getSounds()) {
-			final Identifier identifier = lv.method_12522();
-			SoundContainer<class_2906> soundContainer2;
-			switch (lv.method_12527()) {
-				case FILE:
-					if (!this.method_12542(lv, id)) {
-						continue;
-					}
-
-					soundContainer2 = lv;
-					break;
-				case SOUND_EVENT:
-					soundContainer2 = new SoundContainer<class_2906>() {
-						@Override
-						public int getWeight() {
-							SoundContainerImpl soundContainerImpl = (SoundContainerImpl)SoundManager.this.field_21133.get(identifier);
-							return soundContainerImpl == null ? 0 : soundContainerImpl.getWeight();
-						}
-
-						public class_2906 getSound() {
-							SoundContainerImpl soundContainerImpl = (SoundContainerImpl)SoundManager.this.field_21133.get(identifier);
-							if (soundContainerImpl == null) {
-								return SoundManager.field_13702;
-							} else {
-								class_2906 lv = soundContainerImpl.getSound();
-								return new class_2906(
-									lv.method_12522().toString(),
-									lv.method_12524() * lv.method_12524(),
-									lv.method_12525() * lv.method_12525(),
-									lv.getWeight(),
-									class_2906.class_1898.FILE,
-									lv.method_12528() || lv.method_12528(),
-									lv.method_19602(),
-									lv.method_19603()
-								);
-							}
-						}
-					};
-					break;
-				default:
-					throw new IllegalStateException("Unknown SoundEventRegistration type: " + lv.method_12527());
-			}
-
-			if (soundContainer2.getSound().method_19602()) {
-				this.soundSystem.method_19624(soundContainer2.getSound());
-			}
-
-			soundContainerImpl.method_12549(soundContainer2);
-		}
-	}
-
-	private boolean method_12542(class_2906 arg, Identifier identifier) {
-		Identifier identifier2 = arg.method_12523();
-		Resource resource = null;
-
-		boolean var6;
-		try {
-			resource = this.resourceManager.getResource(identifier2);
-			resource.getInputStream();
-			return true;
-		} catch (FileNotFoundException var11) {
+	private static boolean isSoundResourcePresent(Sound sound, Identifier identifier, ResourceManager resourceManager) {
+		Identifier identifier2 = sound.getLocation();
+		if (!resourceManager.containsResource(identifier2)) {
 			LOGGER.warn("File {} does not exist, cannot add it to event {}", identifier2, identifier);
 			return false;
-		} catch (IOException var12) {
-			LOGGER.warn("Could not load sound file {}, cannot add it to event {}", identifier2, identifier, var12);
-			var6 = false;
-		} finally {
-			IOUtils.closeQuietly(resource);
+		} else {
+			return true;
 		}
-
-		return var6;
 	}
 
 	@Nullable
-	public SoundContainerImpl method_12545(Identifier identifier) {
-		return (SoundContainerImpl)this.field_21133.get(identifier);
+	public WeightedSoundSet get(Identifier identifier) {
+		return (WeightedSoundSet)this.sounds.get(identifier);
 	}
 
-	public Collection<Identifier> method_19628() {
-		return this.field_21133.keySet();
+	public Collection<Identifier> getKeys() {
+		return this.sounds.keySet();
 	}
 
-	public void play(SoundInstance sound) {
-		this.soundSystem.play(sound);
+	public void play(SoundInstance soundInstance) {
+		this.soundSystem.play(soundInstance);
 	}
 
-	public void play(SoundInstance sound, int delay) {
-		this.soundSystem.play(sound, delay);
+	public void play(SoundInstance soundInstance, int i) {
+		this.soundSystem.play(soundInstance, i);
 	}
 
-	public void updateListenerPosition(PlayerEntity player, float tickDelta) {
-		this.soundSystem.updateListenerPosition(player, tickDelta);
+	public void updateListenerPosition(Camera camera) {
+		this.soundSystem.updateListenerPosition(camera);
 	}
 
 	public void pauseAll() {
@@ -232,40 +173,126 @@ public class SoundManager implements Tickable, ResourceReloadListener {
 		this.soundSystem.stop();
 	}
 
-	@Override
-	public void tick() {
-		this.soundSystem.tick();
+	public void tick(boolean bl) {
+		this.soundSystem.tick(bl);
 	}
 
 	public void resumeAll() {
 		this.soundSystem.resumeAll();
 	}
 
-	public void updateSoundVolume(SoundCategory category, float volume) {
-		if (category == SoundCategory.MASTER && volume <= 0.0F) {
+	public void updateSoundVolume(SoundCategory soundCategory, float f) {
+		if (soundCategory == SoundCategory.field_15250 && f <= 0.0F) {
 			this.stopAll();
 		}
 
-		this.soundSystem.updateSoundVolume(category, volume);
+		this.soundSystem.updateSoundVolume(soundCategory, f);
 	}
 
-	public void stop(SoundInstance instance) {
-		this.soundSystem.stop(instance);
+	public void stop(SoundInstance soundInstance) {
+		this.soundSystem.stop(soundInstance);
 	}
 
-	public boolean isPlaying(SoundInstance instance) {
-		return this.soundSystem.isPlaying(instance);
+	public boolean isPlaying(SoundInstance soundInstance) {
+		return this.soundSystem.isPlaying(soundInstance);
 	}
 
-	public void method_12543(class_2907 arg) {
-		this.soundSystem.method_12536(arg);
+	public void registerListener(ListenerSoundInstance listenerSoundInstance) {
+		this.soundSystem.registerListener(listenerSoundInstance);
 	}
 
-	public void method_12546(class_2907 arg) {
-		this.soundSystem.method_12538(arg);
+	public void unregisterListener(ListenerSoundInstance listenerSoundInstance) {
+		this.soundSystem.unregisterListener(listenerSoundInstance);
 	}
 
-	public void method_19629(@Nullable Identifier identifier, @Nullable SoundCategory soundCategory) {
-		this.soundSystem.method_19625(identifier, soundCategory);
+	public void stopSounds(@Nullable Identifier identifier, @Nullable SoundCategory soundCategory) {
+		this.soundSystem.stopSounds(identifier, soundCategory);
+	}
+
+	public String getDebugString() {
+		return this.soundSystem.getDebugString();
+	}
+
+	public static class SoundList {
+		private final Map<Identifier, WeightedSoundSet> loadedSounds = Maps.newHashMap();
+
+		protected SoundList() {
+		}
+
+		private void register(Identifier identifier, SoundEntry soundEntry, ResourceManager resourceManager) {
+			WeightedSoundSet weightedSoundSet = (WeightedSoundSet)this.loadedSounds.get(identifier);
+			boolean bl = weightedSoundSet == null;
+			if (bl || soundEntry.canReplace()) {
+				if (!bl) {
+					SoundManager.LOGGER.debug("Replaced sound event location {}", identifier);
+				}
+
+				weightedSoundSet = new WeightedSoundSet(identifier, soundEntry.getSubtitle());
+				this.loadedSounds.put(identifier, weightedSoundSet);
+			}
+
+			for (final Sound sound : soundEntry.getSounds()) {
+				final Identifier identifier2 = sound.getIdentifier();
+				SoundContainer<Sound> soundContainer2;
+				switch (sound.getRegistrationType()) {
+					case field_5474:
+						if (!SoundManager.isSoundResourcePresent(sound, identifier, resourceManager)) {
+							continue;
+						}
+
+						soundContainer2 = sound;
+						break;
+					case SOUND_EVENT:
+						soundContainer2 = new SoundContainer<Sound>() {
+							@Override
+							public int getWeight() {
+								WeightedSoundSet weightedSoundSet = (WeightedSoundSet)SoundList.this.loadedSounds.get(identifier2);
+								return weightedSoundSet == null ? 0 : weightedSoundSet.getWeight();
+							}
+
+							public Sound method_4883() {
+								WeightedSoundSet weightedSoundSet = (WeightedSoundSet)SoundList.this.loadedSounds.get(identifier2);
+								if (weightedSoundSet == null) {
+									return SoundManager.MISSING_SOUND;
+								} else {
+									Sound sound = weightedSoundSet.method_4887();
+									return new Sound(
+										sound.getIdentifier().toString(),
+										sound.getVolume() * sound.getVolume(),
+										sound.getPitch() * sound.getPitch(),
+										sound.getWeight(),
+										Sound.RegistrationType.field_5474,
+										sound.isStreamed() || sound.isStreamed(),
+										sound.isPreloaded(),
+										sound.getAttenuation()
+									);
+								}
+							}
+
+							@Override
+							public void preload(SoundSystem soundSystem) {
+								WeightedSoundSet weightedSoundSet = (WeightedSoundSet)SoundList.this.loadedSounds.get(identifier2);
+								if (weightedSoundSet != null) {
+									weightedSoundSet.preload(soundSystem);
+								}
+							}
+						};
+						break;
+					default:
+						throw new IllegalStateException("Unknown SoundEventRegistration type: " + sound.getRegistrationType());
+				}
+
+				weightedSoundSet.add(soundContainer2);
+			}
+		}
+
+		public void addTo(Map<Identifier, WeightedSoundSet> map, SoundSystem soundSystem) {
+			map.clear();
+
+			for (Entry<Identifier, WeightedSoundSet> entry : this.loadedSounds.entrySet()) {
+				map.put(entry.getKey(), entry.getValue());
+				((WeightedSoundSet)entry.getValue()).preload(soundSystem);
+			}
+		}
 	}
 }

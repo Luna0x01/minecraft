@@ -1,32 +1,33 @@
 package net.minecraft.entity.ai.goal;
 
-import net.minecraft.entity.PathAwareEntity;
+import java.util.EnumSet;
+import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 
 public abstract class MoveToTargetPosGoal extends Goal {
-	private final PathAwareEntity mob;
-	public double speed;
+	protected final MobEntityWithAi mob;
+	public final double speed;
 	protected int cooldown;
 	protected int tryingTime;
 	private int safeWaitingTime;
 	protected BlockPos targetPos = BlockPos.ORIGIN;
 	private boolean reached;
 	private final int range;
-	private final int field_16881;
-	public int field_16880;
+	private final int maxYDifference;
+	protected int lowestY;
 
-	public MoveToTargetPosGoal(PathAwareEntity pathAwareEntity, double d, int i) {
-		this(pathAwareEntity, d, i, 1);
+	public MoveToTargetPosGoal(MobEntityWithAi mobEntityWithAi, double d, int i) {
+		this(mobEntityWithAi, d, i, 1);
 	}
 
-	public MoveToTargetPosGoal(PathAwareEntity pathAwareEntity, double d, int i, int j) {
-		this.mob = pathAwareEntity;
+	public MoveToTargetPosGoal(MobEntityWithAi mobEntityWithAi, double d, int i, int j) {
+		this.mob = mobEntityWithAi;
 		this.speed = d;
 		this.range = i;
-		this.field_16880 = 0;
-		this.field_16881 = j;
-		this.setCategoryBits(5);
+		this.lowestY = 0;
+		this.maxYDifference = j;
+		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18407));
 	}
 
 	@Override
@@ -35,47 +36,46 @@ public abstract class MoveToTargetPosGoal extends Goal {
 			this.cooldown--;
 			return false;
 		} else {
-			this.cooldown = this.method_15694(this.mob);
+			this.cooldown = this.getInterval(this.mob);
 			return this.findTargetPos();
 		}
 	}
 
-	protected int method_15694(PathAwareEntity pathAwareEntity) {
-		return 200 + pathAwareEntity.getRandom().nextInt(200);
+	protected int getInterval(MobEntityWithAi mobEntityWithAi) {
+		return 200 + mobEntityWithAi.getRand().nextInt(200);
 	}
 
 	@Override
 	public boolean shouldContinue() {
-		return this.tryingTime >= -this.safeWaitingTime && this.tryingTime <= 1200 && this.method_11012(this.mob.world, this.targetPos);
+		return this.tryingTime >= -this.safeWaitingTime && this.tryingTime <= 1200 && this.isTargetPos(this.mob.world, this.targetPos);
 	}
 
 	@Override
 	public void start() {
+		this.startMovingToTarget();
+		this.tryingTime = 0;
+		this.safeWaitingTime = this.mob.getRand().nextInt(this.mob.getRand().nextInt(1200) + 1200) + 1200;
+	}
+
+	protected void startMovingToTarget() {
 		this.mob
 			.getNavigation()
 			.startMovingTo((double)((float)this.targetPos.getX()) + 0.5, (double)(this.targetPos.getY() + 1), (double)((float)this.targetPos.getZ()) + 0.5, this.speed);
-		this.tryingTime = 0;
-		this.safeWaitingTime = this.mob.getRandom().nextInt(this.mob.getRandom().nextInt(1200) + 1200) + 1200;
 	}
 
-	public double method_15695() {
+	public double getDesiredSquaredDistanceToTarget() {
 		return 1.0;
 	}
 
 	@Override
 	public void tick() {
-		if (this.mob.squaredDistanceToCenter(this.targetPos.up()) > this.method_15695()) {
+		if (!this.targetPos.up().isWithinDistance(this.mob.getPos(), this.getDesiredSquaredDistanceToTarget())) {
 			this.reached = false;
 			this.tryingTime++;
-			if (this.method_15696()) {
+			if (this.shouldResetPath()) {
 				this.mob
 					.getNavigation()
-					.startMovingTo(
-						(double)((float)this.targetPos.getX()) + 0.5,
-						(double)(this.targetPos.getY() + this.method_15697()),
-						(double)((float)this.targetPos.getZ()) + 0.5,
-						this.speed
-					);
+					.startMovingTo((double)((float)this.targetPos.getX()) + 0.5, (double)(this.targetPos.getY() + 1), (double)((float)this.targetPos.getZ()) + 0.5, this.speed);
 			}
 		} else {
 			this.reached = true;
@@ -83,30 +83,26 @@ public abstract class MoveToTargetPosGoal extends Goal {
 		}
 	}
 
-	public boolean method_15696() {
+	public boolean shouldResetPath() {
 		return this.tryingTime % 40 == 0;
-	}
-
-	public int method_15697() {
-		return 1;
 	}
 
 	protected boolean hasReached() {
 		return this.reached;
 	}
 
-	private boolean findTargetPos() {
+	protected boolean findTargetPos() {
 		int i = this.range;
-		int j = this.field_16881;
+		int j = this.maxYDifference;
 		BlockPos blockPos = new BlockPos(this.mob);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int k = this.field_16880; k <= j; k = k > 0 ? -k : 1 - k) {
+		for (int k = this.lowestY; k <= j; k = k > 0 ? -k : 1 - k) {
 			for (int l = 0; l < i; l++) {
 				for (int m = 0; m <= l; m = m > 0 ? -m : 1 - m) {
 					for (int n = m < l && m > -l ? l : 0; n <= l; n = n > 0 ? -n : 1 - n) {
-						mutable.set(blockPos).method_19934(m, k - 1, n);
-						if (this.mob.isInWalkTargetRange(mutable) && this.method_11012(this.mob.world, mutable)) {
+						mutable.set(blockPos).setOffset(m, k - 1, n);
+						if (this.mob.isInWalkTargetRange(mutable) && this.isTargetPos(this.mob.world, mutable)) {
 							this.targetPos = mutable;
 							return true;
 						}
@@ -118,5 +114,5 @@ public abstract class MoveToTargetPosGoal extends Goal {
 		return false;
 	}
 
-	protected abstract boolean method_11012(RenderBlockView renderBlockView, BlockPos blockPos);
+	protected abstract boolean isTargetPos(ViewableWorld viewableWorld, BlockPos blockPos);
 }

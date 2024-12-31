@@ -2,79 +2,74 @@ package net.minecraft.item;
 
 import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ItemUsageContext {
-	protected final PlayerEntity field_17400;
-	protected final float field_17401;
-	protected final float field_17402;
-	protected final float field_17403;
-	protected final Direction field_17404;
-	protected final World field_17405;
-	protected final ItemStack field_17406;
-	protected final BlockPos field_17407;
+	protected final PlayerEntity player;
+	protected final Hand hand;
+	protected final BlockHitResult hit;
+	protected final World world;
+	protected final ItemStack stack;
 
-	public ItemUsageContext(PlayerEntity playerEntity, ItemStack itemStack, BlockPos blockPos, Direction direction, float f, float g, float h) {
-		this(playerEntity.world, playerEntity, itemStack, blockPos, direction, f, g, h);
+	public ItemUsageContext(PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		this(playerEntity.world, playerEntity, hand, playerEntity.getStackInHand(hand), blockHitResult);
 	}
 
-	protected ItemUsageContext(
-		World world, @Nullable PlayerEntity playerEntity, ItemStack itemStack, BlockPos blockPos, Direction direction, float f, float g, float h
-	) {
-		this.field_17400 = playerEntity;
-		this.field_17404 = direction;
-		this.field_17401 = f;
-		this.field_17402 = g;
-		this.field_17403 = h;
-		this.field_17407 = blockPos;
-		this.field_17406 = itemStack;
-		this.field_17405 = world;
+	protected ItemUsageContext(World world, @Nullable PlayerEntity playerEntity, Hand hand, ItemStack itemStack, BlockHitResult blockHitResult) {
+		this.player = playerEntity;
+		this.hand = hand;
+		this.hit = blockHitResult;
+		this.stack = itemStack;
+		this.world = world;
 	}
 
 	public BlockPos getBlockPos() {
-		return this.field_17407;
+		return this.hit.getBlockPos();
 	}
 
-	public ItemStack getItemStack() {
-		return this.field_17406;
+	public Direction getSide() {
+		return this.hit.getSide();
+	}
+
+	public Vec3d getHitPos() {
+		return this.hit.getPos();
+	}
+
+	public boolean method_17699() {
+		return this.hit.method_17781();
+	}
+
+	public ItemStack getStack() {
+		return this.stack;
 	}
 
 	@Nullable
 	public PlayerEntity getPlayer() {
-		return this.field_17400;
+		return this.player;
+	}
+
+	public Hand getHand() {
+		return this.hand;
 	}
 
 	public World getWorld() {
-		return this.field_17405;
+		return this.world;
 	}
 
-	public Direction method_16151() {
-		return this.field_17404;
+	public Direction getPlayerFacing() {
+		return this.player == null ? Direction.field_11043 : this.player.getHorizontalFacing();
 	}
 
-	public float method_16152() {
-		return this.field_17401;
+	public boolean isPlayerSneaking() {
+		return this.player != null && this.player.isSneaking();
 	}
 
-	public float method_16153() {
-		return this.field_17402;
-	}
-
-	public float method_16154() {
-		return this.field_17403;
-	}
-
-	public Direction method_16145() {
-		return this.field_17400 == null ? Direction.NORTH : this.field_17400.getHorizontalDirection();
-	}
-
-	public boolean method_16146() {
-		return this.field_17400 != null && this.field_17400.isSneaking();
-	}
-
-	public float method_16147() {
-		return this.field_17400 == null ? 0.0F : this.field_17400.yaw;
+	public float getPlayerYaw() {
+		return this.player == null ? 0.0F : this.player.yaw;
 	}
 }

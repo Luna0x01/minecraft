@@ -1,32 +1,32 @@
 package net.minecraft.block.entity;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 public class ComparatorBlockEntity extends BlockEntity {
 	private int outputSignal;
 
 	public ComparatorBlockEntity() {
-		super(BlockEntityType.COMPARATOR);
+		super(BlockEntityType.field_11908);
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
-		nbt.putInt("OutputSignal", this.outputSignal);
-		return nbt;
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
+		compoundTag.putInt("OutputSignal", this.outputSignal);
+		return compoundTag;
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		super.fromNbt(nbt);
-		this.outputSignal = nbt.getInt("OutputSignal");
+	public void fromTag(CompoundTag compoundTag) {
+		super.fromTag(compoundTag);
+		this.outputSignal = compoundTag.getInt("OutputSignal");
 	}
 
 	public int getOutputSignal() {
 		return this.outputSignal;
 	}
 
-	public void setOutputSignal(int outputSignal) {
-		this.outputSignal = outputSignal;
+	public void setOutputSignal(int i) {
+		this.outputSignal = i;
 	}
 }

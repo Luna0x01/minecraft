@@ -4,37 +4,40 @@ import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.client.network.packet.PaintingSpawnS2CPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.AbstractDecorationEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.sound.Sounds;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Packet;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 public class PaintingEntity extends AbstractDecorationEntity {
-	public Painting field_3380;
+	public PaintingMotive motive;
 
-	public PaintingEntity(World world) {
-		super(EntityType.PAINTING, world);
+	public PaintingEntity(EntityType<? extends PaintingEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	public PaintingEntity(World world, BlockPos blockPos, Direction direction) {
-		super(EntityType.PAINTING, world, blockPos);
-		List<Painting> list = Lists.newArrayList();
+		super(EntityType.field_6120, world, blockPos);
+		List<PaintingMotive> list = Lists.newArrayList();
 		int i = 0;
 
-		for (Painting painting : Registry.PAINTING) {
-			this.field_3380 = painting;
-			this.setDirection(direction);
-			if (this.isPosValid()) {
-				list.add(painting);
-				int j = painting.method_15840() * painting.method_15841();
+		for (PaintingMotive paintingMotive : Registry.MOTIVE) {
+			this.motive = paintingMotive;
+			this.setFacing(direction);
+			if (this.method_6888()) {
+				list.add(paintingMotive);
+				int j = paintingMotive.getWidth() * paintingMotive.getHeight();
 				if (j > i) {
 					i = j;
 				}
@@ -42,53 +45,53 @@ public class PaintingEntity extends AbstractDecorationEntity {
 		}
 
 		if (!list.isEmpty()) {
-			Iterator<Painting> iterator = list.iterator();
+			Iterator<PaintingMotive> iterator = list.iterator();
 
 			while (iterator.hasNext()) {
-				Painting painting2 = (Painting)iterator.next();
-				if (painting2.method_15840() * painting2.method_15841() < i) {
+				PaintingMotive paintingMotive2 = (PaintingMotive)iterator.next();
+				if (paintingMotive2.getWidth() * paintingMotive2.getHeight() < i) {
 					iterator.remove();
 				}
 			}
 
-			this.field_3380 = (Painting)list.get(this.random.nextInt(list.size()));
+			this.motive = (PaintingMotive)list.get(this.random.nextInt(list.size()));
 		}
 
-		this.setDirection(direction);
+		this.setFacing(direction);
 	}
 
-	public PaintingEntity(World world, BlockPos blockPos, Direction direction, Painting painting) {
+	public PaintingEntity(World world, BlockPos blockPos, Direction direction, PaintingMotive paintingMotive) {
 		this(world, blockPos, direction);
-		this.field_3380 = painting;
-		this.setDirection(direction);
+		this.motive = paintingMotive;
+		this.setFacing(direction);
 	}
 
 	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putString("Motive", Registry.PAINTING.getId(this.field_3380).toString());
-		super.writeCustomDataToNbt(nbt);
+	public void writeCustomDataToTag(CompoundTag compoundTag) {
+		compoundTag.putString("Motive", Registry.MOTIVE.getId(this.motive).toString());
+		super.writeCustomDataToTag(compoundTag);
 	}
 
 	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.field_3380 = Registry.PAINTING.get(Identifier.fromString(nbt.getString("Motive")));
-		super.readCustomDataFromNbt(nbt);
+	public void readCustomDataFromTag(CompoundTag compoundTag) {
+		this.motive = Registry.MOTIVE.get(Identifier.tryParse(compoundTag.getString("Motive")));
+		super.readCustomDataFromTag(compoundTag);
 	}
 
 	@Override
-	public int getWidth() {
-		return this.field_3380.method_15840();
+	public int getWidthPixels() {
+		return this.motive == null ? 1 : this.motive.getWidth();
 	}
 
 	@Override
-	public int getHeight() {
-		return this.field_3380.method_15841();
+	public int getHeightPixels() {
+		return this.motive == null ? 1 : this.motive.getHeight();
 	}
 
 	@Override
 	public void onBreak(@Nullable Entity entity) {
-		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
-			this.playSound(Sounds.ENTITY_PAINTING_BREAK, 1.0F, 1.0F);
+		if (this.world.getGameRules().getBoolean(GameRules.field_19393)) {
+			this.playSound(SoundEvents.field_14809, 1.0F, 1.0F);
 			if (entity instanceof PlayerEntity) {
 				PlayerEntity playerEntity = (PlayerEntity)entity;
 				if (playerEntity.abilities.creativeMode) {
@@ -96,23 +99,28 @@ public class PaintingEntity extends AbstractDecorationEntity {
 				}
 			}
 
-			this.method_15560(Items.PAINTING);
+			this.dropItem(Items.field_8892);
 		}
 	}
 
 	@Override
 	public void onPlace() {
-		this.playSound(Sounds.ENTITY_PAINTING_PLACE, 1.0F, 1.0F);
+		this.playSound(SoundEvents.field_14875, 1.0F, 1.0F);
 	}
 
 	@Override
-	public void refreshPositionAndAngles(double x, double y, double z, float yaw, float pitch) {
-		this.updatePosition(x, y, z);
+	public void setPositionAndAngles(double d, double e, double f, float g, float h) {
+		this.setPosition(d, e, f);
 	}
 
 	@Override
-	public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps, boolean interpolate) {
-		BlockPos blockPos = this.pos.add(x - this.x, y - this.y, z - this.z);
-		this.updatePosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+	public void updateTrackedPositionAndAngles(double d, double e, double f, float g, float h, int i, boolean bl) {
+		BlockPos blockPos = this.blockPos.add(d - this.x, e - this.y, f - this.z);
+		this.setPosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+	}
+
+	@Override
+	public Packet<?> createSpawnPacket() {
+		return new PaintingSpawnS2CPacket(this);
 	}
 }

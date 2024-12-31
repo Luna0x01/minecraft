@@ -1,52 +1,32 @@
 package net.minecraft.block;
 
-import net.minecraft.class_3706;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.block.ColoredBlock;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
-public class StainedGlassPaneBlock extends class_3706 {
-	private final DyeColor field_18500;
+public class StainedGlassPaneBlock extends PaneBlock implements ColoredBlock {
+	private final DyeColor color;
 
-	public StainedGlassPaneBlock(DyeColor dyeColor, Block.Builder builder) {
-		super(builder);
-		this.field_18500 = dyeColor;
+	public StainedGlassPaneBlock(DyeColor dyeColor, Block.Settings settings) {
+		super(settings);
+		this.color = dyeColor;
 		this.setDefaultState(
-			this.stateManager
-				.method_16923()
-				.withProperty(field_18265, Boolean.valueOf(false))
-				.withProperty(field_18266, Boolean.valueOf(false))
-				.withProperty(field_18267, Boolean.valueOf(false))
-				.withProperty(field_18268, Boolean.valueOf(false))
-				.withProperty(field_18269, Boolean.valueOf(false))
+			this.stateFactory
+				.getDefaultState()
+				.with(NORTH, Boolean.valueOf(false))
+				.with(EAST, Boolean.valueOf(false))
+				.with(SOUTH, Boolean.valueOf(false))
+				.with(WEST, Boolean.valueOf(false))
+				.with(WATERLOGGED, Boolean.valueOf(false))
 		);
 	}
 
-	public DyeColor method_16740() {
-		return this.field_18500;
+	@Override
+	public DyeColor getColor() {
+		return this.color;
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.TRANSLUCENT;
-	}
-
-	@Override
-	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState) {
-		if (oldState.getBlock() != state.getBlock()) {
-			if (!world.isClient) {
-				BeaconBlock.updateState(world, pos);
-			}
-		}
-	}
-
-	@Override
-	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-		if (state.getBlock() != newState.getBlock()) {
-			if (!world.isClient) {
-				BeaconBlock.updateState(world, pos);
-			}
-		}
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9179;
 	}
 }

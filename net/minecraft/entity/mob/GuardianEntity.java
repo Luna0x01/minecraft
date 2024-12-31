@@ -1,14 +1,17 @@
 package net.minecraft.entity.mob;
 
+import java.util.EnumSet;
+import java.util.Random;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import net.minecraft.class_3462;
-import net.minecraft.class_4342;
-import net.minecraft.entity.ElderGuardianEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.ai.control.LookControl;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -26,22 +29,21 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.SquidEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.loot.LootTables;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.FluidTags;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
 public class GuardianEntity extends HostileEntity {
-	private static final TrackedData<Boolean> field_15549 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private static final TrackedData<Integer> field_14756 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Boolean> SPIKES_RETRACTED = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Integer> BEAM_TARGET_ID = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	protected float spikesExtension;
 	protected float prevSpikesExtension;
 	protected float spikesExtensionRate;
@@ -50,43 +52,38 @@ public class GuardianEntity extends HostileEntity {
 	private LivingEntity cachedBeamTarget;
 	private int beamTicks;
 	private boolean flopping;
-	protected WanderAroundGoal wanderAroundGoal;
+	protected WanderAroundGoal wanderGoal;
 
-	protected GuardianEntity(EntityType<?> entityType, World world) {
+	public GuardianEntity(EntityType<? extends GuardianEntity> entityType, World world) {
 		super(entityType, world);
 		this.experiencePoints = 10;
-		this.setBounds(0.85F, 0.85F);
-		this.entityMotionHelper = new GuardianEntity.GuardianMoveControl(this);
+		this.moveControl = new GuardianEntity.GuardianMoveControl(this);
 		this.spikesExtension = this.random.nextFloat();
 		this.prevSpikesExtension = this.spikesExtension;
-	}
-
-	public GuardianEntity(World world) {
-		this(EntityType.GUARDIAN, world);
 	}
 
 	@Override
 	protected void initGoals() {
 		GoToWalkTargetGoal goToWalkTargetGoal = new GoToWalkTargetGoal(this, 1.0);
-		this.wanderAroundGoal = new WanderAroundGoal(this, 1.0, 80);
-		this.goals.add(4, new GuardianEntity.FireBeamGoal(this));
-		this.goals.add(5, goToWalkTargetGoal);
-		this.goals.add(7, this.wanderAroundGoal);
-		this.goals.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
-		this.goals.add(8, new LookAtEntityGoal(this, GuardianEntity.class, 12.0F, 0.01F));
-		this.goals.add(9, new LookAroundGoal(this));
-		this.wanderAroundGoal.setCategoryBits(3);
-		goToWalkTargetGoal.setCategoryBits(3);
-		this.attackGoals.add(1, new FollowTargetGoal(this, LivingEntity.class, 10, true, false, new GuardianEntity.AttackPredicate(this)));
+		this.wanderGoal = new WanderAroundGoal(this, 1.0, 80);
+		this.goalSelector.add(4, new GuardianEntity.FireBeamGoal(this));
+		this.goalSelector.add(5, goToWalkTargetGoal);
+		this.goalSelector.add(7, this.wanderGoal);
+		this.goalSelector.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
+		this.goalSelector.add(8, new LookAtEntityGoal(this, GuardianEntity.class, 12.0F, 0.01F));
+		this.goalSelector.add(9, new LookAroundGoal(this));
+		this.wanderGoal.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
+		goToWalkTargetGoal.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
+		this.targetSelector.add(1, new FollowTargetGoal(this, LivingEntity.class, 10, true, false, new GuardianEntity.GuardianTargetPredicate(this)));
 	}
 
 	@Override
-	protected void initializeAttributes() {
-		super.initializeAttributes();
-		this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(6.0);
-		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.5);
-		this.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE).setBaseValue(16.0);
-		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(30.0);
+	protected void initAttributes() {
+		super.initAttributes();
+		this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue(6.0);
+		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.5);
+		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(16.0);
+		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(30.0);
 	}
 
 	@Override
@@ -97,38 +94,38 @@ public class GuardianEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_15549, false);
-		this.dataTracker.startTracking(field_14756, 0);
+		this.dataTracker.startTracking(SPIKES_RETRACTED, false);
+		this.dataTracker.startTracking(BEAM_TARGET_ID, 0);
 	}
 
 	@Override
-	public boolean method_2607() {
+	public boolean canBreatheInWater() {
 		return true;
 	}
 
 	@Override
-	public class_3462 method_2647() {
-		return class_3462.field_16822;
+	public EntityGroup getGroup() {
+		return EntityGroup.AQUATIC;
 	}
 
 	public boolean areSpikesRetracted() {
-		return this.dataTracker.get(field_15549);
+		return this.dataTracker.get(SPIKES_RETRACTED);
 	}
 
-	private void setSpikesRetracted(boolean retracted) {
-		this.dataTracker.set(field_15549, retracted);
+	private void setSpikesRetracted(boolean bl) {
+		this.dataTracker.set(SPIKES_RETRACTED, bl);
 	}
 
 	public int getWarmupTime() {
 		return 80;
 	}
 
-	private void setBeamTarget(int progress) {
-		this.dataTracker.set(field_14756, progress);
+	private void setBeamTarget(int i) {
+		this.dataTracker.set(BEAM_TARGET_ID, i);
 	}
 
 	public boolean hasBeamTarget() {
-		return this.dataTracker.get(field_14756) != 0;
+		return this.dataTracker.get(BEAM_TARGET_ID) != 0;
 	}
 
 	@Nullable
@@ -139,7 +136,7 @@ public class GuardianEntity extends HostileEntity {
 			if (this.cachedBeamTarget != null) {
 				return this.cachedBeamTarget;
 			} else {
-				Entity entity = this.world.getEntityById(this.dataTracker.get(field_14756));
+				Entity entity = this.world.getEntityById(this.dataTracker.get(BEAM_TARGET_ID));
 				if (entity instanceof LivingEntity) {
 					this.cachedBeamTarget = (LivingEntity)entity;
 					return this.cachedBeamTarget;
@@ -153,9 +150,9 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> data) {
-		super.onTrackedDataSet(data);
-		if (field_14756.equals(data)) {
+	public void onTrackedDataSet(TrackedData<?> trackedData) {
+		super.onTrackedDataSet(trackedData);
+		if (BEAM_TARGET_ID.equals(trackedData)) {
 			this.beamTicks = 0;
 			this.cachedBeamTarget = null;
 		}
@@ -167,18 +164,18 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Sound ambientSound() {
-		return this.method_15575() ? Sounds.ENTITY_GUARDIAN_AMBIENT : Sounds.ENTITY_GUARDIAN_AMBIENT_LAND;
+	protected SoundEvent getAmbientSound() {
+		return this.isInsideWaterOrBubbleColumn() ? SoundEvents.field_14714 : SoundEvents.field_14968;
 	}
 
 	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
-		return this.method_15575() ? Sounds.ENTITY_GUARDIAN_HURT : Sounds.ENTITY_GUARDIAN_HURT_LAND;
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
+		return this.isInsideWaterOrBubbleColumn() ? SoundEvents.field_14679 : SoundEvents.field_14758;
 	}
 
 	@Override
-	protected Sound deathSound() {
-		return this.method_15575() ? Sounds.ENTITY_GUARDIAN_DEATH : Sounds.ENTITY_GUARDIAN_DEATH_LAND;
+	protected SoundEvent getDeathSound() {
+		return this.isInsideWaterOrBubbleColumn() ? SoundEvents.field_15138 : SoundEvents.field_15232;
 	}
 
 	@Override
@@ -187,161 +184,154 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	public float getEyeHeight() {
-		return this.height * 0.5F;
+	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
+		return entityDimensions.height * 0.5F;
 	}
 
 	@Override
-	public float method_15657(BlockPos blockPos, RenderBlockView renderBlockView) {
-		return renderBlockView.getFluidState(blockPos).matches(FluidTags.WATER)
-			? 10.0F + renderBlockView.method_16356(blockPos) - 0.5F
-			: super.method_15657(blockPos, renderBlockView);
+	public float getPathfindingFavor(BlockPos blockPos, ViewableWorld viewableWorld) {
+		return viewableWorld.getFluidState(blockPos).matches(FluidTags.field_15517)
+			? 10.0F + viewableWorld.getBrightness(blockPos) - 0.5F
+			: super.getPathfindingFavor(blockPos, viewableWorld);
 	}
 
 	@Override
 	public void tickMovement() {
-		if (this.world.isClient) {
-			this.prevSpikesExtension = this.spikesExtension;
-			if (!this.isTouchingWater()) {
-				this.spikesExtensionRate = 2.0F;
-				if (this.velocityY > 0.0 && this.flopping && !this.isSilent()) {
-					this.world.playSound(this.x, this.y, this.z, this.method_14091(), this.getSoundCategory(), 1.0F, 1.0F, false);
-				}
+		if (this.isAlive()) {
+			if (this.world.isClient) {
+				this.prevSpikesExtension = this.spikesExtension;
+				if (!this.isInsideWater()) {
+					this.spikesExtensionRate = 2.0F;
+					Vec3d vec3d = this.getVelocity();
+					if (vec3d.y > 0.0 && this.flopping && !this.isSilent()) {
+						this.world.playSound(this.x, this.y, this.z, this.getFlopSound(), this.getSoundCategory(), 1.0F, 1.0F, false);
+					}
 
-				this.flopping = this.velocityY < 0.0 && this.world.method_16339(new BlockPos(this).down());
-			} else if (this.areSpikesRetracted()) {
-				if (this.spikesExtensionRate < 0.5F) {
-					this.spikesExtensionRate = 4.0F;
+					this.flopping = vec3d.y < 0.0 && this.world.doesBlockHaveSolidTopSurface(new BlockPos(this).down(), this);
+				} else if (this.areSpikesRetracted()) {
+					if (this.spikesExtensionRate < 0.5F) {
+						this.spikesExtensionRate = 4.0F;
+					} else {
+						this.spikesExtensionRate = this.spikesExtensionRate + (0.5F - this.spikesExtensionRate) * 0.1F;
+					}
 				} else {
-					this.spikesExtensionRate = this.spikesExtensionRate + (0.5F - this.spikesExtensionRate) * 0.1F;
-				}
-			} else {
-				this.spikesExtensionRate = this.spikesExtensionRate + (0.125F - this.spikesExtensionRate) * 0.2F;
-			}
-
-			this.spikesExtension = this.spikesExtension + this.spikesExtensionRate;
-			this.prevTailAngle = this.tailAngle;
-			if (!this.method_15575()) {
-				this.tailAngle = this.random.nextFloat();
-			} else if (this.areSpikesRetracted()) {
-				this.tailAngle = this.tailAngle + (0.0F - this.tailAngle) * 0.25F;
-			} else {
-				this.tailAngle = this.tailAngle + (1.0F - this.tailAngle) * 0.06F;
-			}
-
-			if (this.areSpikesRetracted() && this.isTouchingWater()) {
-				Vec3d vec3d = this.getRotationVector(0.0F);
-
-				for (int i = 0; i < 2; i++) {
-					this.world
-						.method_16343(
-							class_4342.field_21379,
-							this.x + (this.random.nextDouble() - 0.5) * (double)this.width - vec3d.x * 1.5,
-							this.y + this.random.nextDouble() * (double)this.height - vec3d.y * 1.5,
-							this.z + (this.random.nextDouble() - 0.5) * (double)this.width - vec3d.z * 1.5,
-							0.0,
-							0.0,
-							0.0
-						);
-				}
-			}
-
-			if (this.hasBeamTarget()) {
-				if (this.beamTicks < this.getWarmupTime()) {
-					this.beamTicks++;
+					this.spikesExtensionRate = this.spikesExtensionRate + (0.125F - this.spikesExtensionRate) * 0.2F;
 				}
 
-				LivingEntity livingEntity = this.getBeamTarget();
-				if (livingEntity != null) {
-					this.getLookControl().lookAt(livingEntity, 90.0F, 90.0F);
-					this.getLookControl().tick();
-					double d = (double)this.getBeamProgress(0.0F);
-					double e = livingEntity.x - this.x;
-					double f = livingEntity.y + (double)(livingEntity.height * 0.5F) - (this.y + (double)this.getEyeHeight());
-					double g = livingEntity.z - this.z;
-					double h = Math.sqrt(e * e + f * f + g * g);
-					e /= h;
-					f /= h;
-					g /= h;
-					double j = this.random.nextDouble();
+				this.spikesExtension = this.spikesExtension + this.spikesExtensionRate;
+				this.prevTailAngle = this.tailAngle;
+				if (!this.isInsideWaterOrBubbleColumn()) {
+					this.tailAngle = this.random.nextFloat();
+				} else if (this.areSpikesRetracted()) {
+					this.tailAngle = this.tailAngle + (0.0F - this.tailAngle) * 0.25F;
+				} else {
+					this.tailAngle = this.tailAngle + (1.0F - this.tailAngle) * 0.06F;
+				}
 
-					while (j < h) {
-						j += 1.8 - d + this.random.nextDouble() * (1.7 - d);
-						this.world.method_16343(class_4342.field_21379, this.x + e * j, this.y + f * j + (double)this.getEyeHeight(), this.z + g * j, 0.0, 0.0, 0.0);
+				if (this.areSpikesRetracted() && this.isInsideWater()) {
+					Vec3d vec3d2 = this.getRotationVec(0.0F);
+
+					for (int i = 0; i < 2; i++) {
+						this.world
+							.addParticle(
+								ParticleTypes.field_11247,
+								this.x + (this.random.nextDouble() - 0.5) * (double)this.getWidth() - vec3d2.x * 1.5,
+								this.y + this.random.nextDouble() * (double)this.getHeight() - vec3d2.y * 1.5,
+								this.z + (this.random.nextDouble() - 0.5) * (double)this.getWidth() - vec3d2.z * 1.5,
+								0.0,
+								0.0,
+								0.0
+							);
+					}
+				}
+
+				if (this.hasBeamTarget()) {
+					if (this.beamTicks < this.getWarmupTime()) {
+						this.beamTicks++;
+					}
+
+					LivingEntity livingEntity = this.getBeamTarget();
+					if (livingEntity != null) {
+						this.getLookControl().lookAt(livingEntity, 90.0F, 90.0F);
+						this.getLookControl().tick();
+						double d = (double)this.getBeamProgress(0.0F);
+						double e = livingEntity.x - this.x;
+						double f = livingEntity.y + (double)(livingEntity.getHeight() * 0.5F) - (this.y + (double)this.getStandingEyeHeight());
+						double g = livingEntity.z - this.z;
+						double h = Math.sqrt(e * e + f * f + g * g);
+						e /= h;
+						f /= h;
+						g /= h;
+						double j = this.random.nextDouble();
+
+						while (j < h) {
+							j += 1.8 - d + this.random.nextDouble() * (1.7 - d);
+							this.world.addParticle(ParticleTypes.field_11247, this.x + e * j, this.y + f * j + (double)this.getStandingEyeHeight(), this.z + g * j, 0.0, 0.0, 0.0);
+						}
 					}
 				}
 			}
-		}
 
-		if (this.method_15575()) {
-			this.setAir(300);
-		} else if (this.onGround) {
-			this.velocityY += 0.5;
-			this.velocityX = this.velocityX + (double)((this.random.nextFloat() * 2.0F - 1.0F) * 0.4F);
-			this.velocityZ = this.velocityZ + (double)((this.random.nextFloat() * 2.0F - 1.0F) * 0.4F);
-			this.yaw = this.random.nextFloat() * 360.0F;
-			this.onGround = false;
-			this.velocityDirty = true;
-		}
+			if (this.isInsideWaterOrBubbleColumn()) {
+				this.setBreath(300);
+			} else if (this.onGround) {
+				this.setVelocity(
+					this.getVelocity().add((double)((this.random.nextFloat() * 2.0F - 1.0F) * 0.4F), 0.5, (double)((this.random.nextFloat() * 2.0F - 1.0F) * 0.4F))
+				);
+				this.yaw = this.random.nextFloat() * 360.0F;
+				this.onGround = false;
+				this.velocityDirty = true;
+			}
 
-		if (this.hasBeamTarget()) {
-			this.yaw = this.headYaw;
+			if (this.hasBeamTarget()) {
+				this.yaw = this.headYaw;
+			}
 		}
 
 		super.tickMovement();
 	}
 
-	protected Sound method_14091() {
-		return Sounds.ENTITY_GUARDIAN_FLOP;
+	protected SoundEvent getFlopSound() {
+		return SoundEvents.field_14584;
 	}
 
-	public float getSpikesExtension(float tickDelta) {
-		return this.prevSpikesExtension + (this.spikesExtension - this.prevSpikesExtension) * tickDelta;
+	public float getSpikesExtension(float f) {
+		return MathHelper.lerp(f, this.prevSpikesExtension, this.spikesExtension);
 	}
 
-	public float getTailAngle(float tickDelta) {
-		return this.prevTailAngle + (this.tailAngle - this.prevTailAngle) * tickDelta;
+	public float getTailAngle(float f) {
+		return MathHelper.lerp(f, this.prevTailAngle, this.tailAngle);
 	}
 
-	public float getBeamProgress(float tickDelta) {
-		return ((float)this.beamTicks + tickDelta) / (float)this.getWarmupTime();
-	}
-
-	@Nullable
-	@Override
-	protected Identifier getLootTableId() {
-		return LootTables.GUARDIAN_ENTITIE;
+	public float getBeamProgress(float f) {
+		return ((float)this.beamTicks + f) / (float)this.getWarmupTime();
 	}
 
 	@Override
-	protected boolean method_3087() {
-		return true;
+	public boolean canSpawn(ViewableWorld viewableWorld) {
+		return viewableWorld.intersectsEntities(this);
+	}
+
+	public static boolean method_20676(EntityType<? extends GuardianEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		return (random.nextInt(20) == 0 || !iWorld.method_8626(blockPos))
+			&& iWorld.getDifficulty() != Difficulty.field_5801
+			&& (spawnType == SpawnType.field_16469 || iWorld.getFluidState(blockPos).matches(FluidTags.field_15517));
 	}
 
 	@Override
-	public boolean method_15653(RenderBlockView renderBlockView) {
-		return renderBlockView.method_16382(this, this.getBoundingBox()) && renderBlockView.method_16387(this, this.getBoundingBox());
-	}
-
-	@Override
-	public boolean method_15652(IWorld iWorld, boolean bl) {
-		return (this.random.nextInt(20) == 0 || !iWorld.method_16394(new BlockPos(this))) && super.method_15652(iWorld, bl);
-	}
-
-	@Override
-	public boolean damage(DamageSource source, float amount) {
-		if (!this.areSpikesRetracted() && !source.getMagic() && source.getSource() instanceof LivingEntity) {
-			LivingEntity livingEntity = (LivingEntity)source.getSource();
-			if (!source.isExplosive()) {
+	public boolean damage(DamageSource damageSource, float f) {
+		if (!this.areSpikesRetracted() && !damageSource.getMagic() && damageSource.getSource() instanceof LivingEntity) {
+			LivingEntity livingEntity = (LivingEntity)damageSource.getSource();
+			if (!damageSource.isExplosive()) {
 				livingEntity.damage(DamageSource.thorns(this), 2.0F);
 			}
 		}
 
-		if (this.wanderAroundGoal != null) {
-			this.wanderAroundGoal.ignoreChanceOnce();
+		if (this.wanderGoal != null) {
+			this.wanderGoal.ignoreChanceOnce();
 		}
 
-		return super.damage(source, amount);
+		return super.damage(damageSource, f);
 	}
 
 	@Override
@@ -350,42 +340,28 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	public void method_2657(float f, float g, float h) {
-		if (this.canMoveVoluntarily() && this.isTouchingWater()) {
-			this.method_2492(f, g, h, 0.1F);
-			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
-			this.velocityX *= 0.9F;
-			this.velocityY *= 0.9F;
-			this.velocityZ *= 0.9F;
+	public void travel(Vec3d vec3d) {
+		if (this.canMoveVoluntarily() && this.isInsideWater()) {
+			this.updateVelocity(0.1F, vec3d);
+			this.move(MovementType.field_6308, this.getVelocity());
+			this.setVelocity(this.getVelocity().multiply(0.9));
 			if (!this.areSpikesRetracted() && this.getTarget() == null) {
-				this.velocityY -= 0.005;
+				this.setVelocity(this.getVelocity().add(0.0, -0.005, 0.0));
 			}
 		} else {
-			super.method_2657(f, g, h);
-		}
-	}
-
-	static class AttackPredicate implements Predicate<LivingEntity> {
-		private final GuardianEntity guardian;
-
-		public AttackPredicate(GuardianEntity guardianEntity) {
-			this.guardian = guardianEntity;
-		}
-
-		public boolean test(@Nullable LivingEntity livingEntity) {
-			return (livingEntity instanceof PlayerEntity || livingEntity instanceof SquidEntity) && livingEntity.squaredDistanceTo(this.guardian) > 9.0;
+			super.travel(vec3d);
 		}
 	}
 
 	static class FireBeamGoal extends Goal {
 		private final GuardianEntity guardian;
 		private int beamTicks;
-		private final boolean field_15550;
+		private final boolean elder;
 
 		public FireBeamGoal(GuardianEntity guardianEntity) {
 			this.guardian = guardianEntity;
-			this.field_15550 = guardianEntity instanceof ElderGuardianEntity;
-			this.setCategoryBits(3);
+			this.elder = guardianEntity instanceof ElderGuardianEntity;
+			this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
 		}
 
 		@Override
@@ -396,7 +372,7 @@ public class GuardianEntity extends HostileEntity {
 
 		@Override
 		public boolean shouldContinue() {
-			return super.shouldContinue() && (this.field_15550 || this.guardian.squaredDistanceTo(this.guardian.getTarget()) > 9.0);
+			return super.shouldContinue() && (this.elder || this.guardian.squaredDistanceTo(this.guardian.getTarget()) > 9.0);
 		}
 
 		@Override
@@ -411,7 +387,7 @@ public class GuardianEntity extends HostileEntity {
 		public void stop() {
 			this.guardian.setBeamTarget(0);
 			this.guardian.setTarget(null);
-			this.guardian.wanderAroundGoal.ignoreChanceOnce();
+			this.guardian.wanderGoal.ignoreChanceOnce();
 		}
 
 		@Override
@@ -428,16 +404,16 @@ public class GuardianEntity extends HostileEntity {
 					this.guardian.world.sendEntityStatus(this.guardian, (byte)21);
 				} else if (this.beamTicks >= this.guardian.getWarmupTime()) {
 					float f = 1.0F;
-					if (this.guardian.world.method_16346() == Difficulty.HARD) {
+					if (this.guardian.world.getDifficulty() == Difficulty.field_5807) {
 						f += 2.0F;
 					}
 
-					if (this.field_15550) {
+					if (this.elder) {
 						f += 2.0F;
 					}
 
 					livingEntity.damage(DamageSource.magic(this.guardian, this.guardian), f);
-					livingEntity.damage(DamageSource.mob(this.guardian), (float)this.guardian.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getValue());
+					livingEntity.damage(DamageSource.mob(this.guardian), (float)this.guardian.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).getValue());
 					this.guardian.setTarget(null);
 				}
 
@@ -455,45 +431,55 @@ public class GuardianEntity extends HostileEntity {
 		}
 
 		@Override
-		public void updateMovement() {
-			if (this.state == MoveControl.MoveStatus.MOVE_TO && !this.guardian.getNavigation().isIdle()) {
-				double d = this.targetX - this.guardian.x;
-				double e = this.targetY - this.guardian.y;
-				double f = this.targetZ - this.guardian.z;
-				double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
-				e /= g;
-				float h = (float)(MathHelper.atan2(f, d) * 180.0F / (float)Math.PI) - 90.0F;
-				this.guardian.yaw = this.wrapDegrees(this.guardian.yaw, h, 90.0F);
-				this.guardian.bodyYaw = this.guardian.yaw;
-				float i = (float)(this.speed * this.guardian.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue());
-				this.guardian.setMovementSpeed(this.guardian.getMovementSpeed() + (i - this.guardian.getMovementSpeed()) * 0.125F);
-				double j = Math.sin((double)(this.guardian.ticksAlive + this.guardian.getEntityId()) * 0.5) * 0.05;
-				double k = Math.cos((double)(this.guardian.yaw * (float) (Math.PI / 180.0)));
-				double l = Math.sin((double)(this.guardian.yaw * (float) (Math.PI / 180.0)));
-				this.guardian.velocityX += j * k;
-				this.guardian.velocityZ += j * l;
-				j = Math.sin((double)(this.guardian.ticksAlive + this.guardian.getEntityId()) * 0.75) * 0.05;
-				this.guardian.velocityY += j * (l + k) * 0.25;
-				this.guardian.velocityY = this.guardian.velocityY + (double)this.guardian.getMovementSpeed() * e * 0.1;
+		public void tick() {
+			if (this.state == MoveControl.State.field_6378 && !this.guardian.getNavigation().isIdle()) {
+				Vec3d vec3d = new Vec3d(this.targetX - this.guardian.x, this.targetY - this.guardian.y, this.targetZ - this.guardian.z);
+				double d = vec3d.length();
+				double e = vec3d.x / d;
+				double f = vec3d.y / d;
+				double g = vec3d.z / d;
+				float h = (float)(MathHelper.atan2(vec3d.z, vec3d.x) * 180.0F / (float)Math.PI) - 90.0F;
+				this.guardian.yaw = this.changeAngle(this.guardian.yaw, h, 90.0F);
+				this.guardian.field_6283 = this.guardian.yaw;
+				float i = (float)(this.speed * this.guardian.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue());
+				float j = MathHelper.lerp(0.125F, this.guardian.getMovementSpeed(), i);
+				this.guardian.setMovementSpeed(j);
+				double k = Math.sin((double)(this.guardian.age + this.guardian.getEntityId()) * 0.5) * 0.05;
+				double l = Math.cos((double)(this.guardian.yaw * (float) (Math.PI / 180.0)));
+				double m = Math.sin((double)(this.guardian.yaw * (float) (Math.PI / 180.0)));
+				double n = Math.sin((double)(this.guardian.age + this.guardian.getEntityId()) * 0.75) * 0.05;
+				this.guardian.setVelocity(this.guardian.getVelocity().add(k * l, n * (m + l) * 0.25 + (double)j * f * 0.1, k * m));
 				LookControl lookControl = this.guardian.getLookControl();
-				double m = this.guardian.x + d / g * 2.0;
-				double n = (double)this.guardian.getEyeHeight() + this.guardian.y + e / g;
-				double o = this.guardian.z + f / g * 2.0;
-				double p = lookControl.getLookX();
-				double q = lookControl.getLookY();
-				double r = lookControl.getLookZ();
+				double o = this.guardian.x + e * 2.0;
+				double p = (double)this.guardian.getStandingEyeHeight() + this.guardian.y + f / d;
+				double q = this.guardian.z + g * 2.0;
+				double r = lookControl.getLookX();
+				double s = lookControl.getLookY();
+				double t = lookControl.getLookZ();
 				if (!lookControl.isActive()) {
-					p = m;
-					q = n;
 					r = o;
+					s = p;
+					t = q;
 				}
 
-				this.guardian.getLookControl().lookAt(p + (m - p) * 0.125, q + (n - q) * 0.125, r + (o - r) * 0.125, 10.0F, 40.0F);
+				this.guardian.getLookControl().lookAt(MathHelper.lerp(0.125, r, o), MathHelper.lerp(0.125, s, p), MathHelper.lerp(0.125, t, q), 10.0F, 40.0F);
 				this.guardian.setSpikesRetracted(true);
 			} else {
 				this.guardian.setMovementSpeed(0.0F);
 				this.guardian.setSpikesRetracted(false);
 			}
+		}
+	}
+
+	static class GuardianTargetPredicate implements Predicate<LivingEntity> {
+		private final GuardianEntity owner;
+
+		public GuardianTargetPredicate(GuardianEntity guardianEntity) {
+			this.owner = guardianEntity;
+		}
+
+		public boolean method_7064(@Nullable LivingEntity livingEntity) {
+			return (livingEntity instanceof PlayerEntity || livingEntity instanceof SquidEntity) && livingEntity.squaredDistanceTo(this.owner) > 9.0;
 		}
 	}
 }

@@ -1,91 +1,101 @@
 package net.minecraft.tag;
 
 import java.util.Collection;
+import java.util.Optional;
 import net.minecraft.item.Item;
 import net.minecraft.util.Identifier;
 
 public class ItemTags {
-	private static TagContainer<Item> field_22194 = new TagContainer<>(identifier -> false, identifier -> null, "", false, "");
-	private static int field_22195;
-	public static final Tag<Item> WOOL = method_21452("wool");
-	public static final Tag<Item> PLANKS = method_21452("planks");
-	public static final Tag<Item> STONE_BRICKS = method_21452("stone_bricks");
-	public static final Tag<Item> WOODEN_BUTTONS = method_21452("wooden_buttons");
-	public static final Tag<Item> BUTTONS = method_21452("buttons");
-	public static final Tag<Item> CARPETS = method_21452("carpets");
-	public static final Tag<Item> WOODEN_DOORS = method_21452("wooden_doors");
-	public static final Tag<Item> WOODEN_STAIRS = method_21452("wooden_stairs");
-	public static final Tag<Item> WOODEN_SLABS = method_21452("wooden_slabs");
-	public static final Tag<Item> WOODEN_PRESSURE_PLATES = method_21452("wooden_pressure_plates");
-	public static final Tag<Item> WOODEN_TRAPDOORS = method_21452("wooden_trapdoors");
-	public static final Tag<Item> DOORS = method_21452("doors");
-	public static final Tag<Item> SAPLINGS = method_21452("saplings");
-	public static final Tag<Item> LOGS = method_21452("logs");
-	public static final Tag<Item> DARK_OAK_LOGS = method_21452("dark_oak_logs");
-	public static final Tag<Item> OAK_LOGS = method_21452("oak_logs");
-	public static final Tag<Item> BIRCH_LOGS = method_21452("birch_logs");
-	public static final Tag<Item> ACACIA_LOGS = method_21452("acacia_logs");
-	public static final Tag<Item> JUNGLE_LOGS = method_21452("jungle_logs");
-	public static final Tag<Item> SPRUCE_LOGS = method_21452("spruce_logs");
-	public static final Tag<Item> BANNERS = method_21452("banners");
-	public static final Tag<Item> SAND = method_21452("sand");
-	public static final Tag<Item> STAIRS = method_21452("stairs");
-	public static final Tag<Item> SLABS = method_21452("slabs");
-	public static final Tag<Item> ANVIL = method_21452("anvil");
-	public static final Tag<Item> RAILS = method_21452("rails");
-	public static final Tag<Item> LEAVES = method_21452("leaves");
-	public static final Tag<Item> TRAPDOORS = method_21452("trapdoors");
-	public static final Tag<Item> BOATS = method_21452("boats");
-	public static final Tag<Item> FISHES = method_21452("fishes");
+	private static TagContainer<Item> container = new TagContainer<>(identifier -> Optional.empty(), "", false, "");
+	private static int latestVersion;
+	public static final Tag<Item> field_15544 = register("wool");
+	public static final Tag<Item> field_15537 = register("planks");
+	public static final Tag<Item> field_15531 = register("stone_bricks");
+	public static final Tag<Item> field_15555 = register("wooden_buttons");
+	public static final Tag<Item> field_15551 = register("buttons");
+	public static final Tag<Item> field_15542 = register("carpets");
+	public static final Tag<Item> field_15552 = register("wooden_doors");
+	public static final Tag<Item> field_15557 = register("wooden_stairs");
+	public static final Tag<Item> field_15534 = register("wooden_slabs");
+	public static final Tag<Item> field_17620 = register("wooden_fences");
+	public static final Tag<Item> field_15540 = register("wooden_pressure_plates");
+	public static final Tag<Item> field_15550 = register("wooden_trapdoors");
+	public static final Tag<Item> field_15553 = register("doors");
+	public static final Tag<Item> field_15528 = register("saplings");
+	public static final Tag<Item> field_15539 = register("logs");
+	public static final Tag<Item> field_15546 = register("dark_oak_logs");
+	public static final Tag<Item> field_15545 = register("oak_logs");
+	public static final Tag<Item> field_15554 = register("birch_logs");
+	public static final Tag<Item> field_15525 = register("acacia_logs");
+	public static final Tag<Item> field_15538 = register("jungle_logs");
+	public static final Tag<Item> field_15549 = register("spruce_logs");
+	public static final Tag<Item> field_15556 = register("banners");
+	public static final Tag<Item> field_15532 = register("sand");
+	public static final Tag<Item> field_15526 = register("stairs");
+	public static final Tag<Item> field_15535 = register("slabs");
+	public static final Tag<Item> field_15560 = register("walls");
+	public static final Tag<Item> field_15547 = register("anvil");
+	public static final Tag<Item> field_15529 = register("rails");
+	public static final Tag<Item> field_15558 = register("leaves");
+	public static final Tag<Item> field_15548 = register("trapdoors");
+	public static final Tag<Item> field_15543 = register("small_flowers");
+	public static final Tag<Item> field_16444 = register("beds");
+	public static final Tag<Item> field_16585 = register("fences");
+	public static final Tag<Item> field_15536 = register("boats");
+	public static final Tag<Item> field_15527 = register("fishes");
+	public static final Tag<Item> field_15533 = register("signs");
+	public static final Tag<Item> field_15541 = register("music_discs");
+	public static final Tag<Item> field_17487 = register("coals");
+	public static final Tag<Item> field_18317 = register("arrows");
 
-	public static void method_21454(TagContainer<Item> tagContainer) {
-		field_22194 = tagContainer;
-		field_22195++;
+	public static void setContainer(TagContainer<Item> tagContainer) {
+		container = tagContainer;
+		latestVersion++;
 	}
 
-	public static TagContainer<Item> method_21451() {
-		return field_22194;
+	public static TagContainer<Item> getContainer() {
+		return container;
 	}
 
-	private static Tag<Item> method_21452(String string) {
-		return new ItemTags.class_4480(new Identifier(string));
+	private static Tag<Item> register(String string) {
+		return new ItemTags.CachingTag(new Identifier(string));
 	}
 
-	public static class class_4480 extends Tag<Item> {
-		private int field_22222 = -1;
-		private Tag<Item> field_22223;
+	public static class CachingTag extends Tag<Item> {
+		private int version = -1;
+		private Tag<Item> delegate;
 
-		public class_4480(Identifier identifier) {
+		public CachingTag(Identifier identifier) {
 			super(identifier);
 		}
 
-		public boolean contains(Item item) {
-			if (this.field_22222 != ItemTags.field_22195) {
-				this.field_22223 = ItemTags.field_22194.getOrCreate(this.getId());
-				this.field_22222 = ItemTags.field_22195;
+		public boolean method_15109(Item item) {
+			if (this.version != ItemTags.latestVersion) {
+				this.delegate = ItemTags.container.getOrCreate(this.getId());
+				this.version = ItemTags.latestVersion;
 			}
 
-			return this.field_22223.contains(item);
+			return this.delegate.contains(item);
 		}
 
 		@Override
 		public Collection<Item> values() {
-			if (this.field_22222 != ItemTags.field_22195) {
-				this.field_22223 = ItemTags.field_22194.getOrCreate(this.getId());
-				this.field_22222 = ItemTags.field_22195;
+			if (this.version != ItemTags.latestVersion) {
+				this.delegate = ItemTags.container.getOrCreate(this.getId());
+				this.version = ItemTags.latestVersion;
 			}
 
-			return this.field_22223.values();
+			return this.delegate.values();
 		}
 
 		@Override
 		public Collection<Tag.Entry<Item>> entries() {
-			if (this.field_22222 != ItemTags.field_22195) {
-				this.field_22223 = ItemTags.field_22194.getOrCreate(this.getId());
-				this.field_22222 = ItemTags.field_22195;
+			if (this.version != ItemTags.latestVersion) {
+				this.delegate = ItemTags.container.getOrCreate(this.getId());
+				this.version = ItemTags.latestVersion;
 			}
 
-			return this.field_22223.entries();
+			return this.delegate.entries();
 		}
 	}
 }

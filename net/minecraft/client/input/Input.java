@@ -12,10 +12,14 @@ public class Input {
 	public boolean jumping;
 	public boolean sneaking;
 
-	public void tick() {
+	public void tick(boolean bl, boolean bl2) {
 	}
 
-	public Vec2f method_13424() {
+	public Vec2f getMovementInput() {
 		return new Vec2f(this.movementSideways, this.movementForward);
+	}
+
+	public boolean method_20622() {
+		return this.movementForward > 1.0E-5F;
 	}
 }

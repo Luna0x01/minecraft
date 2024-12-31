@@ -1,37 +1,33 @@
 package net.minecraft.inventory;
 
-import javax.annotation.Nullable;
-import net.minecraft.class_2960;
-import net.minecraft.class_3175;
-import net.minecraft.class_3538;
+import net.minecraft.container.Container;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.recipe.RecipeFinder;
+import net.minecraft.recipe.RecipeInputProvider;
+import net.minecraft.util.DefaultedList;
 
-public class CraftingInventory implements Inventory, class_3538 {
-	private final DefaultedList<ItemStack> field_15100;
+public class CraftingInventory implements Inventory, RecipeInputProvider {
+	private final DefaultedList<ItemStack> stacks;
 	private final int width;
 	private final int height;
-	private final ScreenHandler screenHandler;
+	private final Container container;
 
-	public CraftingInventory(ScreenHandler screenHandler, int i, int j) {
-		this.field_15100 = DefaultedList.ofSize(i * j, ItemStack.EMPTY);
-		this.screenHandler = screenHandler;
+	public CraftingInventory(Container container, int i, int j) {
+		this.stacks = DefaultedList.ofSize(i * j, ItemStack.EMPTY);
+		this.container = container;
 		this.width = i;
 		this.height = j;
 	}
 
 	@Override
 	public int getInvSize() {
-		return this.field_15100.size();
+		return this.stacks.size();
 	}
 
 	@Override
-	public boolean isEmpty() {
-		for (ItemStack itemStack : this.field_15100) {
+	public boolean isInvEmpty() {
+		for (ItemStack itemStack : this.stacks) {
 			if (!itemStack.isEmpty()) {
 				return false;
 			}
@@ -41,50 +37,29 @@ public class CraftingInventory implements Inventory, class_3538 {
 	}
 
 	@Override
-	public ItemStack getInvStack(int slot) {
-		return slot >= this.getInvSize() ? ItemStack.EMPTY : this.field_15100.get(slot);
+	public ItemStack getInvStack(int i) {
+		return i >= this.getInvSize() ? ItemStack.EMPTY : this.stacks.get(i);
 	}
 
 	@Override
-	public Text method_15540() {
-		return new TranslatableText("container.crafting");
+	public ItemStack removeInvStack(int i) {
+		return Inventories.removeStack(this.stacks, i);
 	}
 
 	@Override
-	public boolean hasCustomName() {
-		return false;
-	}
-
-	@Nullable
-	@Override
-	public Text method_15541() {
-		return null;
-	}
-
-	@Override
-	public ItemStack removeInvStack(int slot) {
-		return class_2960.method_13925(this.field_15100, slot);
-	}
-
-	@Override
-	public ItemStack takeInvStack(int slot, int amount) {
-		ItemStack itemStack = class_2960.method_13926(this.field_15100, slot, amount);
+	public ItemStack takeInvStack(int i, int j) {
+		ItemStack itemStack = Inventories.splitStack(this.stacks, i, j);
 		if (!itemStack.isEmpty()) {
-			this.screenHandler.onContentChanged(this);
+			this.container.onContentChanged(this);
 		}
 
 		return itemStack;
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
-		this.field_15100.set(slot, stack);
-		this.screenHandler.onContentChanged(this);
-	}
-
-	@Override
-	public int getInvMaxStackAmount() {
-		return 64;
+	public void setInvStack(int i, ItemStack itemStack) {
+		this.stacks.set(i, itemStack);
+		this.container.onContentChanged(this);
 	}
 
 	@Override
@@ -92,56 +67,27 @@ public class CraftingInventory implements Inventory, class_3538 {
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity player) {
+	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
 		return true;
-	}
-
-	@Override
-	public void onInvOpen(PlayerEntity player) {
-	}
-
-	@Override
-	public void onInvClose(PlayerEntity player) {
-	}
-
-	@Override
-	public boolean isValidInvStack(int slot, ItemStack stack) {
-		return true;
-	}
-
-	@Override
-	public int getProperty(int key) {
-		return 0;
-	}
-
-	@Override
-	public void setProperty(int id, int value) {
-	}
-
-	@Override
-	public int getProperties() {
-		return 0;
 	}
 
 	@Override
 	public void clear() {
-		this.field_15100.clear();
+		this.stacks.clear();
 	}
 
-	@Override
-	public int method_11259() {
+	public int getHeight() {
 		return this.height;
 	}
 
-	@Override
-	public int method_11260() {
+	public int getWidth() {
 		return this.width;
 	}
 
 	@Override
-	public void method_15987(class_3175 arg) {
-		for (ItemStack itemStack : this.field_15100) {
-			arg.method_14170(itemStack);
+	public void provideRecipeInputs(RecipeFinder recipeFinder) {
+		for (ItemStack itemStack : this.stacks) {
+			recipeFinder.addNormalItem(itemStack);
 		}
 	}
 }

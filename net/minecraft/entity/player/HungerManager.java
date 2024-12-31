@@ -1,10 +1,12 @@
 package net.minecraft.entity.player;
 
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.item.FoodItem;
+import net.minecraft.item.FoodComponent;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameRules;
 
 public class HungerManager {
 	private int foodLevel = 20;
@@ -17,48 +19,51 @@ public class HungerManager {
 		this.foodSaturationLevel = 5.0F;
 	}
 
-	public void add(int food, float saturationModifier) {
-		this.foodLevel = Math.min(food + this.foodLevel, 20);
-		this.foodSaturationLevel = Math.min(this.foodSaturationLevel + (float)food * saturationModifier * 2.0F, (float)this.foodLevel);
+	public void add(int i, float f) {
+		this.foodLevel = Math.min(i + this.foodLevel, 20);
+		this.foodSaturationLevel = Math.min(this.foodSaturationLevel + (float)i * f * 2.0F, (float)this.foodLevel);
 	}
 
-	public void incrementStat(FoodItem food, ItemStack stack) {
-		this.add(food.getHungerPoints(stack), food.getSaturation(stack));
+	public void eat(Item item, ItemStack itemStack) {
+		if (item.isFood()) {
+			FoodComponent foodComponent = item.getFoodComponent();
+			this.add(foodComponent.getHunger(), foodComponent.getSaturationModifier());
+		}
 	}
 
-	public void update(PlayerEntity player) {
-		Difficulty difficulty = player.world.method_16346();
+	public void update(PlayerEntity playerEntity) {
+		Difficulty difficulty = playerEntity.world.getDifficulty();
 		this.prevFoodLevel = this.foodLevel;
 		if (this.exhaustion > 4.0F) {
 			this.exhaustion -= 4.0F;
 			if (this.foodSaturationLevel > 0.0F) {
 				this.foodSaturationLevel = Math.max(this.foodSaturationLevel - 1.0F, 0.0F);
-			} else if (difficulty != Difficulty.PEACEFUL) {
+			} else if (difficulty != Difficulty.field_5801) {
 				this.foodLevel = Math.max(this.foodLevel - 1, 0);
 			}
 		}
 
-		boolean bl = player.world.getGameRules().getBoolean("naturalRegeneration");
-		if (bl && this.foodSaturationLevel > 0.0F && player.canFoodHeal() && this.foodLevel >= 20) {
+		boolean bl = playerEntity.world.getGameRules().getBoolean(GameRules.field_19395);
+		if (bl && this.foodSaturationLevel > 0.0F && playerEntity.canFoodHeal() && this.foodLevel >= 20) {
 			this.foodStarvationTimer++;
 			if (this.foodStarvationTimer >= 10) {
 				float f = Math.min(this.foodSaturationLevel, 6.0F);
-				player.heal(f / 6.0F);
+				playerEntity.heal(f / 6.0F);
 				this.addExhaustion(f);
 				this.foodStarvationTimer = 0;
 			}
-		} else if (bl && this.foodLevel >= 18 && player.canFoodHeal()) {
+		} else if (bl && this.foodLevel >= 18 && playerEntity.canFoodHeal()) {
 			this.foodStarvationTimer++;
 			if (this.foodStarvationTimer >= 80) {
-				player.heal(1.0F);
+				playerEntity.heal(1.0F);
 				this.addExhaustion(6.0F);
 				this.foodStarvationTimer = 0;
 			}
 		} else if (this.foodLevel <= 0) {
 			this.foodStarvationTimer++;
 			if (this.foodStarvationTimer >= 80) {
-				if (player.getHealth() > 10.0F || difficulty == Difficulty.HARD || player.getHealth() > 1.0F && difficulty == Difficulty.NORMAL) {
-					player.damage(DamageSource.STARVE, 1.0F);
+				if (playerEntity.getHealth() > 10.0F || difficulty == Difficulty.field_5807 || playerEntity.getHealth() > 1.0F && difficulty == Difficulty.field_5802) {
+					playerEntity.damage(DamageSource.STARVE, 1.0F);
 				}
 
 				this.foodStarvationTimer = 0;
@@ -68,20 +73,20 @@ public class HungerManager {
 		}
 	}
 
-	public void deserialize(NbtCompound nbt) {
-		if (nbt.contains("foodLevel", 99)) {
-			this.foodLevel = nbt.getInt("foodLevel");
-			this.foodStarvationTimer = nbt.getInt("foodTickTimer");
-			this.foodSaturationLevel = nbt.getFloat("foodSaturationLevel");
-			this.exhaustion = nbt.getFloat("foodExhaustionLevel");
+	public void deserialize(CompoundTag compoundTag) {
+		if (compoundTag.containsKey("foodLevel", 99)) {
+			this.foodLevel = compoundTag.getInt("foodLevel");
+			this.foodStarvationTimer = compoundTag.getInt("foodTickTimer");
+			this.foodSaturationLevel = compoundTag.getFloat("foodSaturationLevel");
+			this.exhaustion = compoundTag.getFloat("foodExhaustionLevel");
 		}
 	}
 
-	public void serialize(NbtCompound nbt) {
-		nbt.putInt("foodLevel", this.foodLevel);
-		nbt.putInt("foodTickTimer", this.foodStarvationTimer);
-		nbt.putFloat("foodSaturationLevel", this.foodSaturationLevel);
-		nbt.putFloat("foodExhaustionLevel", this.exhaustion);
+	public void serialize(CompoundTag compoundTag) {
+		compoundTag.putInt("foodLevel", this.foodLevel);
+		compoundTag.putInt("foodTickTimer", this.foodStarvationTimer);
+		compoundTag.putFloat("foodSaturationLevel", this.foodSaturationLevel);
+		compoundTag.putFloat("foodExhaustionLevel", this.exhaustion);
 	}
 
 	public int getFoodLevel() {
@@ -92,19 +97,19 @@ public class HungerManager {
 		return this.foodLevel < 20;
 	}
 
-	public void addExhaustion(float exhaustion) {
-		this.exhaustion = Math.min(this.exhaustion + exhaustion, 40.0F);
+	public void addExhaustion(float f) {
+		this.exhaustion = Math.min(this.exhaustion + f, 40.0F);
 	}
 
 	public float getSaturationLevel() {
 		return this.foodSaturationLevel;
 	}
 
-	public void setFoodLevel(int foodLevel) {
-		this.foodLevel = foodLevel;
+	public void setFoodLevel(int i) {
+		this.foodLevel = i;
 	}
 
-	public void setSaturationLevelClient(float saturationLevel) {
-		this.foodSaturationLevel = saturationLevel;
+	public void setSaturationLevelClient(float f) {
+		this.foodSaturationLevel = f;
 	}
 }

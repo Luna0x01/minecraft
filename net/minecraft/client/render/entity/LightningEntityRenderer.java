@@ -6,26 +6,26 @@ import javax.annotation.Nullable;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.entity.LightningBoltEntity;
+import net.minecraft.entity.LightningEntity;
 import net.minecraft.util.Identifier;
 
-public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity> {
+public class LightningEntityRenderer extends EntityRenderer<LightningEntity> {
 	public LightningEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void render(LightningBoltEntity lightningBoltEntity, double d, double e, double f, float g, float h) {
+	public void method_4034(LightningEntity lightningEntity, double d, double e, double f, float g, float h) {
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
 		GlStateManager.disableTexture();
 		GlStateManager.disableLighting();
 		GlStateManager.enableBlend();
-		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE);
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
 		double[] ds = new double[8];
 		double[] es = new double[8];
 		double i = 0.0;
 		double j = 0.0;
-		Random random = new Random(lightningBoltEntity.seed);
+		Random random = new Random(lightningEntity.seed);
 
 		for (int k = 7; k >= 0; k--) {
 			ds[k] = i;
@@ -35,7 +35,7 @@ public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity>
 		}
 
 		for (int l = 0; l < 4; l++) {
-			Random random2 = new Random(lightningBoltEntity.seed);
+			Random random2 = new Random(lightningEntity.seed);
 
 			for (int m = 0; m < 3; m++) {
 				int n = 7;
@@ -113,7 +113,7 @@ public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity>
 	}
 
 	@Nullable
-	protected Identifier getTexture(LightningBoltEntity lightningBoltEntity) {
+	protected Identifier method_4033(LightningEntity lightningEntity) {
 		return null;
 	}
 }

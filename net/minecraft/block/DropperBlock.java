@@ -17,37 +17,37 @@ import net.minecraft.world.World;
 public class DropperBlock extends DispenserBlock {
 	private static final DispenserBehavior BEHAVIOR = new ItemDispenserBehavior();
 
-	public DropperBlock(Block.Builder builder) {
-		super(builder);
+	public DropperBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
+	protected DispenserBehavior getBehaviorForItem(ItemStack itemStack) {
 		return BEHAVIOR;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
+	public BlockEntity createBlockEntity(BlockView blockView) {
 		return new DropperBlockEntity();
 	}
 
 	@Override
-	protected void dispense(World world, BlockPos pos) {
-		BlockPointerImpl blockPointerImpl = new BlockPointerImpl(world, pos);
+	protected void dispense(World world, BlockPos blockPos) {
+		BlockPointerImpl blockPointerImpl = new BlockPointerImpl(world, blockPos);
 		DispenserBlockEntity dispenserBlockEntity = blockPointerImpl.getBlockEntity();
 		int i = dispenserBlockEntity.chooseNonEmptySlot();
 		if (i < 0) {
-			world.syncGlobalEvent(1001, pos, 0);
+			world.playLevelEvent(1001, blockPos, 0);
 		} else {
 			ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
 			if (!itemStack.isEmpty()) {
-				Direction direction = world.getBlockState(pos).getProperty(FACING);
-				Inventory inventory = HopperBlockEntity.method_16823(world, pos.offset(direction));
+				Direction direction = world.getBlockState(blockPos).get(FACING);
+				Inventory inventory = HopperBlockEntity.getInventoryAt(world, blockPos.offset(direction));
 				ItemStack itemStack2;
 				if (inventory == null) {
 					itemStack2 = BEHAVIOR.dispense(blockPointerImpl, itemStack);
 				} else {
-					itemStack2 = HopperBlockEntity.method_13727(dispenserBlockEntity, inventory, itemStack.copy().split(1), direction.getOpposite());
+					itemStack2 = HopperBlockEntity.transfer(dispenserBlockEntity, inventory, itemStack.copy().split(1), direction.getOpposite());
 					if (itemStack2.isEmpty()) {
 						itemStack2 = itemStack.copy();
 						itemStack2.decrement(1);

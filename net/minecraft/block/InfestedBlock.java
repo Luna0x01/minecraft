@@ -2,51 +2,45 @@ package net.minecraft.block;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-import java.util.Random;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.SilverfishEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 public class InfestedBlock extends Block {
-	private final Block field_18377;
-	private static final Map<Block, Block> field_18378 = Maps.newIdentityHashMap();
+	private final Block regularBlock;
+	private static final Map<Block, Block> REGULAR_TO_INFESTED = Maps.newIdentityHashMap();
 
-	public InfestedBlock(Block block, Block.Builder builder) {
-		super(builder);
-		this.field_18377 = block;
-		field_18378.put(block, this);
+	public InfestedBlock(Block block, Block.Settings settings) {
+		super(settings);
+		this.regularBlock = block;
+		REGULAR_TO_INFESTED.put(block, this);
+	}
+
+	public Block getRegularBlock() {
+		return this.regularBlock;
+	}
+
+	public static boolean isInfestable(BlockState blockState) {
+		return REGULAR_TO_INFESTED.containsKey(blockState.getBlock());
 	}
 
 	@Override
-	public int getDropCount(BlockState state, Random random) {
-		return 0;
-	}
-
-	public Block method_16685() {
-		return this.field_18377;
-	}
-
-	public static boolean method_16687(BlockState blockState) {
-		return field_18378.containsKey(blockState.getBlock());
-	}
-
-	@Override
-	protected ItemStack createStackFromBlock(BlockState state) {
-		return new ItemStack(this.field_18377);
-	}
-
-	@Override
-	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
-		if (!world.isClient && world.getGameRules().getBoolean("doTileDrops")) {
-			SilverfishEntity silverfishEntity = new SilverfishEntity(world);
-			silverfishEntity.refreshPositionAndAngles((double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, 0.0F, 0.0F);
-			world.method_3686(silverfishEntity);
+	public void onStacksDropped(BlockState blockState, World world, BlockPos blockPos, ItemStack itemStack) {
+		super.onStacksDropped(blockState, world, blockPos, itemStack);
+		if (!world.isClient && world.getGameRules().getBoolean(GameRules.field_19392) && EnchantmentHelper.getLevel(Enchantments.field_9099, itemStack) == 0) {
+			SilverfishEntity silverfishEntity = EntityType.field_6125.create(world);
+			silverfishEntity.setPositionAndAngles((double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, 0.0F, 0.0F);
+			world.spawnEntity(silverfishEntity);
 			silverfishEntity.playSpawnEffects();
 		}
 	}
 
-	public static BlockState method_16686(Block block) {
-		return ((Block)field_18378.get(block)).getDefaultState();
+	public static BlockState fromRegularBlock(Block block) {
+		return ((Block)REGULAR_TO_INFESTED.get(block)).getDefaultState();
 	}
 }

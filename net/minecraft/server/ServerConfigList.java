@@ -35,7 +35,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 	private final File file;
 	private final Map<String, V> map = Maps.newHashMap();
 	private boolean enabled = true;
-	private static final ParameterizedType field_9019 = new ParameterizedType() {
+	private static final ParameterizedType field_14369 = new ParameterizedType() {
 		public Type[] getActualTypeArguments() {
 			return new Type[]{ServerConfigEntry.class};
 		}
@@ -60,16 +60,16 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		return this.enabled;
 	}
 
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
+	public void setEnabled(boolean bl) {
+		this.enabled = bl;
 	}
 
 	public File getFile() {
 		return this.file;
 	}
 
-	public void add(V configEntry) {
-		this.map.put(this.toString(configEntry.getKey()), configEntry);
+	public void add(V serverConfigEntry) {
+		this.map.put(this.toString(serverConfigEntry.getKey()), serverConfigEntry);
 
 		try {
 			this.save();
@@ -94,7 +94,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		}
 	}
 
-	public void method_21389(ServerConfigEntry<K> serverConfigEntry) {
+	public void removeEntry(ServerConfigEntry<K> serverConfigEntry) {
 		this.remove(serverConfigEntry.getKey());
 	}
 
@@ -106,8 +106,8 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		return this.map.size() < 1;
 	}
 
-	protected String toString(K profile) {
-		return profile.toString();
+	protected String toString(K object) {
+		return object.toString();
 	}
 
 	protected boolean contains(K object) {
@@ -132,7 +132,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		return new ServerConfigEntry<>(null, jsonObject);
 	}
 
-	public Collection<V> method_21390() {
+	public Collection<V> values() {
 		return this.map.values();
 	}
 
@@ -155,7 +155,7 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 
 			try {
 				bufferedReader = Files.newReader(this.file, StandardCharsets.UTF_8);
-				Collection<ServerConfigEntry<K>> collection = JsonHelper.deserialize(this.GSON, bufferedReader, field_9019);
+				Collection<ServerConfigEntry<K>> collection = JsonHelper.deserialize(this.GSON, bufferedReader, field_14369);
 				if (collection != null) {
 					this.map.clear();
 
@@ -175,13 +175,13 @@ public class ServerConfigList<K, V extends ServerConfigEntry<K>> {
 		private DeSerializer() {
 		}
 
-		public JsonElement serialize(ServerConfigEntry<K> serverConfigEntry, Type type, JsonSerializationContext jsonSerializationContext) {
+		public JsonElement method_14646(ServerConfigEntry<K> serverConfigEntry, Type type, JsonSerializationContext jsonSerializationContext) {
 			JsonObject jsonObject = new JsonObject();
 			serverConfigEntry.serialize(jsonObject);
 			return jsonObject;
 		}
 
-		public ServerConfigEntry<K> deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public ServerConfigEntry<K> method_14645(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonObject()) {
 				JsonObject jsonObject = jsonElement.getAsJsonObject();
 				return ServerConfigList.this.fromJson(jsonObject);

@@ -2,9 +2,8 @@ package net.minecraft.entity.ai.goal;
 
 import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.PathAwareEntity;
-import net.minecraft.entity.Tameable;
-import net.minecraft.entity.ai.pathing.PathMinHeap;
+import net.minecraft.entity.ai.TargetPredicate;
+import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -15,30 +14,30 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public abstract class TrackTargetGoal extends Goal {
-	protected final PathAwareEntity mob;
-	protected boolean checkVisibility;
-	private final boolean checkNavigable;
+	protected final MobEntity mob;
+	protected final boolean checkVisibility;
+	private final boolean checkCanNavigate;
 	private int canNavigateFlag;
 	private int checkCanNavigateCooldown;
 	private int timeWithoutVisibility;
-	protected LivingEntity field_14597;
-	protected int field_14598 = 60;
+	protected LivingEntity target;
+	protected int maxTimeWithoutVisibility = 60;
 
-	public TrackTargetGoal(PathAwareEntity pathAwareEntity, boolean bl) {
-		this(pathAwareEntity, bl, false);
+	public TrackTargetGoal(MobEntity mobEntity, boolean bl) {
+		this(mobEntity, bl, false);
 	}
 
-	public TrackTargetGoal(PathAwareEntity pathAwareEntity, boolean bl, boolean bl2) {
-		this.mob = pathAwareEntity;
+	public TrackTargetGoal(MobEntity mobEntity, boolean bl, boolean bl2) {
+		this.mob = mobEntity;
 		this.checkVisibility = bl;
-		this.checkNavigable = bl2;
+		this.checkCanNavigate = bl2;
 	}
 
 	@Override
 	public boolean shouldContinue() {
 		LivingEntity livingEntity = this.mob.getTarget();
 		if (livingEntity == null) {
-			livingEntity = this.field_14597;
+			livingEntity = this.target;
 		}
 
 		if (livingEntity == null) {
@@ -58,7 +57,7 @@ public abstract class TrackTargetGoal extends Goal {
 					if (this.checkVisibility) {
 						if (this.mob.getVisibilityCache().canSee(livingEntity)) {
 							this.timeWithoutVisibility = 0;
-						} else if (++this.timeWithoutVisibility > this.field_14598) {
+						} else if (++this.timeWithoutVisibility > this.maxTimeWithoutVisibility) {
 							return false;
 						}
 					}
@@ -75,7 +74,7 @@ public abstract class TrackTargetGoal extends Goal {
 	}
 
 	protected double getFollowRange() {
-		EntityAttributeInstance entityAttributeInstance = this.mob.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE);
+		EntityAttributeInstance entityAttributeInstance = this.mob.getAttributeInstance(EntityAttributes.FOLLOW_RANGE);
 		return entityAttributeInstance == null ? 16.0 : entityAttributeInstance.getValue();
 	}
 
@@ -89,50 +88,24 @@ public abstract class TrackTargetGoal extends Goal {
 	@Override
 	public void stop() {
 		this.mob.setTarget(null);
-		this.field_14597 = null;
+		this.target = null;
 	}
 
-	public static boolean method_11025(MobEntity mob, @Nullable LivingEntity target, boolean bl, boolean bl2) {
-		if (target == null) {
+	protected boolean canTrack(@Nullable LivingEntity livingEntity, TargetPredicate targetPredicate) {
+		if (livingEntity == null) {
 			return false;
-		} else if (target == mob) {
+		} else if (!targetPredicate.test(this.mob, livingEntity)) {
 			return false;
-		} else if (!target.isAlive()) {
-			return false;
-		} else if (!mob.canAttackEntity(target.getClass())) {
-			return false;
-		} else if (mob.isTeammate(target)) {
+		} else if (!this.mob.isInWalkTargetRange(new BlockPos(livingEntity))) {
 			return false;
 		} else {
-			if (mob instanceof Tameable && ((Tameable)mob).method_2719() != null) {
-				if (target instanceof Tameable && ((Tameable)mob).method_2719().equals(((Tameable)target).method_2719())) {
-					return false;
-				}
-
-				if (target == ((Tameable)mob).getOwner()) {
-					return false;
-				}
-			} else if (target instanceof PlayerEntity && !bl && ((PlayerEntity)target).abilities.invulnerable) {
-				return false;
-			}
-
-			return !bl2 || mob.getVisibilityCache().canSee(target);
-		}
-	}
-
-	protected boolean canTrack(@Nullable LivingEntity target, boolean bl) {
-		if (!method_11025(this.mob, target, bl, this.checkVisibility)) {
-			return false;
-		} else if (!this.mob.isInWalkTargetRange(new BlockPos(target))) {
-			return false;
-		} else {
-			if (this.checkNavigable) {
+			if (this.checkCanNavigate) {
 				if (--this.checkCanNavigateCooldown <= 0) {
 					this.canNavigateFlag = 0;
 				}
 
 				if (this.canNavigateFlag == 0) {
-					this.canNavigateFlag = this.canNavigateToEntity(target) ? 1 : 2;
+					this.canNavigateFlag = this.canNavigateToEntity(livingEntity) ? 1 : 2;
 				}
 
 				if (this.canNavigateFlag == 2) {
@@ -144,25 +117,25 @@ public abstract class TrackTargetGoal extends Goal {
 		}
 	}
 
-	private boolean canNavigateToEntity(LivingEntity entity) {
-		this.checkCanNavigateCooldown = 10 + this.mob.getRandom().nextInt(5);
-		PathMinHeap pathMinHeap = this.mob.getNavigation().method_13109(entity);
-		if (pathMinHeap == null) {
+	private boolean canNavigateToEntity(LivingEntity livingEntity) {
+		this.checkCanNavigateCooldown = 10 + this.mob.getRand().nextInt(5);
+		Path path = this.mob.getNavigation().findPathTo(livingEntity, 0);
+		if (path == null) {
 			return false;
 		} else {
-			PathNode pathNode = pathMinHeap.method_11934();
+			PathNode pathNode = path.getEnd();
 			if (pathNode == null) {
 				return false;
 			} else {
-				int i = pathNode.posX - MathHelper.floor(entity.x);
-				int j = pathNode.posZ - MathHelper.floor(entity.z);
+				int i = pathNode.x - MathHelper.floor(livingEntity.x);
+				int j = pathNode.z - MathHelper.floor(livingEntity.z);
 				return (double)(i * i + j * j) <= 2.25;
 			}
 		}
 	}
 
-	public TrackTargetGoal method_13955(int i) {
-		this.field_14598 = i;
+	public TrackTargetGoal setMaxTimeWithoutVisibility(int i) {
+		this.maxTimeWithoutVisibility = i;
 		return this;
 	}
 }

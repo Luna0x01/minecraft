@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.TameableEntity;
 
@@ -9,14 +10,19 @@ public class SitGoal extends Goal {
 
 	public SitGoal(TameableEntity tameableEntity) {
 		this.tameable = tameableEntity;
-		this.setCategoryBits(5);
+		this.setControls(EnumSet.of(Goal.Control.field_18407, Goal.Control.field_18405));
+	}
+
+	@Override
+	public boolean shouldContinue() {
+		return this.enabledWithOwner;
 	}
 
 	@Override
 	public boolean canStart() {
 		if (!this.tameable.isTamed()) {
 			return false;
-		} else if (this.tameable.method_15575()) {
+		} else if (this.tameable.isInsideWaterOrBubbleColumn()) {
 			return false;
 		} else if (!this.tameable.onGround) {
 			return false;
@@ -41,7 +47,7 @@ public class SitGoal extends Goal {
 		this.tameable.setSitting(false);
 	}
 
-	public void setEnabledWithOwner(boolean enabledWithOwner) {
-		this.enabledWithOwner = enabledWithOwner;
+	public void setEnabledWithOwner(boolean bl) {
+		this.enabledWithOwner = bl;
 	}
 }

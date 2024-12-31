@@ -1,19 +1,20 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class ProjectileAttackGoal extends Goal {
-	private final MobEntity entity;
-	private final RangedAttackMob rangedAttackMob;
+	private final MobEntity mob;
+	private final RangedAttackMob owner;
 	private LivingEntity target;
-	private int updateCountdownTicks = -1;
+	private int field_6581 = -1;
 	private final double mobSpeed;
-	private int seenTargetTicks;
-	private final int minIntervalTicks;
-	private final int maxIntervalTicks;
+	private int field_6579;
+	private final int field_6578;
+	private final int field_6577;
 	private final float maxShootRange;
 	private final float squaredMaxShootRange;
 
@@ -25,69 +26,69 @@ public class ProjectileAttackGoal extends Goal {
 		if (!(rangedAttackMob instanceof LivingEntity)) {
 			throw new IllegalArgumentException("ArrowAttackGoal requires Mob implements RangedAttackMob");
 		} else {
-			this.rangedAttackMob = rangedAttackMob;
-			this.entity = (MobEntity)rangedAttackMob;
+			this.owner = rangedAttackMob;
+			this.mob = (MobEntity)rangedAttackMob;
 			this.mobSpeed = d;
-			this.minIntervalTicks = i;
-			this.maxIntervalTicks = j;
+			this.field_6578 = i;
+			this.field_6577 = j;
 			this.maxShootRange = f;
 			this.squaredMaxShootRange = f * f;
-			this.setCategoryBits(3);
+			this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
 		}
 	}
 
 	@Override
 	public boolean canStart() {
-		LivingEntity livingEntity = this.entity.getTarget();
-		if (livingEntity == null) {
-			return false;
-		} else {
+		LivingEntity livingEntity = this.mob.getTarget();
+		if (livingEntity != null && livingEntity.isAlive()) {
 			this.target = livingEntity;
 			return true;
+		} else {
+			return false;
 		}
 	}
 
 	@Override
 	public boolean shouldContinue() {
-		return this.canStart() || !this.entity.getNavigation().isIdle();
+		return this.canStart() || !this.mob.getNavigation().isIdle();
 	}
 
 	@Override
 	public void stop() {
 		this.target = null;
-		this.seenTargetTicks = 0;
-		this.updateCountdownTicks = -1;
+		this.field_6579 = 0;
+		this.field_6581 = -1;
 	}
 
 	@Override
 	public void tick() {
-		double d = this.entity.squaredDistanceTo(this.target.x, this.target.getBoundingBox().minY, this.target.z);
-		boolean bl = this.entity.getVisibilityCache().canSee(this.target);
+		double d = this.mob.squaredDistanceTo(this.target.x, this.target.getBoundingBox().minY, this.target.z);
+		boolean bl = this.mob.getVisibilityCache().canSee(this.target);
 		if (bl) {
-			this.seenTargetTicks++;
+			this.field_6579++;
 		} else {
-			this.seenTargetTicks = 0;
+			this.field_6579 = 0;
 		}
 
-		if (!(d > (double)this.squaredMaxShootRange) && this.seenTargetTicks >= 20) {
-			this.entity.getNavigation().stop();
+		if (!(d > (double)this.squaredMaxShootRange) && this.field_6579 >= 5) {
+			this.mob.getNavigation().stop();
 		} else {
-			this.entity.getNavigation().startMovingTo(this.target, this.mobSpeed);
+			this.mob.getNavigation().startMovingTo(this.target, this.mobSpeed);
 		}
 
-		this.entity.getLookControl().lookAt(this.target, 30.0F, 30.0F);
-		if (--this.updateCountdownTicks == 0) {
+		this.mob.getLookControl().lookAt(this.target, 30.0F, 30.0F);
+		if (--this.field_6581 == 0) {
 			if (!bl) {
 				return;
 			}
 
 			float f = MathHelper.sqrt(d) / this.maxShootRange;
 			float g = MathHelper.clamp(f, 0.1F, 1.0F);
-			this.rangedAttackMob.rangedAttack(this.target, g);
-			this.updateCountdownTicks = MathHelper.floor(f * (float)(this.maxIntervalTicks - this.minIntervalTicks) + (float)this.minIntervalTicks);
-		} else if (this.updateCountdownTicks < 0) {
+			this.owner.attack(this.target, g);
+			this.field_6581 = MathHelper.floor(f * (float)(this.field_6577 - this.field_6578) + (float)this.field_6578);
+		} else if (this.field_6581 < 0) {
 			float h = MathHelper.sqrt(d) / this.maxShootRange;
-			this.updateCountdownTicks = MathHelper.floor(h * (float)(this.maxIntervalTicks - this.minIntervalTicks) + (float)this.minIntervalTicks);
+			this.field_6581 = MathHelper.floor(h * (float)(this.field_6577 - this.field_6578) + (float)this.field_6578);
 		}
 	}
 }

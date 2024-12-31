@@ -2,20 +2,20 @@ package net.minecraft.entity.effect;
 
 import com.google.common.collect.ComparisonChain;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final StatusEffect statusEffect;
+	private final StatusEffect type;
 	private int duration;
 	private int amplifier;
 	private boolean splash;
 	private boolean ambient;
 	private boolean permanent;
 	private boolean showParticles;
-	private boolean field_16688;
+	private boolean showIcon;
 
 	public StatusEffectInstance(StatusEffect statusEffect) {
 		this(statusEffect, 0, 0);
@@ -34,25 +34,25 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	}
 
 	public StatusEffectInstance(StatusEffect statusEffect, int i, int j, boolean bl, boolean bl2, boolean bl3) {
-		this.statusEffect = statusEffect;
+		this.type = statusEffect;
 		this.duration = i;
 		this.amplifier = j;
 		this.ambient = bl;
 		this.showParticles = bl2;
-		this.field_16688 = bl3;
+		this.showIcon = bl3;
 	}
 
 	public StatusEffectInstance(StatusEffectInstance statusEffectInstance) {
-		this.statusEffect = statusEffectInstance.statusEffect;
+		this.type = statusEffectInstance.type;
 		this.duration = statusEffectInstance.duration;
 		this.amplifier = statusEffectInstance.amplifier;
 		this.ambient = statusEffectInstance.ambient;
 		this.showParticles = statusEffectInstance.showParticles;
-		this.field_16688 = statusEffectInstance.field_16688;
+		this.showIcon = statusEffectInstance.showIcon;
 	}
 
-	public boolean method_15551(StatusEffectInstance statusEffectInstance) {
-		if (this.statusEffect != statusEffectInstance.statusEffect) {
+	public boolean upgrade(StatusEffectInstance statusEffectInstance) {
+		if (this.type != statusEffectInstance.type) {
 			LOGGER.warn("This method should only be called for matching effects!");
 		}
 
@@ -76,16 +76,16 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 			bl = true;
 		}
 
-		if (statusEffectInstance.field_16688 != this.field_16688) {
-			this.field_16688 = statusEffectInstance.field_16688;
+		if (statusEffectInstance.showIcon != this.showIcon) {
+			this.showIcon = statusEffectInstance.showIcon;
 			bl = true;
 		}
 
 		return bl;
 	}
 
-	public StatusEffect getStatusEffect() {
-		return this.statusEffect;
+	public StatusEffect getEffectType() {
+		return this.type;
 	}
 
 	public int getDuration() {
@@ -104,14 +104,14 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		return this.showParticles;
 	}
 
-	public boolean method_15552() {
-		return this.field_16688;
+	public boolean shouldShowIcon() {
+		return this.showIcon;
 	}
 
-	public boolean method_6093(LivingEntity livingEntity) {
+	public boolean update(LivingEntity livingEntity) {
 		if (this.duration > 0) {
-			if (this.statusEffect.canApplyUpdateEffect(this.duration, this.amplifier)) {
-				this.method_6094(livingEntity);
+			if (this.type.canApplyUpdateEffect(this.duration, this.amplifier)) {
+				this.applyUpdateEffect(livingEntity);
 			}
 
 			this.updateDuration();
@@ -124,14 +124,14 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		return --this.duration;
 	}
 
-	public void method_6094(LivingEntity livingEntity) {
+	public void applyUpdateEffect(LivingEntity livingEntity) {
 		if (this.duration > 0) {
-			this.statusEffect.method_6087(livingEntity, this.amplifier);
+			this.type.applyUpdateEffect(livingEntity, this.amplifier);
 		}
 	}
 
 	public String getTranslationKey() {
-		return this.statusEffect.getTranslationKey();
+		return this.type.getTranslationKey();
 	}
 
 	public String toString() {
@@ -150,7 +150,7 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 			string = string + ", Particles: false";
 		}
 
-		if (!this.field_16688) {
+		if (!this.showIcon) {
 			string = string + ", Show Icon: false";
 		}
 
@@ -168,70 +168,70 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 				&& this.amplifier == statusEffectInstance.amplifier
 				&& this.splash == statusEffectInstance.splash
 				&& this.ambient == statusEffectInstance.ambient
-				&& this.statusEffect.equals(statusEffectInstance.statusEffect);
+				&& this.type.equals(statusEffectInstance.type);
 		}
 	}
 
 	public int hashCode() {
-		int i = this.statusEffect.hashCode();
+		int i = this.type.hashCode();
 		i = 31 * i + this.duration;
 		i = 31 * i + this.amplifier;
 		i = 31 * i + (this.splash ? 1 : 0);
 		return 31 * i + (this.ambient ? 1 : 0);
 	}
 
-	public NbtCompound toNbt(NbtCompound nbt) {
-		nbt.putByte("Id", (byte)StatusEffect.getIndex(this.getStatusEffect()));
-		nbt.putByte("Amplifier", (byte)this.getAmplifier());
-		nbt.putInt("Duration", this.getDuration());
-		nbt.putBoolean("Ambient", this.isAmbient());
-		nbt.putBoolean("ShowParticles", this.shouldShowParticles());
-		nbt.putBoolean("ShowIcon", this.method_15552());
-		return nbt;
+	public CompoundTag serialize(CompoundTag compoundTag) {
+		compoundTag.putByte("Id", (byte)StatusEffect.getRawId(this.getEffectType()));
+		compoundTag.putByte("Amplifier", (byte)this.getAmplifier());
+		compoundTag.putInt("Duration", this.getDuration());
+		compoundTag.putBoolean("Ambient", this.isAmbient());
+		compoundTag.putBoolean("ShowParticles", this.shouldShowParticles());
+		compoundTag.putBoolean("ShowIcon", this.shouldShowIcon());
+		return compoundTag;
 	}
 
-	public static StatusEffectInstance fromNbt(NbtCompound nbt) {
-		int i = nbt.getByte("Id");
-		StatusEffect statusEffect = StatusEffect.byIndex(i);
+	public static StatusEffectInstance deserialize(CompoundTag compoundTag) {
+		int i = compoundTag.getByte("Id");
+		StatusEffect statusEffect = StatusEffect.byRawId(i);
 		if (statusEffect == null) {
 			return null;
 		} else {
-			int j = nbt.getByte("Amplifier");
-			int k = nbt.getInt("Duration");
-			boolean bl = nbt.getBoolean("Ambient");
+			int j = compoundTag.getByte("Amplifier");
+			int k = compoundTag.getInt("Duration");
+			boolean bl = compoundTag.getBoolean("Ambient");
 			boolean bl2 = true;
-			if (nbt.contains("ShowParticles", 1)) {
-				bl2 = nbt.getBoolean("ShowParticles");
+			if (compoundTag.containsKey("ShowParticles", 1)) {
+				bl2 = compoundTag.getBoolean("ShowParticles");
 			}
 
 			boolean bl3 = bl2;
-			if (nbt.contains("ShowIcon", 1)) {
-				bl3 = nbt.getBoolean("ShowIcon");
+			if (compoundTag.containsKey("ShowIcon", 1)) {
+				bl3 = compoundTag.getBoolean("ShowIcon");
 			}
 
 			return new StatusEffectInstance(statusEffect, k, j < 0 ? 0 : j, bl, bl2, bl3);
 		}
 	}
 
-	public void setPermanent(boolean permanent) {
-		this.permanent = permanent;
+	public void setPermanent(boolean bl) {
+		this.permanent = bl;
 	}
 
 	public boolean isPermanent() {
 		return this.permanent;
 	}
 
-	public int compareTo(StatusEffectInstance statusEffectInstance) {
+	public int method_5587(StatusEffectInstance statusEffectInstance) {
 		int i = 32147;
 		return (this.getDuration() <= 32147 || statusEffectInstance.getDuration() <= 32147) && (!this.isAmbient() || !statusEffectInstance.isAmbient())
 			? ComparisonChain.start()
 				.compare(this.isAmbient(), statusEffectInstance.isAmbient())
 				.compare(this.getDuration(), statusEffectInstance.getDuration())
-				.compare(this.getStatusEffect().getColor(), statusEffectInstance.getStatusEffect().getColor())
+				.compare(this.getEffectType().getColor(), statusEffectInstance.getEffectType().getColor())
 				.result()
 			: ComparisonChain.start()
 				.compare(this.isAmbient(), statusEffectInstance.isAmbient())
-				.compare(this.getStatusEffect().getColor(), statusEffectInstance.getStatusEffect().getColor())
+				.compare(this.getEffectType().getColor(), statusEffectInstance.getEffectType().getColor())
 				.result();
 	}
 }

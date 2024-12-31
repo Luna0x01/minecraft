@@ -2,72 +2,65 @@ package net.minecraft.block;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Itemable;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class FlowerPotBlock extends Block {
-	private static final Map<Block, Block> field_18345 = Maps.newHashMap();
-	protected static final VoxelShape field_18344 = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 6.0, 11.0);
-	private final Block field_18346;
+	private static final Map<Block, Block> CONTENT_TO_POTTED = Maps.newHashMap();
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 6.0, 11.0);
+	private final Block content;
 
-	public FlowerPotBlock(Block block, Block.Builder builder) {
-		super(builder);
-		this.field_18346 = block;
-		field_18345.put(block, this);
+	public FlowerPotBlock(Block block, Block.Settings settings) {
+		super(settings);
+		this.content = block;
+		CONTENT_TO_POTTED.put(block, this);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18344;
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return SHAPE;
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState state) {
-		return BlockRenderType.MODEL;
+	public BlockRenderType getRenderType(BlockState blockState) {
+		return BlockRenderType.field_11458;
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public boolean onUse(
-		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
-	) {
-		ItemStack itemStack = player.getStackInHand(hand);
+	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		Item item = itemStack.getItem();
-		Block block = item instanceof BlockItem ? (Block)field_18345.getOrDefault(((BlockItem)item).getBlock(), Blocks.AIR) : Blocks.AIR;
-		boolean bl = block == Blocks.AIR;
-		boolean bl2 = this.field_18346 == Blocks.AIR;
+		Block block = item instanceof BlockItem ? (Block)CONTENT_TO_POTTED.getOrDefault(((BlockItem)item).getBlock(), Blocks.field_10124) : Blocks.field_10124;
+		boolean bl = block == Blocks.field_10124;
+		boolean bl2 = this.content == Blocks.field_10124;
 		if (bl != bl2) {
 			if (bl2) {
-				world.setBlockState(pos, block.getDefaultState(), 3);
-				player.method_15928(Stats.POT_FLOWER);
-				if (!player.abilities.creativeMode) {
+				world.setBlockState(blockPos, block.getDefaultState(), 3);
+				playerEntity.incrementStat(Stats.field_15412);
+				if (!playerEntity.abilities.creativeMode) {
 					itemStack.decrement(1);
 				}
 			} else {
-				ItemStack itemStack2 = new ItemStack(this.field_18346);
+				ItemStack itemStack2 = new ItemStack(this.content);
 				if (itemStack.isEmpty()) {
-					player.equipStack(hand, itemStack2);
-				} else if (!player.method_13617(itemStack2)) {
-					player.dropItem(itemStack2, false);
+					playerEntity.setStackInHand(hand, itemStack2);
+				} else if (!playerEntity.giveItemStack(itemStack2)) {
+					playerEntity.dropItem(itemStack2, false);
 				}
 
-				world.setBlockState(pos, Blocks.FLOWER_POT.getDefaultState(), 3);
+				world.setBlockState(blockPos, Blocks.field_10495.getDefaultState(), 3);
 			}
 		}
 
@@ -75,37 +68,25 @@ public class FlowerPotBlock extends Block {
 	}
 
 	@Override
-	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
-		return this.field_18346 == Blocks.AIR ? super.getPickBlock(world, pos, state) : new ItemStack(this.field_18346);
+	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
+		return this.content == Blocks.field_10124 ? super.getPickStack(blockView, blockPos, blockState) : new ItemStack(this.content);
 	}
 
 	@Override
-	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
-		return Blocks.FLOWER_POT;
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		return direction == Direction.field_11033 && !blockState.canPlaceAt(iWorld, blockPos)
+			? Blocks.field_10124.getDefaultState()
+			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
-		super.method_410(blockState, world, blockPos, f, i);
-		if (this.field_18346 != Blocks.AIR) {
-			onBlockBreak(world, blockPos, new ItemStack(this.field_18346));
-		}
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9174;
 	}
 
-	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
-			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
-	}
-
-	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
+	public Block getContent() {
+		return this.content;
 	}
 }

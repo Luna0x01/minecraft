@@ -1,242 +1,231 @@
 package net.minecraft.client.gui.screen;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Runnables;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 import java.util.Random;
-import net.minecraft.class_4216;
-import net.minecraft.class_4227;
-import net.minecraft.client.MinecraftClient;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
+import net.minecraft.SharedConstants;
+import net.minecraft.client.gui.CubeMapRenderer;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.RotatingCubeMapRenderer;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.LanguageButton;
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.texture.TextureManager;
 import net.minecraft.realms.RealmsBridge;
-import net.minecraft.resource.Resource;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.level.LevelProperties;
-import net.minecraft.world.level.storage.LevelStorageAccess;
-import org.apache.commons.io.IOUtils;
-import org.lwjgl.opengl.GL;
+import net.minecraft.world.level.storage.LevelStorage;
 
 public class TitleScreen extends Screen {
-	private static final Random RANDOM = new Random();
-	private final float minecraftRandomNumber;
+	public static final CubeMapRenderer PANORAMA_CUBE_MAP = new CubeMapRenderer(new Identifier("textures/gui/title/background/panorama"));
+	private static final Identifier PANORAMA_OVERLAY = new Identifier("textures/gui/title/background/panorama_overlay.png");
+	private static final Identifier ACCESSIBILITY_ICON_TEXTURE = new Identifier("textures/gui/accessibility.png");
+	private final boolean field_17776;
+	@Nullable
 	private String splashText;
-	private ButtonWidget field_20321;
-	private ButtonWidget resetDemoButton;
-	private final Object mutex = new Object();
-	public static final String MORE_INFO_MESSAGE = "Please click " + Formatting.UNDERLINE + "here" + Formatting.RESET + " for more information.";
-	private int oldGl2Width;
-	private int oldGl1Width;
-	private int oldGlLeft;
-	private int oldGlTop;
-	private int oldGlRight;
-	private int oldGlBottom;
-	private String oldGl1;
-	private String oldGl2 = MORE_INFO_MESSAGE;
-	private String oldGlLink;
-	private static final Identifier SPLASHES = new Identifier("texts/splashes.txt");
+	private ButtonWidget buttonResetDemo;
+	@Nullable
+	private TitleScreen.Warning warning;
 	private static final Identifier MINECRAFT_TITLE_TEXTURE = new Identifier("textures/gui/title/minecraft.png");
-	private static final Identifier MINECRAFT_EDITION_TEXTURE = new Identifier("textures/gui/title/edition.png");
+	private static final Identifier EDITION_TITLE_TEXTURE = new Identifier("textures/gui/title/edition.png");
 	private boolean realmsNotificationsInitialized;
-	private Screen realmsNotificationScreen;
+	private Screen realmsNotificationGui;
 	private int copyrightTextWidth;
-	private int field_15948;
-	private final class_4227 field_20320 = new class_4227(new class_4216(new Identifier("textures/gui/title/background/panorama")));
+	private int copyrightTextX;
+	private final RotatingCubeMapRenderer backgroundRenderer = new RotatingCubeMapRenderer(PANORAMA_CUBE_MAP);
+	private final boolean doBackgroundFade;
+	private long backgroundFadeStart;
 
 	public TitleScreen() {
-		this.splashText = "missingno";
-		Resource resource = null;
+		this(false);
+	}
 
-		try {
-			List<String> list = Lists.newArrayList();
-			resource = MinecraftClient.getInstance().getResourceManager().getResource(SPLASHES);
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
-
-			String string;
-			while ((string = bufferedReader.readLine()) != null) {
-				string = string.trim();
-				if (!string.isEmpty()) {
-					list.add(string);
-				}
-			}
-
-			if (!list.isEmpty()) {
-				do {
-					this.splashText = (String)list.get(RANDOM.nextInt(list.size()));
-				} while (this.splashText.hashCode() == 125780783);
-			}
-		} catch (IOException var8) {
-		} finally {
-			IOUtils.closeQuietly(resource);
-		}
-
-		this.minecraftRandomNumber = RANDOM.nextFloat();
-		this.oldGl1 = "";
-		if (!GL.getCapabilities().OpenGL20 && !GLX.areShadersSupported()) {
-			this.oldGl1 = I18n.translate("title.oldgl1");
-			this.oldGl2 = I18n.translate("title.oldgl2");
-			this.oldGlLink = "https://help.mojang.com/customer/portal/articles/325948?ref=game";
+	public TitleScreen(boolean bl) {
+		super(new TranslatableText("narrator.screen.title"));
+		this.doBackgroundFade = bl;
+		this.field_17776 = (double)new Random().nextFloat() < 1.0E-4;
+		if (!GLX.supportsOpenGL2() && !GLX.isNextGen()) {
+			this.warning = new TitleScreen.Warning(
+				new TranslatableText("title.oldgl.eol.line1").formatted(Formatting.field_1061).formatted(Formatting.field_1067),
+				new TranslatableText("title.oldgl.eol.line2").formatted(Formatting.field_1061).formatted(Formatting.field_1067),
+				"https://help.mojang.com/customer/portal/articles/325948?ref=game"
+			);
 		}
 	}
 
 	private boolean areRealmsNotificationsEnabled() {
-		return MinecraftClient.getInstance().options.getIntVideoOptions(GameOptions.Option.REALMS_NOTIFICATIONS) && this.realmsNotificationScreen != null;
+		return this.minecraft.options.realmsNotifications && this.realmsNotificationGui != null;
 	}
 
 	@Override
 	public void tick() {
 		if (this.areRealmsNotificationsEnabled()) {
-			this.realmsNotificationScreen.tick();
+			this.realmsNotificationGui.tick();
 		}
 	}
 
+	public static CompletableFuture<Void> loadTexturesAsync(TextureManager textureManager, Executor executor) {
+		return CompletableFuture.allOf(
+			textureManager.loadTextureAsync(MINECRAFT_TITLE_TEXTURE, executor),
+			textureManager.loadTextureAsync(EDITION_TITLE_TEXTURE, executor),
+			textureManager.loadTextureAsync(PANORAMA_OVERLAY, executor),
+			PANORAMA_CUBE_MAP.loadTexturesAsync(textureManager, executor)
+		);
+	}
+
 	@Override
-	public boolean shouldPauseGame() {
+	public boolean isPauseScreen() {
 		return false;
 	}
 
 	@Override
-	public boolean method_18607() {
+	public boolean shouldCloseOnEsc() {
 		return false;
 	}
 
 	@Override
 	protected void init() {
-		this.copyrightTextWidth = this.textRenderer.getStringWidth("Copyright Mojang AB. Do not distribute!");
-		this.field_15948 = this.width - this.copyrightTextWidth - 2;
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTime(new Date());
-		if (calendar.get(2) + 1 == 12 && calendar.get(5) == 24) {
-			this.splashText = "Merry X-mas!";
-		} else if (calendar.get(2) + 1 == 1 && calendar.get(5) == 1) {
-			this.splashText = "Happy new year!";
-		} else if (calendar.get(2) + 1 == 10 && calendar.get(5) == 31) {
-			this.splashText = "OOoooOOOoooo! Spooky!";
+		if (this.splashText == null) {
+			this.splashText = this.minecraft.getSplashTextLoader().get();
 		}
 
+		this.copyrightTextWidth = this.font.getStringWidth("Copyright Mojang AB. Do not distribute!");
+		this.copyrightTextX = this.width - this.copyrightTextWidth - 2;
 		int i = 24;
 		int j = this.height / 4 + 48;
-		if (this.client.isDemo()) {
+		if (this.minecraft.isDemo()) {
 			this.initWidgetsDemo(j, 24);
 		} else {
 			this.initWidgetsNormal(j, 24);
 		}
 
-		this.field_20321 = this.addButton(new ButtonWidget(0, this.width / 2 - 100, j + 72 + 12, 98, 20, I18n.translate("menu.options")) {
-			@Override
-			public void method_18374(double d, double e) {
-				TitleScreen.this.client.setScreen(new SettingsScreen(TitleScreen.this, TitleScreen.this.client.options));
-			}
-		});
-		this.addButton(new ButtonWidget(4, this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.translate("menu.quit")) {
-			@Override
-			public void method_18374(double d, double e) {
-				TitleScreen.this.client.scheduleStop();
-			}
-		});
 		this.addButton(
-			new LanguageButton(5, this.width / 2 - 124, j + 72 + 12) {
-				@Override
-				public void method_18374(double d, double e) {
-					TitleScreen.this.client
-						.setScreen(new LanguageOptionsScreen(TitleScreen.this, TitleScreen.this.client.options, TitleScreen.this.client.getLanguageManager()));
-				}
-			}
+			new TexturedButtonWidget(
+				this.width / 2 - 124,
+				j + 72 + 12,
+				20,
+				20,
+				0,
+				106,
+				20,
+				ButtonWidget.WIDGETS_LOCATION,
+				256,
+				256,
+				buttonWidget -> this.minecraft.openScreen(new LanguageOptionsScreen(this, this.minecraft.options, this.minecraft.getLanguageManager())),
+				I18n.translate("narrator.button.language")
+			)
 		);
-		synchronized (this.mutex) {
-			this.oldGl1Width = this.textRenderer.getStringWidth(this.oldGl1);
-			this.oldGl2Width = this.textRenderer.getStringWidth(this.oldGl2);
-			int k = Math.max(this.oldGl1Width, this.oldGl2Width);
-			this.oldGlLeft = (this.width - k) / 2;
-			this.oldGlTop = j - 24;
-			this.oldGlRight = this.oldGlLeft + k;
-			this.oldGlBottom = this.oldGlTop + 24;
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 100,
+				j + 72 + 12,
+				98,
+				20,
+				I18n.translate("menu.options"),
+				buttonWidget -> this.minecraft.openScreen(new SettingsScreen(this, this.minecraft.options))
+			)
+		);
+		this.addButton(new ButtonWidget(this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.translate("menu.quit"), buttonWidget -> this.minecraft.scheduleStop()));
+		this.addButton(
+			new TexturedButtonWidget(
+				this.width / 2 + 104,
+				j + 72 + 12,
+				20,
+				20,
+				0,
+				0,
+				20,
+				ACCESSIBILITY_ICON_TEXTURE,
+				32,
+				64,
+				buttonWidget -> this.minecraft.openScreen(new AccessibilityScreen(this, this.minecraft.options)),
+				I18n.translate("narrator.button.accessibility")
+			)
+		);
+		if (this.warning != null) {
+			this.warning.init(j);
 		}
 
-		this.client.setConnectedToRealms(false);
-		if (MinecraftClient.getInstance().options.getIntVideoOptions(GameOptions.Option.REALMS_NOTIFICATIONS) && !this.realmsNotificationsInitialized) {
+		this.minecraft.setConnectedToRealms(false);
+		if (this.minecraft.options.realmsNotifications && !this.realmsNotificationsInitialized) {
 			RealmsBridge realmsBridge = new RealmsBridge();
-			this.realmsNotificationScreen = realmsBridge.getNotificationScreen(this);
+			this.realmsNotificationGui = realmsBridge.getNotificationScreen(this);
 			this.realmsNotificationsInitialized = true;
 		}
 
 		if (this.areRealmsNotificationsEnabled()) {
-			this.realmsNotificationScreen.init(this.client, this.width, this.height);
+			this.realmsNotificationGui.init(this.minecraft, this.width, this.height);
 		}
 	}
 
-	private void initWidgetsNormal(int y, int spacingY) {
-		this.addButton(new ButtonWidget(1, this.width / 2 - 100, y, I18n.translate("menu.singleplayer")) {
-			@Override
-			public void method_18374(double d, double e) {
-				TitleScreen.this.client.setScreen(new SelectWorldScreen(TitleScreen.this));
-			}
-		});
-		this.addButton(new ButtonWidget(2, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.multiplayer")) {
-			@Override
-			public void method_18374(double d, double e) {
-				TitleScreen.this.client.setScreen(new MultiplayerScreen(TitleScreen.this));
-			}
-		});
-		this.addButton(new ButtonWidget(14, this.width / 2 - 100, y + spacingY * 2, I18n.translate("menu.online")) {
-			@Override
-			public void method_18374(double d, double e) {
-				TitleScreen.this.switchToRealms();
-			}
-		});
+	private void initWidgetsNormal(int i, int j) {
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 100, i, 200, 20, I18n.translate("menu.singleplayer"), buttonWidget -> this.minecraft.openScreen(new SelectWorldScreen(this))
+			)
+		);
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 100, i + j * 1, 200, 20, I18n.translate("menu.multiplayer"), buttonWidget -> this.minecraft.openScreen(new MultiplayerScreen(this))
+			)
+		);
+		this.addButton(new ButtonWidget(this.width / 2 - 100, i + j * 2, 200, 20, I18n.translate("menu.online"), buttonWidget -> this.switchToRealms()));
 	}
 
-	private void initWidgetsDemo(int y, int spacingY) {
-		this.addButton(new ButtonWidget(11, this.width / 2 - 100, y, I18n.translate("menu.playdemo")) {
-			@Override
-			public void method_18374(double d, double e) {
-				TitleScreen.this.client.startIntegratedServer("Demo_World", "Demo_World", DemoServerWorld.INFO);
-			}
-		});
-		this.resetDemoButton = this.addButton(
-			new ButtonWidget(12, this.width / 2 - 100, y + spacingY * 1, I18n.translate("menu.resetdemo")) {
-				@Override
-				public void method_18374(double d, double e) {
-					LevelStorageAccess levelStorageAccess = TitleScreen.this.client.getCurrentSave();
-					LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
-					if (levelProperties != null) {
-						TitleScreen.this.client
-							.setScreen(
+	private void initWidgetsDemo(int i, int j) {
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 100,
+				i,
+				200,
+				20,
+				I18n.translate("menu.playdemo"),
+				buttonWidget -> this.minecraft.startIntegratedServer("Demo_World", "Demo_World", MinecraftServer.DEMO_LEVEL_INFO)
+			)
+		);
+		this.buttonResetDemo = this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 100,
+				i + j * 1,
+				200,
+				20,
+				I18n.translate("menu.resetdemo"),
+				buttonWidget -> {
+					LevelStorage levelStoragex = this.minecraft.getLevelStorage();
+					LevelProperties levelPropertiesx = levelStoragex.getLevelProperties("Demo_World");
+					if (levelPropertiesx != null) {
+						this.minecraft
+							.openScreen(
 								new ConfirmScreen(
-									TitleScreen.this,
-									I18n.translate("selectWorld.deleteQuestion"),
-									I18n.translate("selectWorld.deleteWarning", levelProperties.getLevelName()),
+									this::method_20375,
+									new TranslatableText("selectWorld.deleteQuestion"),
+									new TranslatableText("selectWorld.deleteWarning", levelPropertiesx.getLevelName()),
 									I18n.translate("selectWorld.deleteButton"),
-									I18n.translate("gui.cancel"),
-									12
+									I18n.translate("gui.cancel")
 								)
 							);
 					}
 				}
-			}
+			)
 		);
-		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
-		LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
+		LevelStorage levelStorage = this.minecraft.getLevelStorage();
+		LevelProperties levelProperties = levelStorage.getLevelProperties("Demo_World");
 		if (levelProperties == null) {
-			this.resetDemoButton.active = false;
+			this.buttonResetDemo.active = false;
 		}
 	}
 
@@ -246,76 +235,76 @@ public class TitleScreen extends Screen {
 	}
 
 	@Override
-	public void confirmResult(boolean bl, int i) {
-		if (bl && i == 12) {
-			LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
-			levelStorageAccess.clearAll();
-			levelStorageAccess.deleteLevel("Demo_World");
-			this.client.setScreen(this);
-		} else if (i == 12) {
-			this.client.setScreen(this);
-		} else if (i == 13) {
-			if (bl) {
-				Util.getOperatingSystem().method_20236(this.oldGlLink);
+	public void render(int i, int j, float f) {
+		if (this.backgroundFadeStart == 0L && this.doBackgroundFade) {
+			this.backgroundFadeStart = SystemUtil.getMeasuringTimeMs();
+		}
+
+		float g = this.doBackgroundFade ? (float)(SystemUtil.getMeasuringTimeMs() - this.backgroundFadeStart) / 1000.0F : 1.0F;
+		fill(0, 0, this.width, this.height, -1);
+		this.backgroundRenderer.render(f, MathHelper.clamp(g, 0.0F, 1.0F));
+		int k = 274;
+		int l = this.width / 2 - 137;
+		int m = 30;
+		this.minecraft.getTextureManager().bindTexture(PANORAMA_OVERLAY);
+		GlStateManager.enableBlend();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, this.doBackgroundFade ? (float)MathHelper.ceil(MathHelper.clamp(g, 0.0F, 1.0F)) : 1.0F);
+		blit(0, 0, this.width, this.height, 0.0F, 0.0F, 16, 128, 16, 128);
+		float h = this.doBackgroundFade ? MathHelper.clamp(g - 1.0F, 0.0F, 1.0F) : 1.0F;
+		int n = MathHelper.ceil(h * 255.0F) << 24;
+		if ((n & -67108864) != 0) {
+			this.minecraft.getTextureManager().bindTexture(MINECRAFT_TITLE_TEXTURE);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, h);
+			if (this.field_17776) {
+				this.blit(l + 0, 30, 0, 0, 99, 44);
+				this.blit(l + 99, 30, 129, 0, 27, 44);
+				this.blit(l + 99 + 26, 30, 126, 0, 3, 44);
+				this.blit(l + 99 + 26 + 3, 30, 99, 0, 26, 44);
+				this.blit(l + 155, 30, 0, 45, 155, 44);
+			} else {
+				this.blit(l + 0, 30, 0, 0, 155, 44);
+				this.blit(l + 155, 30, 0, 45, 155, 44);
 			}
 
-			this.client.setScreen(this);
-		}
-	}
+			this.minecraft.getTextureManager().bindTexture(EDITION_TITLE_TEXTURE);
+			blit(l + 88, 67, 0.0F, 0.0F, 98, 14, 128, 16);
+			if (this.splashText != null) {
+				GlStateManager.pushMatrix();
+				GlStateManager.translatef((float)(this.width / 2 + 90), 70.0F, 0.0F);
+				GlStateManager.rotatef(-20.0F, 0.0F, 0.0F, 1.0F);
+				float o = 1.8F - MathHelper.abs(MathHelper.sin((float)(SystemUtil.getMeasuringTimeMs() % 1000L) / 1000.0F * (float) (Math.PI * 2)) * 0.1F);
+				o = o * 100.0F / (float)(this.font.getStringWidth(this.splashText) + 32);
+				GlStateManager.scalef(o, o, o);
+				this.drawCenteredString(this.font, this.splashText, 0, -8, 16776960 | n);
+				GlStateManager.popMatrix();
+			}
 
-	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
-		this.field_20320.method_19176(tickDelta);
-		int i = 274;
-		int j = this.width / 2 - 137;
-		int k = 30;
-		this.client.getTextureManager().bindTexture(new Identifier("textures/gui/title/background/panorama_overlay.png"));
-		drawTexture(0, 0, 0.0F, 0.0F, 16, 128, this.width, this.height, 16.0F, 128.0F);
-		this.client.getTextureManager().bindTexture(MINECRAFT_TITLE_TEXTURE);
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		if ((double)this.minecraftRandomNumber < 1.0E-4) {
-			this.drawTexture(j + 0, 30, 0, 0, 99, 44);
-			this.drawTexture(j + 99, 30, 129, 0, 27, 44);
-			this.drawTexture(j + 99 + 26, 30, 126, 0, 3, 44);
-			this.drawTexture(j + 99 + 26 + 3, 30, 99, 0, 26, 44);
-			this.drawTexture(j + 155, 30, 0, 45, 155, 44);
-		} else {
-			this.drawTexture(j + 0, 30, 0, 0, 155, 44);
-			this.drawTexture(j + 155, 30, 0, 45, 155, 44);
-		}
+			String string = "Minecraft " + SharedConstants.getGameVersion().getName();
+			if (this.minecraft.isDemo()) {
+				string = string + " Demo";
+			} else {
+				string = string + ("release".equalsIgnoreCase(this.minecraft.getVersionType()) ? "" : "/" + this.minecraft.getVersionType());
+			}
 
-		this.client.getTextureManager().bindTexture(MINECRAFT_EDITION_TEXTURE);
-		drawTexture(j + 88, 67, 0.0F, 0.0F, 98, 14, 128.0F, 16.0F);
-		GlStateManager.pushMatrix();
-		GlStateManager.translate((float)(this.width / 2 + 90), 70.0F, 0.0F);
-		GlStateManager.rotate(-20.0F, 0.0F, 0.0F, 1.0F);
-		float f = 1.8F - MathHelper.abs(MathHelper.sin((float)(Util.method_20227() % 1000L) / 1000.0F * (float) (Math.PI * 2)) * 0.1F);
-		f = f * 100.0F / (float)(this.textRenderer.getStringWidth(this.splashText) + 32);
-		GlStateManager.scale(f, f, f);
-		this.drawCenteredString(this.textRenderer, this.splashText, 0, -8, -256);
-		GlStateManager.popMatrix();
-		String string = "Minecraft 1.13.2";
-		if (this.client.isDemo()) {
-			string = string + " Demo";
-		} else {
-			string = string + ("release".equalsIgnoreCase(this.client.getVersionType()) ? "" : "/" + this.client.getVersionType());
-		}
+			this.drawString(this.font, string, 2, this.height - 10, 16777215 | n);
+			this.drawString(this.font, "Copyright Mojang AB. Do not distribute!", this.copyrightTextX, this.height - 10, 16777215 | n);
+			if (i > this.copyrightTextX && i < this.copyrightTextX + this.copyrightTextWidth && j > this.height - 10 && j < this.height) {
+				fill(this.copyrightTextX, this.height - 1, this.copyrightTextX + this.copyrightTextWidth, this.height, 16777215 | n);
+			}
 
-		this.drawWithShadow(this.textRenderer, string, 2, this.height - 10, -1);
-		this.drawWithShadow(this.textRenderer, "Copyright Mojang AB. Do not distribute!", this.field_15948, this.height - 10, -1);
-		if (mouseX > this.field_15948 && mouseX < this.field_15948 + this.copyrightTextWidth && mouseY > this.height - 10 && mouseY < this.height) {
-			fill(this.field_15948, this.height - 1, this.field_15948 + this.copyrightTextWidth, this.height, -1);
-		}
+			if (this.warning != null) {
+				this.warning.render(n);
+			}
 
-		if (this.oldGl1 != null && !this.oldGl1.isEmpty()) {
-			fill(this.oldGlLeft - 2, this.oldGlTop - 2, this.oldGlRight + 2, this.oldGlBottom - 1, 1428160512);
-			this.drawWithShadow(this.textRenderer, this.oldGl1, this.oldGlLeft, this.oldGlTop, -1);
-			this.drawWithShadow(this.textRenderer, this.oldGl2, (this.width - this.oldGl2Width) / 2, this.oldGlTop + 12, -1);
-		}
+			for (AbstractButtonWidget abstractButtonWidget : this.buttons) {
+				abstractButtonWidget.setAlpha(h);
+			}
 
-		super.render(mouseX, mouseY, tickDelta);
-		if (this.areRealmsNotificationsEnabled()) {
-			this.realmsNotificationScreen.render(mouseX, mouseY, tickDelta);
+			super.render(i, j, f);
+			if (this.areRealmsNotificationsEnabled() && h >= 1.0F) {
+				this.realmsNotificationGui.render(i, j, f);
+			}
 		}
 	}
 
@@ -323,37 +312,85 @@ public class TitleScreen extends Screen {
 	public boolean mouseClicked(double d, double e, int i) {
 		if (super.mouseClicked(d, e, i)) {
 			return true;
+		} else if (this.warning != null && this.warning.onClick(d, e)) {
+			return true;
+		} else if (this.areRealmsNotificationsEnabled() && this.realmsNotificationGui.mouseClicked(d, e, i)) {
+			return true;
 		} else {
-			synchronized (this.mutex) {
-				if (!this.oldGl1.isEmpty()
-					&& !ChatUtil.isEmpty(this.oldGlLink)
-					&& d >= (double)this.oldGlLeft
-					&& d <= (double)this.oldGlRight
-					&& e >= (double)this.oldGlTop
-					&& e <= (double)this.oldGlBottom) {
-					ConfirmChatLinkScreen confirmChatLinkScreen = new ConfirmChatLinkScreen(this, this.oldGlLink, 13, true);
-					confirmChatLinkScreen.disableWarning();
-					this.client.setScreen(confirmChatLinkScreen);
-					return true;
-				}
+			if (d > (double)this.copyrightTextX
+				&& d < (double)(this.copyrightTextX + this.copyrightTextWidth)
+				&& e > (double)(this.height - 10)
+				&& e < (double)this.height) {
+				this.minecraft.openScreen(new EndCreditsScreen(false, Runnables.doNothing()));
 			}
 
-			if (this.areRealmsNotificationsEnabled() && this.realmsNotificationScreen.mouseClicked(d, e, i)) {
-				return true;
-			} else {
-				if (d > (double)this.field_15948 && d < (double)(this.field_15948 + this.copyrightTextWidth) && e > (double)(this.height - 10) && e < (double)this.height) {
-					this.client.setScreen(new CreditsScreen(false, Runnables.doNothing()));
-				}
-
-				return false;
-			}
+			return false;
 		}
 	}
 
 	@Override
 	public void removed() {
-		if (this.realmsNotificationScreen != null) {
-			this.realmsNotificationScreen.removed();
+		if (this.realmsNotificationGui != null) {
+			this.realmsNotificationGui.removed();
+		}
+	}
+
+	private void method_20375(boolean bl) {
+		if (bl) {
+			LevelStorage levelStorage = this.minecraft.getLevelStorage();
+			levelStorage.deleteLevel("Demo_World");
+		}
+
+		this.minecraft.openScreen(this);
+	}
+
+	class Warning {
+		private int line2Width;
+		private int startX;
+		private int startY;
+		private int endX;
+		private int endY;
+		private final Text line1;
+		private final Text line2;
+		private final String helpUrl;
+
+		public Warning(Text text, Text text2, String string) {
+			this.line1 = text;
+			this.line2 = text2;
+			this.helpUrl = string;
+		}
+
+		public void init(int i) {
+			int j = TitleScreen.this.font.getStringWidth(this.line1.getString());
+			this.line2Width = TitleScreen.this.font.getStringWidth(this.line2.getString());
+			int k = Math.max(j, this.line2Width);
+			this.startX = (TitleScreen.this.width - k) / 2;
+			this.startY = i - 24;
+			this.endX = this.startX + k;
+			this.endY = this.startY + 24;
+		}
+
+		public void render(int i) {
+			DrawableHelper.fill(this.startX - 2, this.startY - 2, this.endX + 2, this.endY - 1, 1428160512);
+			TitleScreen.this.drawString(TitleScreen.this.font, this.line1.asFormattedString(), this.startX, this.startY, 16777215 | i);
+			TitleScreen.this.drawString(
+				TitleScreen.this.font, this.line2.asFormattedString(), (TitleScreen.this.width - this.line2Width) / 2, this.startY + 12, 16777215 | i
+			);
+		}
+
+		public boolean onClick(double d, double e) {
+			if (!ChatUtil.isEmpty(this.helpUrl) && d >= (double)this.startX && d <= (double)this.endX && e >= (double)this.startY && e <= (double)this.endY) {
+				TitleScreen.this.minecraft.openScreen(new ConfirmChatLinkScreen(bl -> {
+					if (bl) {
+						SystemUtil.getOperatingSystem().open(this.helpUrl);
+					}
+
+					TitleScreen.this.minecraft.openScreen(TitleScreen.this);
+				}, this.helpUrl, true));
+				return true;
+			} else {
+				return false;
+			}
 		}
 	}
 }

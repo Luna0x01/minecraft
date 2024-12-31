@@ -1,70 +1,52 @@
 package net.minecraft.world.gen.chunk;
 
 import java.util.function.Supplier;
-import net.minecraft.class_3784;
-import net.minecraft.class_3798;
-import net.minecraft.class_3799;
-import net.minecraft.class_3807;
-import net.minecraft.class_3808;
-import net.minecraft.class_3809;
-import net.minecraft.class_3811;
-import net.minecraft.class_3917;
-import net.minecraft.server.world.ChunkGenerator;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.SingletonBiomeSource;
-import net.minecraft.world.chunk.DebugChunkGenerator;
-import net.minecraft.world.chunk.EndChunkGenerator;
-import net.minecraft.world.chunk.FlatChunkGenerator;
-import net.minecraft.world.chunk.SurfaceChunkGenerator;
+import net.minecraft.world.biome.source.BiomeSource;
 
-public class ChunkGeneratorType<C extends class_3798, T extends ChunkGenerator<C>> implements class_3784<C, T> {
-	public static final ChunkGeneratorType<class_3809, SurfaceChunkGenerator> SURFACE = method_17039("surface", SurfaceChunkGenerator::new, class_3809::new, true);
-	public static final ChunkGeneratorType<class_3807, class_3808> CAVES = method_17039("caves", class_3808::new, class_3807::new, true);
-	public static final ChunkGeneratorType<class_3811, EndChunkGenerator> FLOATING_ISLANDS = method_17039(
-		"floating_islands", EndChunkGenerator::new, class_3811::new, true
+public class ChunkGeneratorType<C extends ChunkGeneratorConfig, T extends ChunkGenerator<C>> implements ChunkGeneratorFactory<C, T> {
+	public static final ChunkGeneratorType<OverworldChunkGeneratorConfig, OverworldChunkGenerator> field_12769 = register(
+		"surface", OverworldChunkGenerator::new, OverworldChunkGeneratorConfig::new, true
 	);
-	public static final ChunkGeneratorType<class_3799, DebugChunkGenerator> DEBUG = method_17039("debug", DebugChunkGenerator::new, class_3799::new, false);
-	public static final ChunkGeneratorType<class_3917, FlatChunkGenerator> FLAT = method_17039("flat", FlatChunkGenerator::new, class_3917::new, false);
-	private final Identifier field_18852;
-	private final class_3784<C, T> field_18853;
-	private final boolean field_18854;
-	private final Supplier<C> field_18855;
+	public static final ChunkGeneratorType<CavesChunkGeneratorConfig, CavesChunkGenerator> field_12765 = register(
+		"caves", CavesChunkGenerator::new, CavesChunkGeneratorConfig::new, true
+	);
+	public static final ChunkGeneratorType<FloatingIslandsChunkGeneratorConfig, FloatingIslandsChunkGenerator> field_12770 = register(
+		"floating_islands", FloatingIslandsChunkGenerator::new, FloatingIslandsChunkGeneratorConfig::new, true
+	);
+	public static final ChunkGeneratorType<DebugChunkGeneratorConfig, DebugChunkGenerator> field_12768 = register(
+		"debug", DebugChunkGenerator::new, DebugChunkGeneratorConfig::new, false
+	);
+	public static final ChunkGeneratorType<FlatChunkGeneratorConfig, FlatChunkGenerator> field_12766 = register(
+		"flat", FlatChunkGenerator::new, FlatChunkGeneratorConfig::new, false
+	);
+	private final ChunkGeneratorFactory<C, T> factory;
+	private final boolean buffetScreenOption;
+	private final Supplier<C> settingsSupplier;
 
-	public static void method_17038() {
-	}
-
-	public ChunkGeneratorType(class_3784<C, T> arg, boolean bl, Supplier<C> supplier, Identifier identifier) {
-		this.field_18853 = arg;
-		this.field_18854 = bl;
-		this.field_18855 = supplier;
-		this.field_18852 = identifier;
-	}
-
-	public static <C extends class_3798, T extends ChunkGenerator<C>> ChunkGeneratorType<C, T> method_17039(
-		String string, class_3784<C, T> arg, Supplier<C> supplier, boolean bl
+	private static <C extends ChunkGeneratorConfig, T extends ChunkGenerator<C>> ChunkGeneratorType<C, T> register(
+		String string, ChunkGeneratorFactory<C, T> chunkGeneratorFactory, Supplier<C> supplier, boolean bl
 	) {
-		Identifier identifier = new Identifier(string);
-		ChunkGeneratorType<C, T> chunkGeneratorType = new ChunkGeneratorType<>(arg, bl, supplier, identifier);
-		Registry.CHUNK_GENERATOR_TYPE.add(identifier, chunkGeneratorType);
-		return chunkGeneratorType;
+		return Registry.register(Registry.CHUNK_GENERATOR_TYPE, string, new ChunkGeneratorType<>(chunkGeneratorFactory, bl, supplier));
+	}
+
+	public ChunkGeneratorType(ChunkGeneratorFactory<C, T> chunkGeneratorFactory, boolean bl, Supplier<C> supplier) {
+		this.factory = chunkGeneratorFactory;
+		this.buffetScreenOption = bl;
+		this.settingsSupplier = supplier;
 	}
 
 	@Override
-	public T create(World world, SingletonBiomeSource singletonBiomeSource, C arg) {
-		return this.field_18853.create(world, singletonBiomeSource, arg);
+	public T create(World world, BiomeSource biomeSource, C chunkGeneratorConfig) {
+		return this.factory.create(world, biomeSource, chunkGeneratorConfig);
 	}
 
-	public C method_17040() {
-		return (C)this.field_18855.get();
+	public C createSettings() {
+		return (C)this.settingsSupplier.get();
 	}
 
-	public boolean method_17041() {
-		return this.field_18854;
-	}
-
-	public Identifier method_17042() {
-		return this.field_18852;
+	public boolean isBuffetScreenOption() {
+		return this.buffetScreenOption;
 	}
 }

@@ -16,69 +16,70 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import net.minecraft.class_3915;
-import net.minecraft.class_3965;
-import net.minecraft.class_4009;
-import net.minecraft.class_4151;
-import net.minecraft.class_4159;
-import net.minecraft.class_4164;
-import net.minecraft.class_4186;
-import net.minecraft.class_4196;
-import net.minecraft.scoreboard.GenericScoreboardCriteria;
+import net.minecraft.command.arguments.ObjectiveArgumentType;
+import net.minecraft.command.arguments.ObjectiveCriteriaArgumentType;
+import net.minecraft.command.arguments.OperationArgumentType;
+import net.minecraft.command.arguments.ScoreHolderArgumentType;
+import net.minecraft.command.arguments.ScoreboardSlotArgumentType;
+import net.minecraft.command.arguments.TextArgumentType;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.ChatSerializer;
 
 public class ScoreboardCommand {
-	private static final SimpleCommandExceptionType field_21777 = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OBJECTIVES_ADD_DUPLICATE_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.scoreboard.objectives.add.duplicate")
 	);
-	private static final SimpleCommandExceptionType field_21778 = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OBJECTIVES_DISPLAY_ALREADYEMPTY_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.scoreboard.objectives.display.alreadyEmpty")
 	);
-	private static final SimpleCommandExceptionType field_21779 = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OBJECTIVES_DISPLAY_ALREADYSET_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.scoreboard.objectives.display.alreadySet")
 	);
-	private static final SimpleCommandExceptionType field_21780 = new SimpleCommandExceptionType(new TranslatableText("commands.scoreboard.players.enable.failed"));
-	private static final SimpleCommandExceptionType field_21781 = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType PLAYERS_ENABLE_FAILED_EXCEPTION = new SimpleCommandExceptionType(
+		new TranslatableText("commands.scoreboard.players.enable.failed")
+	);
+	private static final SimpleCommandExceptionType PLAYERS_ENABLE_INVALID_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.scoreboard.players.enable.invalid")
 	);
-	private static final Dynamic2CommandExceptionType field_21782 = new Dynamic2CommandExceptionType(
+	private static final Dynamic2CommandExceptionType PLAYERS_GET_NULL_EXCEPTION = new Dynamic2CommandExceptionType(
 		(object, object2) -> new TranslatableText("commands.scoreboard.players.get.null", object, object2)
 	);
 
-	public static void method_20962(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("scoreboard").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("scoreboard")
+						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.then(
-						((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("objectives")
-											.then(CommandManager.method_17529("list").executes(commandContext -> method_20966((class_3915)commandContext.getSource()))))
+						((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("objectives")
+											.then(CommandManager.literal("list").executes(commandContext -> executeListObjectives((ServerCommandSource)commandContext.getSource()))))
 										.then(
-											CommandManager.method_17529("add")
+											CommandManager.literal("add")
 												.then(
-													CommandManager.method_17530("objective", StringArgumentType.word())
+													CommandManager.argument("objective", StringArgumentType.word())
 														.then(
-															((RequiredArgumentBuilder)CommandManager.method_17530("criteria", class_4159.method_18598())
+															((RequiredArgumentBuilder)CommandManager.argument("criteria", ObjectiveCriteriaArgumentType.objectiveCriteria())
 																	.executes(
-																		commandContext -> method_20955(
-																				(class_3915)commandContext.getSource(),
+																		commandContext -> executeAddObjective(
+																				(ServerCommandSource)commandContext.getSource(),
 																				StringArgumentType.getString(commandContext, "objective"),
-																				class_4159.method_18600(commandContext, "criteria"),
+																				ObjectiveCriteriaArgumentType.getCriteria(commandContext, "criteria"),
 																				new LiteralText(StringArgumentType.getString(commandContext, "objective"))
 																			)
 																	))
 																.then(
-																	CommandManager.method_17530("displayName", class_4009.method_17711())
+																	CommandManager.argument("displayName", TextArgumentType.text())
 																		.executes(
-																			commandContext -> method_20955(
-																					(class_3915)commandContext.getSource(),
+																			commandContext -> executeAddObjective(
+																					(ServerCommandSource)commandContext.getSource(),
 																					StringArgumentType.getString(commandContext, "objective"),
-																					class_4159.method_18600(commandContext, "criteria"),
-																					class_4009.method_17713(commandContext, "displayName")
+																					ObjectiveCriteriaArgumentType.getCriteria(commandContext, "criteria"),
+																					TextArgumentType.getTextArgument(commandContext, "displayName")
 																				)
 																		)
 																)
@@ -86,42 +87,52 @@ public class ScoreboardCommand {
 												)
 										))
 									.then(
-										CommandManager.method_17529("modify")
+										CommandManager.literal("modify")
 											.then(
-												((RequiredArgumentBuilder)CommandManager.method_17530("objective", class_4151.method_18520())
+												((RequiredArgumentBuilder)CommandManager.argument("objective", ObjectiveArgumentType.objective())
 														.then(
-															CommandManager.method_17529("displayname")
+															CommandManager.literal("displayname")
 																.then(
-																	CommandManager.method_17530("displayName", class_4009.method_17711())
+																	CommandManager.argument("displayName", TextArgumentType.text())
 																		.executes(
-																			commandContext -> method_20952(
-																					(class_3915)commandContext.getSource(),
-																					class_4151.method_18522(commandContext, "objective"),
-																					class_4009.method_17713(commandContext, "displayName")
+																			commandContext -> executeModifyObjective(
+																					(ServerCommandSource)commandContext.getSource(),
+																					ObjectiveArgumentType.getObjective(commandContext, "objective"),
+																					TextArgumentType.getTextArgument(commandContext, "displayName")
 																				)
 																		)
 																)
 														))
-													.then(method_20946())
+													.then(makeRenderTypeArguments())
 											)
 									))
 								.then(
-									CommandManager.method_17529("remove")
+									CommandManager.literal("remove")
 										.then(
-											CommandManager.method_17530("objective", class_4151.method_18520())
-												.executes(commandContext -> method_20950((class_3915)commandContext.getSource(), class_4151.method_18522(commandContext, "objective")))
+											CommandManager.argument("objective", ObjectiveArgumentType.objective())
+												.executes(
+													commandContext -> executeRemoveObjective(
+															(ServerCommandSource)commandContext.getSource(), ObjectiveArgumentType.getObjective(commandContext, "objective")
+														)
+												)
 										)
 								))
 							.then(
-								CommandManager.method_17529("setdisplay")
+								CommandManager.literal("setdisplay")
 									.then(
-										((RequiredArgumentBuilder)CommandManager.method_17530("slot", class_4196.method_18938())
-												.executes(commandContext -> method_20948((class_3915)commandContext.getSource(), class_4196.method_18940(commandContext, "slot"))))
+										((RequiredArgumentBuilder)CommandManager.argument("slot", ScoreboardSlotArgumentType.scoreboardSlot())
+												.executes(
+													commandContext -> executeClearDisplay(
+															(ServerCommandSource)commandContext.getSource(), ScoreboardSlotArgumentType.getScorebordSlot(commandContext, "slot")
+														)
+												))
 											.then(
-												CommandManager.method_17530("objective", class_4151.method_18520())
+												CommandManager.argument("objective", ObjectiveArgumentType.objective())
 													.executes(
-														commandContext -> method_20949(
-																(class_3915)commandContext.getSource(), class_4196.method_18940(commandContext, "slot"), class_4151.method_18522(commandContext, "objective")
+														commandContext -> executeSetDisplay(
+																(ServerCommandSource)commandContext.getSource(),
+																ScoreboardSlotArgumentType.getScorebordSlot(commandContext, "slot"),
+																ObjectiveArgumentType.getObjective(commandContext, "objective")
 															)
 													)
 											)
@@ -129,31 +140,36 @@ public class ScoreboardCommand {
 							)
 					))
 				.then(
-					((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529(
+					((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal(
 														"players"
 													)
 													.then(
-														((LiteralArgumentBuilder)CommandManager.method_17529("list").executes(commandContext -> method_20947((class_3915)commandContext.getSource())))
+														((LiteralArgumentBuilder)CommandManager.literal("list")
+																.executes(commandContext -> executeListPlayers((ServerCommandSource)commandContext.getSource())))
 															.then(
-																CommandManager.method_17530("target", class_4186.method_18919())
-																	.suggests(class_4186.field_20535)
-																	.executes(commandContext -> method_20953((class_3915)commandContext.getSource(), class_4186.method_18923(commandContext, "target")))
+																CommandManager.argument("target", ScoreHolderArgumentType.scoreHolder())
+																	.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
+																	.executes(
+																		commandContext -> executeListScores(
+																				(ServerCommandSource)commandContext.getSource(), ScoreHolderArgumentType.getScoreHolder(commandContext, "target")
+																			)
+																	)
 															)
 													))
 												.then(
-													CommandManager.method_17529("set")
+													CommandManager.literal("set")
 														.then(
-															CommandManager.method_17530("targets", class_4186.method_18927())
-																.suggests(class_4186.field_20535)
+															CommandManager.argument("targets", ScoreHolderArgumentType.scoreHolders())
+																.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 																.then(
-																	CommandManager.method_17530("objective", class_4151.method_18520())
+																	CommandManager.argument("objective", ObjectiveArgumentType.objective())
 																		.then(
-																			CommandManager.method_17530("score", IntegerArgumentType.integer())
+																			CommandManager.argument("score", IntegerArgumentType.integer())
 																				.executes(
-																					commandContext -> method_20958(
-																							(class_3915)commandContext.getSource(),
-																							class_4186.method_18930(commandContext, "targets"),
-																							class_4151.method_18524(commandContext, "objective"),
+																					commandContext -> executeSet(
+																							(ServerCommandSource)commandContext.getSource(),
+																							ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																							ObjectiveArgumentType.getWritableObjective(commandContext, "objective"),
 																							IntegerArgumentType.getInteger(commandContext, "score")
 																						)
 																				)
@@ -162,36 +178,36 @@ public class ScoreboardCommand {
 														)
 												))
 											.then(
-												CommandManager.method_17529("get")
+												CommandManager.literal("get")
 													.then(
-														CommandManager.method_17530("target", class_4186.method_18919())
-															.suggests(class_4186.field_20535)
+														CommandManager.argument("target", ScoreHolderArgumentType.scoreHolder())
+															.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 															.then(
-																CommandManager.method_17530("objective", class_4151.method_18520())
+																CommandManager.argument("objective", ObjectiveArgumentType.objective())
 																	.executes(
-																		commandContext -> method_20954(
-																				(class_3915)commandContext.getSource(),
-																				class_4186.method_18923(commandContext, "target"),
-																				class_4151.method_18522(commandContext, "objective")
+																		commandContext -> executeGet(
+																				(ServerCommandSource)commandContext.getSource(),
+																				ScoreHolderArgumentType.getScoreHolder(commandContext, "target"),
+																				ObjectiveArgumentType.getObjective(commandContext, "objective")
 																			)
 																	)
 															)
 													)
 											))
 										.then(
-											CommandManager.method_17529("add")
+											CommandManager.literal("add")
 												.then(
-													CommandManager.method_17530("targets", class_4186.method_18927())
-														.suggests(class_4186.field_20535)
+													CommandManager.argument("targets", ScoreHolderArgumentType.scoreHolders())
+														.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 														.then(
-															CommandManager.method_17530("objective", class_4151.method_18520())
+															CommandManager.argument("objective", ObjectiveArgumentType.objective())
 																.then(
-																	CommandManager.method_17530("score", IntegerArgumentType.integer(0))
+																	CommandManager.argument("score", IntegerArgumentType.integer(0))
 																		.executes(
-																			commandContext -> method_20968(
-																					(class_3915)commandContext.getSource(),
-																					class_4186.method_18930(commandContext, "targets"),
-																					class_4151.method_18524(commandContext, "objective"),
+																			commandContext -> executeAdd(
+																					(ServerCommandSource)commandContext.getSource(),
+																					ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																					ObjectiveArgumentType.getWritableObjective(commandContext, "objective"),
 																					IntegerArgumentType.getInteger(commandContext, "score")
 																				)
 																		)
@@ -200,19 +216,19 @@ public class ScoreboardCommand {
 												)
 										))
 									.then(
-										CommandManager.method_17529("remove")
+										CommandManager.literal("remove")
 											.then(
-												CommandManager.method_17530("targets", class_4186.method_18927())
-													.suggests(class_4186.field_20535)
+												CommandManager.argument("targets", ScoreHolderArgumentType.scoreHolders())
+													.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 													.then(
-														CommandManager.method_17530("objective", class_4151.method_18520())
+														CommandManager.argument("objective", ObjectiveArgumentType.objective())
 															.then(
-																CommandManager.method_17530("score", IntegerArgumentType.integer(0))
+																CommandManager.argument("score", IntegerArgumentType.integer(0))
 																	.executes(
-																		commandContext -> method_20971(
-																				(class_3915)commandContext.getSource(),
-																				class_4186.method_18930(commandContext, "targets"),
-																				class_4151.method_18524(commandContext, "objective"),
+																		commandContext -> executeRemove(
+																				(ServerCommandSource)commandContext.getSource(),
+																				ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																				ObjectiveArgumentType.getWritableObjective(commandContext, "objective"),
 																				IntegerArgumentType.getInteger(commandContext, "score")
 																			)
 																	)
@@ -221,67 +237,73 @@ public class ScoreboardCommand {
 											)
 									))
 								.then(
-									CommandManager.method_17529("reset")
+									CommandManager.literal("reset")
 										.then(
-											((RequiredArgumentBuilder)CommandManager.method_17530("targets", class_4186.method_18927())
-													.suggests(class_4186.field_20535)
-													.executes(commandContext -> method_20956((class_3915)commandContext.getSource(), class_4186.method_18930(commandContext, "targets"))))
+											((RequiredArgumentBuilder)CommandManager.argument("targets", ScoreHolderArgumentType.scoreHolders())
+													.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
+													.executes(
+														commandContext -> executeReset(
+																(ServerCommandSource)commandContext.getSource(), ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets")
+															)
+													))
 												.then(
-													CommandManager.method_17530("objective", class_4151.method_18520())
+													CommandManager.argument("objective", ObjectiveArgumentType.objective())
 														.executes(
-															commandContext -> method_20967(
-																	(class_3915)commandContext.getSource(),
-																	class_4186.method_18930(commandContext, "targets"),
-																	class_4151.method_18522(commandContext, "objective")
+															commandContext -> executeReset(
+																	(ServerCommandSource)commandContext.getSource(),
+																	ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																	ObjectiveArgumentType.getObjective(commandContext, "objective")
 																)
 														)
 												)
 										)
 								))
 							.then(
-								CommandManager.method_17529("enable")
+								CommandManager.literal("enable")
 									.then(
-										CommandManager.method_17530("targets", class_4186.method_18927())
-											.suggests(class_4186.field_20535)
+										CommandManager.argument("targets", ScoreHolderArgumentType.scoreHolders())
+											.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 											.then(
-												CommandManager.method_17530("objective", class_4151.method_18520())
+												CommandManager.argument("objective", ObjectiveArgumentType.objective())
 													.suggests(
-														(commandContext, suggestionsBuilder) -> method_20960(
-																(class_3915)commandContext.getSource(), class_4186.method_18930(commandContext, "targets"), suggestionsBuilder
+														(commandContext, suggestionsBuilder) -> suggestDisabled(
+																(ServerCommandSource)commandContext.getSource(),
+																ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																suggestionsBuilder
 															)
 													)
 													.executes(
-														commandContext -> method_20957(
-																(class_3915)commandContext.getSource(),
-																class_4186.method_18930(commandContext, "targets"),
-																class_4151.method_18522(commandContext, "objective")
+														commandContext -> executeEnable(
+																(ServerCommandSource)commandContext.getSource(),
+																ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																ObjectiveArgumentType.getObjective(commandContext, "objective")
 															)
 													)
 											)
 									)
 							))
 						.then(
-							CommandManager.method_17529("operation")
+							CommandManager.literal("operation")
 								.then(
-									CommandManager.method_17530("targets", class_4186.method_18927())
-										.suggests(class_4186.field_20535)
+									CommandManager.argument("targets", ScoreHolderArgumentType.scoreHolders())
+										.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 										.then(
-											CommandManager.method_17530("targetObjective", class_4151.method_18520())
+											CommandManager.argument("targetObjective", ObjectiveArgumentType.objective())
 												.then(
-													CommandManager.method_17530("operation", class_4164.method_18683())
+													CommandManager.argument("operation", OperationArgumentType.operation())
 														.then(
-															CommandManager.method_17530("source", class_4186.method_18927())
-																.suggests(class_4186.field_20535)
+															CommandManager.argument("source", ScoreHolderArgumentType.scoreHolders())
+																.suggests(ScoreHolderArgumentType.SUGGESTION_PROVIDER)
 																.then(
-																	CommandManager.method_17530("sourceObjective", class_4151.method_18520())
+																	CommandManager.argument("sourceObjective", ObjectiveArgumentType.objective())
 																		.executes(
-																			commandContext -> method_20959(
-																					(class_3915)commandContext.getSource(),
-																					class_4186.method_18930(commandContext, "targets"),
-																					class_4151.method_18524(commandContext, "targetObjective"),
-																					class_4164.method_18687(commandContext, "operation"),
-																					class_4186.method_18930(commandContext, "source"),
-																					class_4151.method_18522(commandContext, "sourceObjective")
+																			commandContext -> executeOperation(
+																					(ServerCommandSource)commandContext.getSource(),
+																					ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "targets"),
+																					ObjectiveArgumentType.getWritableObjective(commandContext, "targetObjective"),
+																					OperationArgumentType.getOperation(commandContext, "operation"),
+																					ScoreHolderArgumentType.getScoreboardScoreHolders(commandContext, "source"),
+																					ObjectiveArgumentType.getObjective(commandContext, "sourceObjective")
 																				)
 																		)
 																)
@@ -294,25 +316,31 @@ public class ScoreboardCommand {
 		);
 	}
 
-	private static LiteralArgumentBuilder<class_3915> method_20946() {
-		LiteralArgumentBuilder<class_3915> literalArgumentBuilder = CommandManager.method_17529("rendertype");
+	private static LiteralArgumentBuilder<ServerCommandSource> makeRenderTypeArguments() {
+		LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = CommandManager.literal("rendertype");
 
-		for (GenericScoreboardCriteria.class_4104 lv : GenericScoreboardCriteria.class_4104.values()) {
+		for (ScoreboardCriterion.RenderType renderType : ScoreboardCriterion.RenderType.values()) {
 			literalArgumentBuilder.then(
-				CommandManager.method_17529(lv.method_18132())
-					.executes(commandContext -> method_20951((class_3915)commandContext.getSource(), class_4151.method_18522(commandContext, "objective"), lv))
+				CommandManager.literal(renderType.getName())
+					.executes(
+						commandContext -> executeModifyRenderType(
+								(ServerCommandSource)commandContext.getSource(), ObjectiveArgumentType.getObjective(commandContext, "objective"), renderType
+							)
+					)
 			);
 		}
 
 		return literalArgumentBuilder;
 	}
 
-	private static CompletableFuture<Suggestions> method_20960(class_3915 arg, Collection<String> collection, SuggestionsBuilder suggestionsBuilder) {
+	private static CompletableFuture<Suggestions> suggestDisabled(
+		ServerCommandSource serverCommandSource, Collection<String> collection, SuggestionsBuilder suggestionsBuilder
+	) {
 		List<String> list = Lists.newArrayList();
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 
 		for (ScoreboardObjective scoreboardObjective : scoreboard.getObjectives()) {
-			if (scoreboardObjective.method_4848() == GenericScoreboardCriteria.TRIGGER) {
+			if (scoreboardObjective.getCriterion() == ScoreboardCriterion.field_1462) {
 				boolean bl = false;
 
 				for (String string : collection) {
@@ -328,31 +356,31 @@ public class ScoreboardCommand {
 			}
 		}
 
-		return class_3965.method_17571(list, suggestionsBuilder);
+		return CommandSource.suggestMatching(list, suggestionsBuilder);
 	}
 
-	private static int method_20954(class_3915 arg, String string, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeGet(ServerCommandSource serverCommandSource, String string, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		if (!scoreboard.playerHasObjective(string, scoreboardObjective)) {
-			throw field_21782.create(scoreboardObjective.getName(), string);
+			throw PLAYERS_GET_NULL_EXCEPTION.create(scoreboardObjective.getName(), string);
 		} else {
 			ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string, scoreboardObjective);
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.players.get.success", string, scoreboardPlayerScore.getScore(), scoreboardObjective.method_18090()), false
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.get.success", string, scoreboardPlayerScore.getScore(), scoreboardObjective.toHoverableText()), false
 			);
 			return scoreboardPlayerScore.getScore();
 		}
 	}
 
-	private static int method_20959(
-		class_3915 arg,
+	private static int executeOperation(
+		ServerCommandSource serverCommandSource,
 		Collection<String> collection,
 		ScoreboardObjective scoreboardObjective,
-		class_4164.class_4165 arg2,
+		OperationArgumentType.Operation operation,
 		Collection<String> collection2,
 		ScoreboardObjective scoreboardObjective2
 	) throws CommandSyntaxException {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		int i = 0;
 
 		for (String string : collection) {
@@ -360,28 +388,30 @@ public class ScoreboardCommand {
 
 			for (String string2 : collection2) {
 				ScoreboardPlayerScore scoreboardPlayerScore2 = scoreboard.getPlayerScore(string2, scoreboardObjective2);
-				arg2.apply(scoreboardPlayerScore, scoreboardPlayerScore2);
+				operation.apply(scoreboardPlayerScore, scoreboardPlayerScore2);
 			}
 
 			i += scoreboardPlayerScore.getScore();
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.players.operation.success.single", scoreboardObjective.method_18090(), collection.iterator().next(), i), true
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.operation.success.single", scoreboardObjective.toHoverableText(), collection.iterator().next(), i), true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.operation.success.multiple", scoreboardObjective.method_18090(), collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.operation.success.multiple", scoreboardObjective.toHoverableText(), collection.size()), true
+			);
 		}
 
 		return i;
 	}
 
-	private static int method_20957(class_3915 arg, Collection<String> collection, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
-		if (scoreboardObjective.method_4848() != GenericScoreboardCriteria.TRIGGER) {
-			throw field_21781.create();
+	private static int executeEnable(ServerCommandSource serverCommandSource, Collection<String> collection, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
+		if (scoreboardObjective.getCriterion() != ScoreboardCriterion.field_1462) {
+			throw PLAYERS_ENABLE_INVALID_EXCEPTION.create();
 		} else {
-			Scoreboard scoreboard = arg.method_17473().method_20333();
+			Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 			int i = 0;
 
 			for (String string : collection) {
@@ -393,14 +423,16 @@ public class ScoreboardCommand {
 			}
 
 			if (i == 0) {
-				throw field_21780.create();
+				throw PLAYERS_ENABLE_FAILED_EXCEPTION.create();
 			} else {
 				if (collection.size() == 1) {
-					arg.method_17459(
-						new TranslatableText("commands.scoreboard.players.enable.success.single", scoreboardObjective.method_18090(), collection.iterator().next()), true
+					serverCommandSource.sendFeedback(
+						new TranslatableText("commands.scoreboard.players.enable.success.single", scoreboardObjective.toHoverableText(), collection.iterator().next()), true
 					);
 				} else {
-					arg.method_17459(new TranslatableText("commands.scoreboard.players.enable.success.multiple", scoreboardObjective.method_18090(), collection.size()), true);
+					serverCommandSource.sendFeedback(
+						new TranslatableText("commands.scoreboard.players.enable.success.multiple", scoreboardObjective.toHoverableText(), collection.size()), true
+					);
 				}
 
 				return i;
@@ -408,42 +440,44 @@ public class ScoreboardCommand {
 		}
 	}
 
-	private static int method_20956(class_3915 arg, Collection<String> collection) {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeReset(ServerCommandSource serverCommandSource, Collection<String> collection) {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 
 		for (String string : collection) {
 			scoreboard.resetPlayerScore(string, null);
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.reset.all.single", collection.iterator().next()), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.players.reset.all.single", collection.iterator().next()), true);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.reset.all.multiple", collection.size()), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.players.reset.all.multiple", collection.size()), true);
 		}
 
 		return collection.size();
 	}
 
-	private static int method_20967(class_3915 arg, Collection<String> collection, ScoreboardObjective scoreboardObjective) {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeReset(ServerCommandSource serverCommandSource, Collection<String> collection, ScoreboardObjective scoreboardObjective) {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 
 		for (String string : collection) {
 			scoreboard.resetPlayerScore(string, scoreboardObjective);
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.players.reset.specific.single", scoreboardObjective.method_18090(), collection.iterator().next()), true
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.reset.specific.single", scoreboardObjective.toHoverableText(), collection.iterator().next()), true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.reset.specific.multiple", scoreboardObjective.method_18090(), collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.reset.specific.multiple", scoreboardObjective.toHoverableText(), collection.size()), true
+			);
 		}
 
 		return collection.size();
 	}
 
-	private static int method_20958(class_3915 arg, Collection<String> collection, ScoreboardObjective scoreboardObjective, int i) {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeSet(ServerCommandSource serverCommandSource, Collection<String> collection, ScoreboardObjective scoreboardObjective, int i) {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 
 		for (String string : collection) {
 			ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string, scoreboardObjective);
@@ -451,18 +485,20 @@ public class ScoreboardCommand {
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.players.set.success.single", scoreboardObjective.method_18090(), collection.iterator().next(), i), true
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.set.success.single", scoreboardObjective.toHoverableText(), collection.iterator().next(), i), true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.set.success.multiple", scoreboardObjective.method_18090(), collection.size(), i), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.set.success.multiple", scoreboardObjective.toHoverableText(), collection.size(), i), true
+			);
 		}
 
 		return i * collection.size();
 	}
 
-	private static int method_20968(class_3915 arg, Collection<String> collection, ScoreboardObjective scoreboardObjective, int i) {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeAdd(ServerCommandSource serverCommandSource, Collection<String> collection, ScoreboardObjective scoreboardObjective, int i) {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		int j = 0;
 
 		for (String string : collection) {
@@ -472,18 +508,20 @@ public class ScoreboardCommand {
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.players.add.success.single", i, scoreboardObjective.method_18090(), collection.iterator().next(), j), true
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.add.success.single", i, scoreboardObjective.toHoverableText(), collection.iterator().next(), j), true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.add.success.multiple", i, scoreboardObjective.method_18090(), collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.add.success.multiple", i, scoreboardObjective.toHoverableText(), collection.size()), true
+			);
 		}
 
 		return j;
 	}
 
-	private static int method_20971(class_3915 arg, Collection<String> collection, ScoreboardObjective scoreboardObjective, int i) {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeRemove(ServerCommandSource serverCommandSource, Collection<String> collection, ScoreboardObjective scoreboardObjective, int i) {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		int j = 0;
 
 		for (String string : collection) {
@@ -493,39 +531,41 @@ public class ScoreboardCommand {
 		}
 
 		if (collection.size() == 1) {
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.players.remove.success.single", i, scoreboardObjective.method_18090(), collection.iterator().next(), j), true
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.remove.success.single", i, scoreboardObjective.toHoverableText(), collection.iterator().next(), j), true
 			);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.remove.success.multiple", i, scoreboardObjective.method_18090(), collection.size()), true);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.players.remove.success.multiple", i, scoreboardObjective.toHoverableText(), collection.size()), true
+			);
 		}
 
 		return j;
 	}
 
-	private static int method_20947(class_3915 arg) {
-		Collection<String> collection = arg.method_17473().method_20333().getKnownPlayers();
+	private static int executeListPlayers(ServerCommandSource serverCommandSource) {
+		Collection<String> collection = serverCommandSource.getMinecraftServer().getScoreboard().getKnownPlayers();
 		if (collection.isEmpty()) {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.list.empty"), false);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.players.list.empty"), false);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.list.success", collection.size(), ChatSerializer.method_20191(collection)), false);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.players.list.success", collection.size(), Texts.joinOrdered(collection)), false);
 		}
 
 		return collection.size();
 	}
 
-	private static int method_20953(class_3915 arg, String string) {
-		Map<ScoreboardObjective, ScoreboardPlayerScore> map = arg.method_17473().method_20333().getPlayerObjectives(string);
+	private static int executeListScores(ServerCommandSource serverCommandSource, String string) {
+		Map<ScoreboardObjective, ScoreboardPlayerScore> map = serverCommandSource.getMinecraftServer().getScoreboard().getPlayerObjectives(string);
 		if (map.isEmpty()) {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.list.entity.empty", string), false);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.players.list.entity.empty", string), false);
 		} else {
-			arg.method_17459(new TranslatableText("commands.scoreboard.players.list.entity.success", string, map.size()), false);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.players.list.entity.success", string, map.size()), false);
 
 			for (Entry<ScoreboardObjective, ScoreboardPlayerScore> entry : map.entrySet()) {
-				arg.method_17459(
+				serverCommandSource.sendFeedback(
 					new TranslatableText(
 						"commands.scoreboard.players.list.entity.entry",
-						((ScoreboardObjective)entry.getKey()).method_18090(),
+						((ScoreboardObjective)entry.getKey()).toHoverableText(),
 						((ScoreboardPlayerScore)entry.getValue()).getScore()
 					),
 					false
@@ -536,81 +576,80 @@ public class ScoreboardCommand {
 		return map.size();
 	}
 
-	private static int method_20948(class_3915 arg, int i) throws CommandSyntaxException {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeClearDisplay(ServerCommandSource serverCommandSource, int i) throws CommandSyntaxException {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		if (scoreboard.getObjectiveForSlot(i) == null) {
-			throw field_21778.create();
+			throw OBJECTIVES_DISPLAY_ALREADYEMPTY_EXCEPTION.create();
 		} else {
 			scoreboard.setObjectiveSlot(i, null);
-			arg.method_17459(new TranslatableText("commands.scoreboard.objectives.display.cleared", Scoreboard.getDisplaySlotNames()[i]), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.objectives.display.cleared", Scoreboard.getDisplaySlotNames()[i]), true);
 			return 0;
 		}
 	}
 
-	private static int method_20949(class_3915 arg, int i, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeSetDisplay(ServerCommandSource serverCommandSource, int i, ScoreboardObjective scoreboardObjective) throws CommandSyntaxException {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		if (scoreboard.getObjectiveForSlot(i) == scoreboardObjective) {
-			throw field_21779.create();
+			throw OBJECTIVES_DISPLAY_ALREADYSET_EXCEPTION.create();
 		} else {
 			scoreboard.setObjectiveSlot(i, scoreboardObjective);
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.objectives.display.set", Scoreboard.getDisplaySlotNames()[i], scoreboardObjective.method_4849()), true
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.objectives.display.set", Scoreboard.getDisplaySlotNames()[i], scoreboardObjective.getDisplayName()), true
 			);
 			return 0;
 		}
 	}
 
-	private static int method_20952(class_3915 arg, ScoreboardObjective scoreboardObjective, Text text) {
-		if (!scoreboardObjective.method_4849().equals(text)) {
-			scoreboardObjective.method_18088(text);
-			arg.method_17459(
-				new TranslatableText("commands.scoreboard.objectives.modify.displayname", scoreboardObjective.getName(), scoreboardObjective.method_18090()), true
+	private static int executeModifyObjective(ServerCommandSource serverCommandSource, ScoreboardObjective scoreboardObjective, Text text) {
+		if (!scoreboardObjective.getDisplayName().equals(text)) {
+			scoreboardObjective.setDisplayName(text);
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.objectives.modify.displayname", scoreboardObjective.getName(), scoreboardObjective.toHoverableText()), true
 			);
 		}
 
 		return 0;
 	}
 
-	private static int method_20951(class_3915 arg, ScoreboardObjective scoreboardObjective, GenericScoreboardCriteria.class_4104 arg2) {
-		if (scoreboardObjective.method_9351() != arg2) {
-			scoreboardObjective.method_9350(arg2);
-			arg.method_17459(new TranslatableText("commands.scoreboard.objectives.modify.rendertype", scoreboardObjective.method_18090()), true);
+	private static int executeModifyRenderType(
+		ServerCommandSource serverCommandSource, ScoreboardObjective scoreboardObjective, ScoreboardCriterion.RenderType renderType
+	) {
+		if (scoreboardObjective.getRenderType() != renderType) {
+			scoreboardObjective.setRenderType(renderType);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.objectives.modify.rendertype", scoreboardObjective.toHoverableText()), true);
 		}
 
 		return 0;
 	}
 
-	private static int method_20950(class_3915 arg, ScoreboardObjective scoreboardObjective) {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeRemoveObjective(ServerCommandSource serverCommandSource, ScoreboardObjective scoreboardObjective) {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		scoreboard.removeObjective(scoreboardObjective);
-		arg.method_17459(new TranslatableText("commands.scoreboard.objectives.remove.success", scoreboardObjective.method_18090()), true);
+		serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.objectives.remove.success", scoreboardObjective.toHoverableText()), true);
 		return scoreboard.getObjectives().size();
 	}
 
-	private static int method_20955(class_3915 arg, String string, GenericScoreboardCriteria genericScoreboardCriteria, Text text) throws CommandSyntaxException {
-		Scoreboard scoreboard = arg.method_17473().method_20333();
+	private static int executeAddObjective(ServerCommandSource serverCommandSource, String string, ScoreboardCriterion scoreboardCriterion, Text text) throws CommandSyntaxException {
+		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
 		if (scoreboard.getNullableObjective(string) != null) {
-			throw field_21777.create();
+			throw OBJECTIVES_ADD_DUPLICATE_EXCEPTION.create();
 		} else if (string.length() > 16) {
-			throw class_4151.field_20192.create(16);
+			throw ObjectiveArgumentType.LONG_NAME_EXCEPTION.create(16);
 		} else {
-			scoreboard.method_18113(string, genericScoreboardCriteria, text, genericScoreboardCriteria.method_18131());
+			scoreboard.addObjective(string, scoreboardCriterion, text, scoreboardCriterion.getCriterionType());
 			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(string);
-			arg.method_17459(new TranslatableText("commands.scoreboard.objectives.add.success", scoreboardObjective.method_18090()), true);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.objectives.add.success", scoreboardObjective.toHoverableText()), true);
 			return scoreboard.getObjectives().size();
 		}
 	}
 
-	private static int method_20966(class_3915 arg) {
-		Collection<ScoreboardObjective> collection = arg.method_17473().method_20333().getObjectives();
+	private static int executeListObjectives(ServerCommandSource serverCommandSource) {
+		Collection<ScoreboardObjective> collection = serverCommandSource.getMinecraftServer().getScoreboard().getObjectives();
 		if (collection.isEmpty()) {
-			arg.method_17459(new TranslatableText("commands.scoreboard.objectives.list.empty"), false);
+			serverCommandSource.sendFeedback(new TranslatableText("commands.scoreboard.objectives.list.empty"), false);
 		} else {
-			arg.method_17459(
-				new TranslatableText(
-					"commands.scoreboard.objectives.list.success", collection.size(), ChatSerializer.method_20193(collection, ScoreboardObjective::method_18090)
-				),
-				false
+			serverCommandSource.sendFeedback(
+				new TranslatableText("commands.scoreboard.objectives.list.success", collection.size(), Texts.join(collection, ScoreboardObjective::toHoverableText)), false
 			);
 		}
 

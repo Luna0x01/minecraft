@@ -1,7 +1,7 @@
 package net.minecraft.client.sound;
 
-import net.minecraft.util.Tickable;
-
-public interface TickableSoundInstance extends SoundInstance, Tickable {
+public interface TickableSoundInstance extends SoundInstance {
 	boolean isDone();
+
+	void tick();
 }

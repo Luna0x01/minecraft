@@ -1,1114 +1,976 @@
 package net.minecraft.entity.passive;
 
-import java.util.Locale;
-import java.util.Random;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.util.Pair;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import net.minecraft.class_3082;
-import net.minecraft.class_3133;
-import net.minecraft.class_4342;
-import net.minecraft.advancement.AchievementsAndCriterions;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.EnchantmentLevelEntry;
+import net.minecraft.client.network.DebugRendererInfoManager;
+import net.minecraft.datafixers.NbtOps;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityInteraction;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EvocationIllagerEntity;
 import net.minecraft.entity.ExperienceOrbEntity;
+import net.minecraft.entity.InteractionObserver;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LightningBoltEntity;
+import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.Tradable;
-import net.minecraft.entity.VexEntity;
-import net.minecraft.entity.VindicationIllagerEntity;
-import net.minecraft.entity.ai.goal.FleeEntityGoal;
-import net.minecraft.entity.ai.goal.FollowGolemGoal;
-import net.minecraft.entity.ai.goal.FormCaravanGoal;
-import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
-import net.minecraft.entity.ai.goal.HarvestCropsGoal;
-import net.minecraft.entity.ai.goal.LongDoorInteractGoal;
-import net.minecraft.entity.ai.goal.LookAtCustomerGoal;
-import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.RestrictOpenDoorGoal;
-import net.minecraft.entity.ai.goal.StayIndoorsGoal;
-import net.minecraft.entity.ai.goal.StopAndLookAtEntityGoal;
-import net.minecraft.entity.ai.goal.StopFollowingCustomerGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.VillagerInteractGoal;
-import net.minecraft.entity.ai.goal.VillagerMatingGoal;
+import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.ai.brain.Activity;
+import net.minecraft.entity.ai.brain.Brain;
+import net.minecraft.entity.ai.brain.MemoryModuleState;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
+import net.minecraft.entity.ai.brain.Schedule;
+import net.minecraft.entity.ai.brain.sensor.Sensor;
+import net.minecraft.entity.ai.brain.sensor.SensorType;
+import net.minecraft.entity.ai.brain.task.VillagerTaskListProvider;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.WitchEntity;
-import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.EnchantedBookItem;
-import net.minecraft.item.FilledMapItem;
+import net.minecraft.entity.raid.Raid;
+import net.minecraft.inventory.BasicInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.item.map.MapState;
-import net.minecraft.loot.LootTables;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.particle.ParticleEffect;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.Team;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.GlobalPos;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
+import net.minecraft.util.Timestamp;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.village.PointOfInterestStorage;
+import net.minecraft.village.PointOfInterestType;
 import net.minecraft.village.TradeOffer;
+import net.minecraft.village.TradeOffers;
 import net.minecraft.village.TraderOfferList;
-import net.minecraft.village.Village;
+import net.minecraft.village.VillageGossipType;
+import net.minecraft.village.VillagerData;
+import net.minecraft.village.VillagerDataContainer;
+import net.minecraft.village.VillagerGossips;
+import net.minecraft.village.VillagerProfession;
+import net.minecraft.village.VillagerType;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
-	private static final Logger VILLAGER_LOGGER = LogManager.getLogger();
-	private static final TrackedData<Integer> field_14789 = DataTracker.registerData(VillagerEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private int field_3951;
-	private boolean field_3952;
-	private boolean field_3953;
-	private Village field_3950;
+public class VillagerEntity extends AbstractTraderEntity implements InteractionObserver, VillagerDataContainer {
+	private static final TrackedData<VillagerData> VILLAGER_DATA = DataTracker.registerData(VillagerEntity.class, TrackedDataHandlerRegistry.VILLAGER_DATA);
+	public static final Map<Item, Integer> ITEM_FOOD_VALUES = ImmutableMap.of(Items.field_8229, 4, Items.field_8567, 1, Items.field_8179, 1, Items.field_8186, 1);
+	private static final Set<Item> GATHERABLE_ITEMS = ImmutableSet.of(
+		Items.field_8229, Items.field_8567, Items.field_8179, Items.field_8861, Items.field_8317, Items.field_8186, new Item[]{Items.field_8309}
+	);
+	private int levelUpTimer;
+	private boolean levellingUp;
 	@Nullable
-	private PlayerEntity customer;
-	@Nullable
-	private TraderOfferList offers;
-	private int field_3956;
-	private boolean field_3948;
-	private boolean willingToMate;
-	private int riches;
-	private String field_5395;
-	private int career;
-	private int careerLevel;
-	private boolean field_5396;
-	private boolean field_12106;
-	private final SimpleInventory villagerInventory = new SimpleInventory(new LiteralText("Items"), 8);
-	private static final VillagerEntity.TradeProvider[][][][] TRADES = new VillagerEntity.TradeProvider[][][][]{
-		{
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.WHEAT, new VillagerEntity.Cost(18, 22)),
-								new VillagerEntity.ItemTradeEntry(Items.POTATO, new VillagerEntity.Cost(15, 19)),
-								new VillagerEntity.ItemTradeEntry(Items.CARROT, new VillagerEntity.Cost(15, 19)),
-								new VillagerEntity.ItemStackTradeEntry(Items.BREAD, new VillagerEntity.Cost(-4, -2))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Blocks.PUMPKIN, new VillagerEntity.Cost(8, 13)),
-								new VillagerEntity.ItemStackTradeEntry(Items.PUMPKIN_PIE, new VillagerEntity.Cost(-3, -2))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Blocks.MELON_BLOCK, new VillagerEntity.Cost(7, 12)),
-								new VillagerEntity.ItemStackTradeEntry(Items.APPLE, new VillagerEntity.Cost(-7, -5))
-						},
-						{
-								new VillagerEntity.ItemStackTradeEntry(Items.COOKIE, new VillagerEntity.Cost(-10, -6)),
-								new VillagerEntity.ItemStackTradeEntry(Blocks.CAKE, new VillagerEntity.Cost(1, 1))
-						}
-				},
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.STRING, new VillagerEntity.Cost(15, 20)),
-								new VillagerEntity.ItemTradeEntry(Items.COAL, new VillagerEntity.Cost(16, 24)),
-								new VillagerEntity.EmeraldToItem(Items.COD, new VillagerEntity.Cost(6, 6), Items.COOKED_COD, new VillagerEntity.Cost(6, 6)),
-								new VillagerEntity.EmeraldToItem(Items.SALMON, new VillagerEntity.Cost(6, 6), Items.COOKED_SALMON, new VillagerEntity.Cost(6, 6))
-						},
-						{new VillagerEntity.EnchantedItemStackTradeEntry(Items.FISHING_ROD, new VillagerEntity.Cost(7, 8))}
-				},
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Blocks.WHITE_WOOL, new VillagerEntity.Cost(16, 22)),
-								new VillagerEntity.ItemStackTradeEntry(Items.SHEARS, new VillagerEntity.Cost(3, 4))
-						},
-						{
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.WHITE_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.ORANGE_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.MAGENTA_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.LIGHT_BLUE_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.YELLOW_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.LIME_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.PINK_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.GRAY_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.LIGHT_GRAY_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.CYAN_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.PURPLE_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.BLUE_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.BROWN_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.GREEN_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.RED_WOOL), new VillagerEntity.Cost(1, 2)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Blocks.BLACK_WOOL), new VillagerEntity.Cost(1, 2))
-						}
-				},
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.STRING, new VillagerEntity.Cost(15, 20)),
-								new VillagerEntity.ItemStackTradeEntry(Items.ARROW, new VillagerEntity.Cost(-12, -8))
-						},
-						{
-								new VillagerEntity.ItemStackTradeEntry(Items.BOW, new VillagerEntity.Cost(2, 3)),
-								new VillagerEntity.EmeraldToItem(Blocks.GRAVEL, new VillagerEntity.Cost(10, 10), Items.FLINT, new VillagerEntity.Cost(6, 10))
-						}
-				}
-		},
-		{
-				{
-						{new VillagerEntity.ItemTradeEntry(Items.PAPER, new VillagerEntity.Cost(24, 36)), new VillagerEntity.EnchantedBook()},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.BOOK, new VillagerEntity.Cost(8, 10)),
-								new VillagerEntity.ItemStackTradeEntry(Items.COMPASS, new VillagerEntity.Cost(10, 12)),
-								new VillagerEntity.ItemStackTradeEntry(Blocks.BOOKSHELF, new VillagerEntity.Cost(3, 4))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.WRITTEN_BOOK, new VillagerEntity.Cost(2, 2)),
-								new VillagerEntity.ItemStackTradeEntry(Items.CLOCK, new VillagerEntity.Cost(10, 12)),
-								new VillagerEntity.ItemStackTradeEntry(Blocks.GLASS, new VillagerEntity.Cost(-5, -3))
-						},
-						{new VillagerEntity.EnchantedBook()},
-						{new VillagerEntity.EnchantedBook()},
-						{new VillagerEntity.ItemStackTradeEntry(Items.NAME_TAG, new VillagerEntity.Cost(20, 22))}
-				},
-				{
-						{new VillagerEntity.ItemTradeEntry(Items.PAPER, new VillagerEntity.Cost(24, 36))},
-						{new VillagerEntity.ItemTradeEntry(Items.COMPASS, new VillagerEntity.Cost(1, 1))},
-						{new VillagerEntity.ItemStackTradeEntry(Items.MAP, new VillagerEntity.Cost(7, 11))},
-						{
-								new VillagerEntity.class_3051(new VillagerEntity.Cost(12, 20), "Monument", class_3082.class_3083.MONUMENT),
-								new VillagerEntity.class_3051(new VillagerEntity.Cost(16, 28), "Mansion", class_3082.class_3083.MANSION)
-						}
-				}
-		},
-		{
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.ROTTEN_FLESH, new VillagerEntity.Cost(36, 40)),
-								new VillagerEntity.ItemTradeEntry(Items.GOLD_INGOT, new VillagerEntity.Cost(8, 10))
-						},
-						{
-								new VillagerEntity.ItemStackTradeEntry(Items.REDSTONE, new VillagerEntity.Cost(-4, -1)),
-								new VillagerEntity.ItemStackTradeEntry(new ItemStack(Items.LAPIS_LAZULI), new VillagerEntity.Cost(-2, -1))
-						},
-						{
-								new VillagerEntity.ItemStackTradeEntry(Items.ENDER_PEARL, new VillagerEntity.Cost(4, 7)),
-								new VillagerEntity.ItemStackTradeEntry(Blocks.GLOWSTONE, new VillagerEntity.Cost(-3, -1))
-						},
-						{new VillagerEntity.ItemStackTradeEntry(Items.EXPERIENCE_BOTTLE, new VillagerEntity.Cost(3, 11))}
-				}
-		},
-		{
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.COAL, new VillagerEntity.Cost(16, 24)),
-								new VillagerEntity.ItemStackTradeEntry(Items.IRON_HELMET, new VillagerEntity.Cost(4, 6))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.IRON_INGOT, new VillagerEntity.Cost(7, 9)),
-								new VillagerEntity.ItemStackTradeEntry(Items.IRON_CHESTPLATE, new VillagerEntity.Cost(10, 14))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.DIAMOND, new VillagerEntity.Cost(3, 4)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.DIAMOND_CHESTPLATE, new VillagerEntity.Cost(16, 19))
-						},
-						{
-								new VillagerEntity.ItemStackTradeEntry(Items.CHAINMAIL_BOOTS, new VillagerEntity.Cost(5, 7)),
-								new VillagerEntity.ItemStackTradeEntry(Items.CHAINMAIL_LEGGINGS, new VillagerEntity.Cost(9, 11)),
-								new VillagerEntity.ItemStackTradeEntry(Items.CHAINMAIL_HELMET, new VillagerEntity.Cost(5, 7)),
-								new VillagerEntity.ItemStackTradeEntry(Items.CHAINMAIL_CHESTPLATE, new VillagerEntity.Cost(11, 15))
-						}
-				},
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.COAL, new VillagerEntity.Cost(16, 24)),
-								new VillagerEntity.ItemStackTradeEntry(Items.IRON_AXE, new VillagerEntity.Cost(6, 8))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.IRON_INGOT, new VillagerEntity.Cost(7, 9)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.IRON_SWORD, new VillagerEntity.Cost(9, 10))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.DIAMOND, new VillagerEntity.Cost(3, 4)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.DIAMOND_SWORD, new VillagerEntity.Cost(12, 15)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.DIAMOND_AXE, new VillagerEntity.Cost(9, 12))
-						}
-				},
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.COAL, new VillagerEntity.Cost(16, 24)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.IRON_SHOVEL, new VillagerEntity.Cost(5, 7))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.IRON_INGOT, new VillagerEntity.Cost(7, 9)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.IRON_PICKAXE, new VillagerEntity.Cost(9, 11))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.DIAMOND, new VillagerEntity.Cost(3, 4)),
-								new VillagerEntity.EnchantedItemStackTradeEntry(Items.DIAMOND_PICKAXE, new VillagerEntity.Cost(12, 15))
-						}
-				}
-		},
-		{
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.RAW_PORKCHOP, new VillagerEntity.Cost(14, 18)),
-								new VillagerEntity.ItemTradeEntry(Items.CHICKEN, new VillagerEntity.Cost(14, 18))
-						},
-						{
-								new VillagerEntity.ItemTradeEntry(Items.COAL, new VillagerEntity.Cost(16, 24)),
-								new VillagerEntity.ItemStackTradeEntry(Items.COOKED_PORKCHOP, new VillagerEntity.Cost(-7, -5)),
-								new VillagerEntity.ItemStackTradeEntry(Items.COOKED_CHICKEN, new VillagerEntity.Cost(-8, -6))
-						}
-				},
-				{
-						{
-								new VillagerEntity.ItemTradeEntry(Items.LEATHER, new VillagerEntity.Cost(9, 12)),
-								new VillagerEntity.ItemStackTradeEntry(Items.LEATHER_LEGGINGS, new VillagerEntity.Cost(2, 4))
-						},
-						{new VillagerEntity.EnchantedItemStackTradeEntry(Items.LEATHER_CHESTPLATE, new VillagerEntity.Cost(7, 12))},
-						{new VillagerEntity.ItemStackTradeEntry(Items.SADDLE, new VillagerEntity.Cost(8, 10))}
-				}
-		},
-		{new VillagerEntity.TradeProvider[0][]}
-	};
+	private PlayerEntity lastCustomer;
+	private byte foodLevel;
+	private final VillagerGossips gossip = new VillagerGossips();
+	private long gossipStartTime;
+	private long lastGossipDecayTime;
+	private int experience;
+	private long lastRestockTime;
+	private int restocksToday;
+	private long field_20332;
+	private static final ImmutableList<MemoryModuleType<?>> MEMORY_MODULES = ImmutableList.of(
+		MemoryModuleType.field_18438,
+		MemoryModuleType.field_18439,
+		MemoryModuleType.field_18440,
+		MemoryModuleType.field_18441,
+		MemoryModuleType.field_18442,
+		MemoryModuleType.field_19006,
+		MemoryModuleType.field_18443,
+		MemoryModuleType.field_18444,
+		MemoryModuleType.field_18445,
+		MemoryModuleType.field_18446,
+		MemoryModuleType.field_18447,
+		MemoryModuleType.field_18448,
+		new MemoryModuleType[]{
+			MemoryModuleType.field_18449,
+			MemoryModuleType.field_18450,
+			MemoryModuleType.field_20312,
+			MemoryModuleType.field_19007,
+			MemoryModuleType.field_18451,
+			MemoryModuleType.field_18452,
+			MemoryModuleType.field_18453,
+			MemoryModuleType.field_18873,
+			MemoryModuleType.field_19008,
+			MemoryModuleType.field_19009,
+			MemoryModuleType.field_19293,
+			MemoryModuleType.field_19385,
+			MemoryModuleType.field_19386,
+			MemoryModuleType.field_19355
+		}
+	);
+	private static final ImmutableList<SensorType<? extends Sensor<? super VillagerEntity>>> SENSORS = ImmutableList.of(
+		SensorType.field_18466,
+		SensorType.field_18467,
+		SensorType.field_18468,
+		SensorType.field_19010,
+		SensorType.field_18469,
+		SensorType.field_18470,
+		SensorType.field_19011,
+		SensorType.field_18875,
+		SensorType.field_19356
+	);
+	public static final Map<MemoryModuleType<GlobalPos>, BiPredicate<VillagerEntity, PointOfInterestType>> POINTS_OF_INTEREST = ImmutableMap.of(
+		MemoryModuleType.field_18438,
+		(BiPredicate)(villagerEntity, pointOfInterestType) -> pointOfInterestType == PointOfInterestType.field_18517,
+		MemoryModuleType.field_18439,
+		(BiPredicate)(villagerEntity, pointOfInterestType) -> villagerEntity.getVillagerData().getProfession().getWorkStation() == pointOfInterestType,
+		MemoryModuleType.field_18440,
+		(BiPredicate)(villagerEntity, pointOfInterestType) -> pointOfInterestType == PointOfInterestType.field_18518
+	);
 
-	public VillagerEntity(World world) {
-		this(world, 0);
+	public VillagerEntity(EntityType<? extends VillagerEntity> entityType, World world) {
+		this(entityType, world, VillagerType.PLAINS);
 	}
 
-	public VillagerEntity(World world, int i) {
-		super(EntityType.VILLAGER, world);
-		this.setProfession(i);
-		this.setBounds(0.6F, 1.95F);
+	public VillagerEntity(EntityType<? extends VillagerEntity> entityType, World world, VillagerType villagerType) {
+		super(entityType, world);
 		((MobNavigation)this.getNavigation()).setCanPathThroughDoors(true);
+		this.getNavigation().setCanSwim(true);
 		this.setCanPickUpLoot(true);
+		this.setVillagerData(this.getVillagerData().withType(villagerType).withProfession(VillagerProfession.field_17051));
+		this.brain = this.deserializeBrain(new Dynamic(NbtOps.INSTANCE, new CompoundTag()));
 	}
 
 	@Override
-	protected void initGoals() {
-		this.goals.add(0, new SwimGoal(this));
-		this.goals.add(1, new FleeEntityGoal(this, ZombieEntity.class, 8.0F, 0.6, 0.6));
-		this.goals.add(1, new FleeEntityGoal(this, EvocationIllagerEntity.class, 12.0F, 0.8, 0.8));
-		this.goals.add(1, new FleeEntityGoal(this, VindicationIllagerEntity.class, 8.0F, 0.8, 0.8));
-		this.goals.add(1, new FleeEntityGoal(this, VexEntity.class, 8.0F, 0.6, 0.6));
-		this.goals.add(1, new StopFollowingCustomerGoal(this));
-		this.goals.add(1, new LookAtCustomerGoal(this));
-		this.goals.add(2, new StayIndoorsGoal(this));
-		this.goals.add(3, new RestrictOpenDoorGoal(this));
-		this.goals.add(4, new LongDoorInteractGoal(this, true));
-		this.goals.add(5, new GoToWalkTargetGoal(this, 0.6));
-		this.goals.add(6, new VillagerMatingGoal(this));
-		this.goals.add(7, new FollowGolemGoal(this));
-		this.goals.add(9, new StopAndLookAtEntityGoal(this, PlayerEntity.class, 3.0F, 1.0F));
-		this.goals.add(9, new VillagerInteractGoal(this));
-		this.goals.add(9, new class_3133(this, 0.6));
-		this.goals.add(10, new LookAtEntityGoal(this, MobEntity.class, 8.0F));
+	public Brain<VillagerEntity> getBrain() {
+		return (Brain<VillagerEntity>)super.getBrain();
 	}
 
-	private void method_11225() {
-		if (!this.field_12106) {
-			this.field_12106 = true;
-			if (this.isBaby()) {
-				this.goals.add(8, new FormCaravanGoal(this, 0.32));
-			} else if (this.profession() == 0) {
-				this.goals.add(6, new HarvestCropsGoal(this, 0.6));
-			}
+	@Override
+	protected Brain<?> deserializeBrain(Dynamic<?> dynamic) {
+		Brain<VillagerEntity> brain = new Brain<>(MEMORY_MODULES, SENSORS, dynamic);
+		this.initBrain(brain);
+		return brain;
+	}
+
+	public void reinitializeBrain(ServerWorld serverWorld) {
+		Brain<VillagerEntity> brain = this.getBrain();
+		brain.stopAllTasks(serverWorld, this);
+		this.brain = brain.copy();
+		this.initBrain(this.getBrain());
+	}
+
+	private void initBrain(Brain<VillagerEntity> brain) {
+		VillagerProfession villagerProfession = this.getVillagerData().getProfession();
+		float f = (float)this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue();
+		if (this.isBaby()) {
+			brain.setSchedule(Schedule.VILLAGER_BABY);
+			brain.setTaskList(Activity.field_18885, VillagerTaskListProvider.createPlayTasks(f));
+		} else {
+			brain.setSchedule(Schedule.VILLAGER_DEFAULT);
+			brain.setTaskList(
+				Activity.field_18596,
+				VillagerTaskListProvider.createWorkTasks(villagerProfession, f),
+				ImmutableSet.of(Pair.of(MemoryModuleType.field_18439, MemoryModuleState.field_18456))
+			);
+		}
+
+		brain.setTaskList(Activity.field_18594, VillagerTaskListProvider.createCoreTasks(villagerProfession, f));
+		brain.setTaskList(
+			Activity.field_18598,
+			VillagerTaskListProvider.createMeetTasks(villagerProfession, f),
+			ImmutableSet.of(Pair.of(MemoryModuleType.field_18440, MemoryModuleState.field_18456))
+		);
+		brain.setTaskList(Activity.field_18597, VillagerTaskListProvider.createRestTasks(villagerProfession, f));
+		brain.setTaskList(Activity.field_18595, VillagerTaskListProvider.createIdleTasks(villagerProfession, f));
+		brain.setTaskList(Activity.field_18599, VillagerTaskListProvider.createPanicTasks(villagerProfession, f));
+		brain.setTaskList(Activity.field_19042, VillagerTaskListProvider.createPreRaidTasks(villagerProfession, f));
+		brain.setTaskList(Activity.field_19041, VillagerTaskListProvider.createRaidTasks(villagerProfession, f));
+		brain.setTaskList(Activity.field_19043, VillagerTaskListProvider.createHideTasks(villagerProfession, f));
+		brain.setCoreActivities(ImmutableSet.of(Activity.field_18594));
+		brain.setDefaultActivity(Activity.field_18595);
+		brain.resetPossibleActivities(Activity.field_18595);
+		brain.refreshActivities(this.world.getTimeOfDay(), this.world.getTime());
+	}
+
+	@Override
+	protected void onGrowUp() {
+		super.onGrowUp();
+		if (this.world instanceof ServerWorld) {
+			this.reinitializeBrain((ServerWorld)this.world);
 		}
 	}
 
 	@Override
-	protected void method_10926() {
-		if (this.profession() == 0) {
-			this.goals.add(8, new HarvestCropsGoal(this, 0.6));
-		}
-
-		super.method_10926();
-	}
-
-	@Override
-	protected void initializeAttributes() {
-		super.initializeAttributes();
-		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.5);
+	protected void initAttributes() {
+		super.initAttributes();
+		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.5);
+		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(48.0);
 	}
 
 	@Override
 	protected void mobTick() {
-		if (--this.field_3951 <= 0) {
-			BlockPos blockPos = new BlockPos(this);
-			this.world.getVillageState().method_11061(blockPos);
-			this.field_3951 = 70 + this.random.nextInt(50);
-			this.field_3950 = this.world.getVillageState().method_11062(blockPos, 32);
-			if (this.field_3950 == null) {
-				this.method_6173();
-			} else {
-				BlockPos blockPos2 = this.field_3950.getMinPos();
-				this.setPositionTarget(blockPos2, this.field_3950.getRadius());
-				if (this.field_5396) {
-					this.field_5396 = false;
-					this.field_3950.method_4507(5);
+		this.world.getProfiler().push("brain");
+		this.getBrain().tick((ServerWorld)this.world, this);
+		this.world.getProfiler().pop();
+		if (!this.hasCustomer() && this.levelUpTimer > 0) {
+			this.levelUpTimer--;
+			if (this.levelUpTimer <= 0) {
+				if (this.levellingUp) {
+					this.levelUp();
+					this.levellingUp = false;
 				}
+
+				this.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5924, 200, 0));
 			}
 		}
 
-		if (!this.hasCustomer() && this.field_3956 > 0) {
-			this.field_3956--;
-			if (this.field_3956 <= 0) {
-				if (this.field_3948) {
-					for (TradeOffer tradeOffer : this.offers) {
-						if (tradeOffer.isDisabled()) {
-							tradeOffer.increaseSpecialPrice(this.random.nextInt(6) + this.random.nextInt(6) + 2);
-						}
-					}
+		if (this.lastCustomer != null && this.world instanceof ServerWorld) {
+			((ServerWorld)this.world).handleInteraction(EntityInteraction.field_18478, this.lastCustomer, this);
+			this.world.sendEntityStatus(this, (byte)14);
+			this.lastCustomer = null;
+		}
 
-					this.getOffers();
-					this.field_3948 = false;
-					if (this.field_3950 != null && this.field_5395 != null) {
-						this.world.sendEntityStatus(this, (byte)14);
-						this.field_3950.method_4505(this.field_5395, 1);
-					}
-				}
-
-				this.method_2654(new StatusEffectInstance(StatusEffects.REGENERATION, 200, 0));
+		if (!this.isAiDisabled() && this.random.nextInt(100) == 0) {
+			Raid raid = ((ServerWorld)this.world).getRaidAt(new BlockPos(this));
+			if (raid != null && raid.isActive() && !raid.isFinished()) {
+				this.world.sendEntityStatus(this, (byte)42);
 			}
+		}
+
+		if (this.getVillagerData().getProfession() == VillagerProfession.field_17051 && this.hasCustomer()) {
+			this.resetCustomer();
 		}
 
 		super.mobTick();
 	}
 
 	@Override
+	public void tick() {
+		super.tick();
+		if (this.getHeadRollingTimeLeft() > 0) {
+			this.setHeadRollingTimeLeft(this.getHeadRollingTimeLeft() - 1);
+		}
+
+		this.decayGossip();
+	}
+
+	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		boolean bl = itemStack.getItem() == Items.NAME_TAG;
+		boolean bl = itemStack.getItem() == Items.field_8448;
 		if (bl) {
-			itemStack.method_6329(playerEntity, this, hand);
+			itemStack.useOnEntity(playerEntity, this, hand);
 			return true;
-		} else if (itemStack.getItem() != Items.VILLAGER_SPAWN_EGG && this.isAlive() && !this.hasCustomer() && !this.isBaby()) {
-			if (this.offers == null) {
-				this.getOffers();
-			}
-
-			if (hand == Hand.MAIN_HAND) {
-				playerEntity.method_15928(Stats.TALKED_TO_VILLAGER);
-			}
-
-			if (!this.world.isClient && !this.offers.isEmpty()) {
-				this.setCurrentCustomer(playerEntity);
-				playerEntity.openTradingScreen(this);
-			} else if (this.offers.isEmpty()) {
-				return super.interactMob(playerEntity, hand);
-			}
-
-			return true;
-		} else {
+		} else if (itemStack.getItem() == Items.field_8086 || !this.isAlive() || this.hasCustomer() || this.isSleeping()) {
 			return super.interactMob(playerEntity, hand);
+		} else if (this.isBaby()) {
+			this.sayNo();
+			return super.interactMob(playerEntity, hand);
+		} else {
+			boolean bl2 = this.getOffers().isEmpty();
+			if (hand == Hand.field_5808) {
+				if (bl2 && !this.world.isClient) {
+					this.sayNo();
+				}
+
+				playerEntity.incrementStat(Stats.field_15384);
+			}
+
+			if (bl2) {
+				return super.interactMob(playerEntity, hand);
+			} else {
+				if (!this.world.isClient && !this.offers.isEmpty()) {
+					this.beginTradeWith(playerEntity);
+				}
+
+				return true;
+			}
+		}
+	}
+
+	private void sayNo() {
+		this.setHeadRollingTimeLeft(40);
+		if (!this.world.isClient()) {
+			this.playSound(SoundEvents.field_15008, this.getSoundVolume(), this.getSoundPitch());
+		}
+	}
+
+	private void beginTradeWith(PlayerEntity playerEntity) {
+		this.prepareRecipesFor(playerEntity);
+		this.setCurrentCustomer(playerEntity);
+		this.sendOffers(playerEntity, this.getDisplayName(), this.getVillagerData().getLevel());
+	}
+
+	@Override
+	public void setCurrentCustomer(@Nullable PlayerEntity playerEntity) {
+		boolean bl = this.getCurrentCustomer() != null && playerEntity == null;
+		super.setCurrentCustomer(playerEntity);
+		if (bl) {
+			this.resetCustomer();
+		}
+	}
+
+	@Override
+	protected void resetCustomer() {
+		super.resetCustomer();
+		this.clearCurrentBonus();
+	}
+
+	private void clearCurrentBonus() {
+		for (TradeOffer tradeOffer : this.getOffers()) {
+			tradeOffer.clearSpecialPrice();
+		}
+	}
+
+	@Override
+	public boolean canRefreshTrades() {
+		return true;
+	}
+
+	public void restock() {
+		this.method_21724();
+
+		for (TradeOffer tradeOffer : this.getOffers()) {
+			tradeOffer.resetUses();
+		}
+
+		if (this.getVillagerData().getProfession() == VillagerProfession.field_17056) {
+			this.craftBread();
+		}
+
+		this.lastRestockTime = this.world.getTime();
+		this.restocksToday++;
+	}
+
+	private boolean needRestock() {
+		for (TradeOffer tradeOffer : this.getOffers()) {
+			if (tradeOffer.isDisabled()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean canRestock() {
+		return this.restocksToday < 2 && this.world.getTime() > this.lastRestockTime + 2400L;
+	}
+
+	public boolean shouldRestock() {
+		long l = this.lastRestockTime + 12000L;
+		boolean bl = this.world.getTime() > l;
+		long m = this.world.getTimeOfDay();
+		if (this.field_20332 > 0L) {
+			long n = this.field_20332 / 24000L;
+			long o = m / 24000L;
+			bl |= o > n;
+		}
+
+		this.field_20332 = m;
+		if (bl) {
+			this.clearDailyRestockCount();
+		}
+
+		return this.canRestock() && this.needRestock();
+	}
+
+	private void method_21723() {
+		int i = 2 - this.restocksToday;
+		if (i > 0) {
+			for (TradeOffer tradeOffer : this.getOffers()) {
+				tradeOffer.resetUses();
+			}
+		}
+
+		for (int j = 0; j < i; j++) {
+			this.method_21724();
+		}
+	}
+
+	private void method_21724() {
+		for (TradeOffer tradeOffer : this.getOffers()) {
+			tradeOffer.updatePriceOnDemand();
+		}
+	}
+
+	private void prepareRecipesFor(PlayerEntity playerEntity) {
+		int i = this.getReputation(playerEntity);
+		if (i != 0) {
+			for (TradeOffer tradeOffer : this.getOffers()) {
+				tradeOffer.increaseSpecialPrice(-MathHelper.floor((float)i * tradeOffer.getPriceMultiplier()));
+			}
+		}
+
+		if (playerEntity.hasStatusEffect(StatusEffects.field_18980)) {
+			StatusEffectInstance statusEffectInstance = playerEntity.getStatusEffect(StatusEffects.field_18980);
+			int j = statusEffectInstance.getAmplifier();
+
+			for (TradeOffer tradeOffer2 : this.getOffers()) {
+				double d = 0.3 + 0.0625 * (double)j;
+				int k = (int)Math.floor(d * (double)tradeOffer2.getOriginalFirstBuyItem().getCount());
+				tradeOffer2.increaseSpecialPrice(-Math.max(k, 1));
+			}
 		}
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_14789, 0);
+		this.dataTracker.startTracking(VILLAGER_DATA, new VillagerData(VillagerType.PLAINS, VillagerProfession.field_17051, 1));
 	}
 
 	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putInt("Profession", this.profession());
-		nbt.putInt("Riches", this.riches);
-		nbt.putInt("Career", this.career);
-		nbt.putInt("CareerLevel", this.careerLevel);
-		nbt.putBoolean("Willing", this.willingToMate);
-		if (this.offers != null) {
-			nbt.put("Offers", this.offers.toNbt());
-		}
-
-		NbtList nbtList = new NbtList();
-
-		for (int i = 0; i < this.villagerInventory.getInvSize(); i++) {
-			ItemStack itemStack = this.villagerInventory.getInvStack(i);
-			if (!itemStack.isEmpty()) {
-				nbtList.add((NbtElement)itemStack.toNbt(new NbtCompound()));
-			}
-		}
-
-		nbt.put("Inventory", nbtList);
+	public void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		compoundTag.put("VillagerData", this.getVillagerData().serialize(NbtOps.INSTANCE));
+		compoundTag.putByte("FoodLevel", this.foodLevel);
+		compoundTag.put("Gossips", (Tag)this.gossip.serialize(NbtOps.INSTANCE).getValue());
+		compoundTag.putInt("Xp", this.experience);
+		compoundTag.putLong("LastRestock", this.lastRestockTime);
+		compoundTag.putLong("LastGossipDecay", this.lastGossipDecayTime);
+		compoundTag.putInt("RestocksToday", this.restocksToday);
 	}
 
 	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.setProfession(nbt.getInt("Profession"));
-		this.riches = nbt.getInt("Riches");
-		this.career = nbt.getInt("Career");
-		this.careerLevel = nbt.getInt("CareerLevel");
-		this.willingToMate = nbt.getBoolean("Willing");
-		if (nbt.contains("Offers", 10)) {
-			NbtCompound nbtCompound = nbt.getCompound("Offers");
-			this.offers = new TraderOfferList(nbtCompound);
+	public void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		if (compoundTag.containsKey("VillagerData", 10)) {
+			this.setVillagerData(new VillagerData(new Dynamic(NbtOps.INSTANCE, compoundTag.getTag("VillagerData"))));
 		}
 
-		NbtList nbtList = nbt.getList("Inventory", 10);
-
-		for (int i = 0; i < nbtList.size(); i++) {
-			ItemStack itemStack = ItemStack.from(nbtList.getCompound(i));
-			if (!itemStack.isEmpty()) {
-				this.villagerInventory.fillInventoryWith(itemStack);
-			}
+		if (compoundTag.containsKey("Offers", 10)) {
+			this.offers = new TraderOfferList(compoundTag.getCompound("Offers"));
 		}
 
+		if (compoundTag.containsKey("FoodLevel", 1)) {
+			this.foodLevel = compoundTag.getByte("FoodLevel");
+		}
+
+		ListTag listTag = compoundTag.getList("Gossips", 10);
+		this.gossip.deserialize(new Dynamic(NbtOps.INSTANCE, listTag));
+		if (compoundTag.containsKey("Xp", 3)) {
+			this.experience = compoundTag.getInt("Xp");
+		}
+
+		this.lastRestockTime = compoundTag.getLong("LastRestock");
+		this.lastGossipDecayTime = compoundTag.getLong("LastGossipDecay");
 		this.setCanPickUpLoot(true);
-		this.method_11225();
+		this.reinitializeBrain((ServerWorld)this.world);
+		this.restocksToday = compoundTag.getInt("RestocksToday");
 	}
 
 	@Override
-	public boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn(double d) {
 		return false;
 	}
 
-	@Override
-	protected Sound ambientSound() {
-		return this.hasCustomer() ? Sounds.ENTITY_VILLAGER_TRADE : Sounds.ENTITY_VILLAGER_AMBIENT;
-	}
-
-	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
-		return Sounds.ENTITY_VILLAGER_HURT;
-	}
-
-	@Override
-	protected Sound deathSound() {
-		return Sounds.ENTITY_VILLAGER_DEATH;
-	}
-
 	@Nullable
 	@Override
-	protected Identifier getLootTableId() {
-		return LootTables.VILLAGER_ENTITIE;
-	}
-
-	public void setProfession(int profession) {
-		this.dataTracker.set(field_14789, profession);
-	}
-
-	public int profession() {
-		return Math.max(this.dataTracker.get(field_14789) % 6, 0);
-	}
-
-	public boolean method_3116() {
-		return this.field_3952;
-	}
-
-	public void method_3113(boolean bl) {
-		this.field_3952 = bl;
-	}
-
-	public void method_3114(boolean bl) {
-		this.field_3953 = bl;
-	}
-
-	public boolean method_3117() {
-		return this.field_3953;
-	}
-
-	@Override
-	public void setAttacker(@Nullable LivingEntity entity) {
-		super.setAttacker(entity);
-		if (this.field_3950 != null && entity != null) {
-			this.field_3950.addAttacker(entity);
-			if (entity instanceof PlayerEntity) {
-				int i = -1;
-				if (this.isBaby()) {
-					i = -3;
-				}
-
-				this.field_3950.method_4505(((PlayerEntity)entity).getGameProfile().getName(), i);
-				if (this.isAlive()) {
-					this.world.sendEntityStatus(this, (byte)13);
-				}
-			}
+	protected SoundEvent getAmbientSound() {
+		if (this.isSleeping()) {
+			return null;
+		} else {
+			return this.hasCustomer() ? SoundEvents.field_14933 : SoundEvents.field_15175;
 		}
 	}
 
 	@Override
-	public void onKilled(DamageSource source) {
-		if (this.field_3950 != null) {
-			Entity entity = source.getAttacker();
-			if (entity != null) {
-				if (entity instanceof PlayerEntity) {
-					this.field_3950.method_4505(((PlayerEntity)entity).getGameProfile().getName(), -2);
-				} else if (entity instanceof Monster) {
-					this.field_3950.method_4511();
-				}
-			} else {
-				PlayerEntity playerEntity = this.world.method_16364(this, 16.0);
-				if (playerEntity != null) {
-					this.field_3950.method_4511();
-				}
-			}
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
+		return SoundEvents.field_15139;
+	}
+
+	@Override
+	protected SoundEvent getDeathSound() {
+		return SoundEvents.field_15225;
+	}
+
+	public void playWorkSound() {
+		SoundEvent soundEvent = this.getVillagerData().getProfession().getWorkStation().getSound();
+		if (soundEvent != null) {
+			this.playSound(soundEvent, this.getSoundVolume(), this.getSoundPitch());
+		}
+	}
+
+	public void setVillagerData(VillagerData villagerData) {
+		VillagerData villagerData2 = this.getVillagerData();
+		if (villagerData2.getProfession() != villagerData.getProfession()) {
+			this.offers = null;
 		}
 
-		super.onKilled(source);
+		this.dataTracker.set(VILLAGER_DATA, villagerData);
 	}
 
 	@Override
-	public void setCurrentCustomer(@Nullable PlayerEntity player) {
-		this.customer = player;
-	}
-
-	@Nullable
-	@Override
-	public PlayerEntity getCurrentCustomer() {
-		return this.customer;
-	}
-
-	public boolean hasCustomer() {
-		return this.customer != null;
-	}
-
-	public boolean method_11227(boolean bl) {
-		if (!this.willingToMate && bl && this.method_11221()) {
-			boolean bl2 = false;
-
-			for (int i = 0; i < this.villagerInventory.getInvSize(); i++) {
-				ItemStack itemStack = this.villagerInventory.getInvStack(i);
-				if (!itemStack.isEmpty()) {
-					if (itemStack.getItem() == Items.BREAD && itemStack.getCount() >= 3) {
-						bl2 = true;
-						this.villagerInventory.takeInvStack(i, 3);
-					} else if ((itemStack.getItem() == Items.POTATO || itemStack.getItem() == Items.CARROT) && itemStack.getCount() >= 12) {
-						bl2 = true;
-						this.villagerInventory.takeInvStack(i, 12);
-					}
-				}
-
-				if (bl2) {
-					this.world.sendEntityStatus(this, (byte)18);
-					this.willingToMate = true;
-					break;
-				}
-			}
-		}
-
-		return this.willingToMate;
-	}
-
-	public void method_11228(boolean bl) {
-		this.willingToMate = bl;
+	public VillagerData getVillagerData() {
+		return this.dataTracker.get(VILLAGER_DATA);
 	}
 
 	@Override
-	public void trade(TradeOffer offer) {
-		offer.use();
-		this.ambientSoundChance = -this.getMinAmbientSoundDelay();
-		this.playSound(Sounds.ENTITY_VILLAGER_YES, this.getSoundVolume(), this.getSoundPitch());
+	protected void afterUsing(TradeOffer tradeOffer) {
 		int i = 3 + this.random.nextInt(4);
-		if (offer.getUses() == 1 || this.random.nextInt(5) == 0) {
-			this.field_3956 = 40;
-			this.field_3948 = true;
-			this.willingToMate = true;
-			if (this.customer != null) {
-				this.field_5395 = this.customer.getGameProfile().getName();
-			} else {
-				this.field_5395 = null;
-			}
-
+		this.experience = this.experience + tradeOffer.getTraderExperience();
+		this.lastCustomer = this.getCurrentCustomer();
+		if (this.canLevelUp()) {
+			this.levelUpTimer = 40;
+			this.levellingUp = true;
 			i += 5;
 		}
 
-		if (offer.getFirstStack().getItem() == Items.EMERALD) {
-			this.riches = this.riches + offer.getFirstStack().getCount();
-		}
-
-		if (offer.shouldRewardPlayerExperience()) {
-			this.world.method_3686(new ExperienceOrbEntity(this.world, this.x, this.y + 0.5, this.z, i));
-		}
-
-		if (this.customer instanceof ServerPlayerEntity) {
-			AchievementsAndCriterions.field_16346.method_14419((ServerPlayerEntity)this.customer, this, offer.getResult());
+		if (tradeOffer.shouldRewardPlayerExperience()) {
+			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.x, this.y + 0.5, this.z, i));
 		}
 	}
 
 	@Override
-	public void method_5501(ItemStack stack) {
-		if (!this.world.isClient && this.ambientSoundChance > -this.getMinAmbientSoundDelay() + 20) {
-			this.ambientSoundChance = -this.getMinAmbientSoundDelay();
-			this.playSound(stack.isEmpty() ? Sounds.ENTITY_VILLAGER_NO : Sounds.ENTITY_VILLAGER_YES, this.getSoundVolume(), this.getSoundPitch());
+	public void setAttacker(@Nullable LivingEntity livingEntity) {
+		if (livingEntity != null && this.world instanceof ServerWorld) {
+			((ServerWorld)this.world).handleInteraction(EntityInteraction.field_18476, livingEntity, this);
+			if (this.isAlive() && livingEntity instanceof PlayerEntity) {
+				this.world.sendEntityStatus(this, (byte)13);
+			}
 		}
+
+		super.setAttacker(livingEntity);
 	}
 
-	@Nullable
 	@Override
-	public TraderOfferList getOffers(PlayerEntity player) {
-		if (this.offers == null) {
-			this.getOffers();
+	public void onDeath(DamageSource damageSource) {
+		Entity entity = damageSource.getAttacker();
+		if (entity != null) {
+			this.notifyDeath(entity);
 		}
 
-		return this.offers;
+		this.releaseTicketFor(MemoryModuleType.field_18438);
+		this.releaseTicketFor(MemoryModuleType.field_18439);
+		this.releaseTicketFor(MemoryModuleType.field_18440);
+		super.onDeath(damageSource);
 	}
 
-	private void getOffers() {
-		VillagerEntity.TradeProvider[][][] tradeProviders = TRADES[this.profession()];
-		if (this.career != 0 && this.careerLevel != 0) {
-			this.careerLevel++;
-		} else {
-			this.career = this.random.nextInt(tradeProviders.length) + 1;
-			this.careerLevel = 1;
+	private void notifyDeath(Entity entity) {
+		if (this.world instanceof ServerWorld) {
+			Optional<List<LivingEntity>> optional = this.brain.getOptionalMemory(MemoryModuleType.field_18442);
+			if (optional.isPresent()) {
+				ServerWorld serverWorld = (ServerWorld)this.world;
+				((List)optional.get())
+					.stream()
+					.filter(livingEntity -> livingEntity instanceof InteractionObserver)
+					.forEach(livingEntity -> serverWorld.handleInteraction(EntityInteraction.field_18477, entity, (InteractionObserver)livingEntity));
+			}
 		}
+	}
 
-		if (this.offers == null) {
-			this.offers = new TraderOfferList();
+	public void releaseTicketFor(MemoryModuleType<GlobalPos> memoryModuleType) {
+		if (this.world instanceof ServerWorld) {
+			MinecraftServer minecraftServer = ((ServerWorld)this.world).getServer();
+			this.brain.getOptionalMemory(memoryModuleType).ifPresent(globalPos -> {
+				ServerWorld serverWorld = minecraftServer.getWorld(globalPos.getDimension());
+				PointOfInterestStorage pointOfInterestStorage = serverWorld.getPointOfInterestStorage();
+				Optional<PointOfInterestType> optional = pointOfInterestStorage.getType(globalPos.getPos());
+				BiPredicate<VillagerEntity, PointOfInterestType> biPredicate = (BiPredicate<VillagerEntity, PointOfInterestType>)POINTS_OF_INTEREST.get(memoryModuleType);
+				if (optional.isPresent() && biPredicate.test(this, optional.get())) {
+					pointOfInterestStorage.releaseTicket(globalPos.getPos());
+					DebugRendererInfoManager.sendPointOfInterest(serverWorld, globalPos.getPos());
+				}
+			});
 		}
+	}
 
-		int i = this.career - 1;
-		int j = this.careerLevel - 1;
-		if (i >= 0 && i < tradeProviders.length) {
-			VillagerEntity.TradeProvider[][] tradeProviders2 = tradeProviders[i];
-			if (j >= 0 && j < tradeProviders2.length) {
-				VillagerEntity.TradeProvider[] tradeProviders3 = tradeProviders2[j];
+	public boolean isReadyToBreed() {
+		return this.foodLevel + this.getAvailableFood() >= 12 && this.getBreedingAge() == 0;
+	}
 
-				for (VillagerEntity.TradeProvider tradeProvider : tradeProviders3) {
-					tradeProvider.method_11230(this, this.offers, this.random);
+	private boolean lacksFood() {
+		return this.foodLevel < 12;
+	}
+
+	private void consumeAvailableFood() {
+		if (this.lacksFood() && this.getAvailableFood() != 0) {
+			for (int i = 0; i < this.getInventory().getInvSize(); i++) {
+				ItemStack itemStack = this.getInventory().getInvStack(i);
+				if (!itemStack.isEmpty()) {
+					Integer integer = (Integer)ITEM_FOOD_VALUES.get(itemStack.getItem());
+					if (integer != null) {
+						int j = itemStack.getCount();
+
+						for (int k = j; k > 0; k--) {
+							this.foodLevel = (byte)(this.foodLevel + integer);
+							this.getInventory().takeInvStack(i, 1);
+							if (!this.lacksFood()) {
+								return;
+							}
+						}
+					}
 				}
 			}
 		}
 	}
 
-	@Override
-	public void setTraderOfferList(@Nullable TraderOfferList list) {
+	public int getReputation(PlayerEntity playerEntity) {
+		return this.gossip.getReputationFor(playerEntity.getUuid(), villageGossipType -> true);
+	}
+
+	private void depleteFood(int i) {
+		this.foodLevel = (byte)(this.foodLevel - i);
+	}
+
+	public void eatForBreeding() {
+		this.consumeAvailableFood();
+		this.depleteFood(12);
+	}
+
+	public void setOffers(TraderOfferList traderOfferList) {
+		this.offers = traderOfferList;
+	}
+
+	private boolean canLevelUp() {
+		int i = this.getVillagerData().getLevel();
+		return VillagerData.canLevelUp(i) && this.experience >= VillagerData.getUpperLevelExperience(i);
+	}
+
+	private void levelUp() {
+		this.setVillagerData(this.getVillagerData().withLevel(this.getVillagerData().getLevel() + 1));
+		this.fillRecipes();
 	}
 
 	@Override
-	public World method_13682() {
-		return this.world;
-	}
-
-	@Override
-	public BlockPos method_13683() {
-		return new BlockPos(this);
-	}
-
-	@Override
-	public Text getName() {
+	public Text getDisplayName() {
 		AbstractTeam abstractTeam = this.getScoreboardTeam();
-		Text text = this.method_15541();
+		Text text = this.getCustomName();
 		if (text != null) {
-			return Team.method_18097(abstractTeam, text).styled(style -> style.setHoverEvent(this.getHoverEvent()).setInsertion(this.getEntityName()));
+			return Team.modifyText(abstractTeam, text).styled(style -> style.setHoverEvent(this.getHoverEvent()).setInsertion(this.getUuidAsString()));
 		} else {
-			if (this.offers == null) {
-				this.getOffers();
+			VillagerProfession villagerProfession = this.getVillagerData().getProfession();
+			Text text2 = new TranslatableText(this.getType().getTranslationKey() + '.' + Registry.VILLAGER_PROFESSION.getId(villagerProfession).getPath())
+				.styled(style -> style.setHoverEvent(this.getHoverEvent()).setInsertion(this.getUuidAsString()));
+			if (abstractTeam != null) {
+				text2.formatted(abstractTeam.getColor());
 			}
 
-			String string = null;
-			switch (this.profession()) {
-				case 0:
-					if (this.career == 1) {
-						string = "farmer";
-					} else if (this.career == 2) {
-						string = "fisherman";
-					} else if (this.career == 3) {
-						string = "shepherd";
-					} else if (this.career == 4) {
-						string = "fletcher";
-					}
-					break;
-				case 1:
-					if (this.career == 1) {
-						string = "librarian";
-					} else if (this.career == 2) {
-						string = "cartographer";
-					}
-					break;
-				case 2:
-					string = "cleric";
-					break;
-				case 3:
-					if (this.career == 1) {
-						string = "armorer";
-					} else if (this.career == 2) {
-						string = "weapon_smith";
-					} else if (this.career == 3) {
-						string = "tool_smith";
-					}
-					break;
-				case 4:
-					if (this.career == 1) {
-						string = "butcher";
-					} else if (this.career == 2) {
-						string = "leatherworker";
-					}
-					break;
-				case 5:
-					string = "nitwit";
-			}
-
-			if (string != null) {
-				Text text2 = new TranslatableText(this.method_15557().getTranslationKey() + '.' + string)
-					.styled(style -> style.setHoverEvent(this.getHoverEvent()).setInsertion(this.getEntityName()));
-				if (abstractTeam != null) {
-					text2.formatted(abstractTeam.method_12130());
-				}
-
-				return text2;
-			} else {
-				return super.getName();
-			}
+			return text2;
 		}
 	}
 
 	@Override
-	public float getEyeHeight() {
-		return this.isBaby() ? 0.81F : 1.62F;
-	}
-
-	@Override
-	public void handleStatus(byte status) {
-		if (status == 12) {
-			this.method_11218(class_4342.field_21351);
-		} else if (status == 13) {
-			this.method_11218(class_4342.field_21376);
-		} else if (status == 14) {
-			this.method_11218(class_4342.field_21400);
+	public void handleStatus(byte b) {
+		if (b == 12) {
+			this.produceParticles(ParticleTypes.field_11201);
+		} else if (b == 13) {
+			this.produceParticles(ParticleTypes.field_11231);
+		} else if (b == 14) {
+			this.produceParticles(ParticleTypes.field_11211);
+		} else if (b == 42) {
+			this.produceParticles(ParticleTypes.field_11202);
 		} else {
-			super.handleStatus(status);
-		}
-	}
-
-	private void method_11218(ParticleEffect particleEffect) {
-		for (int i = 0; i < 5; i++) {
-			double d = this.random.nextGaussian() * 0.02;
-			double e = this.random.nextGaussian() * 0.02;
-			double f = this.random.nextGaussian() * 0.02;
-			this.world
-				.method_16343(
-					particleEffect,
-					this.x + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
-					this.y + 1.0 + (double)(this.random.nextFloat() * this.height),
-					this.z + (double)(this.random.nextFloat() * this.width * 2.0F) - (double)this.width,
-					d,
-					e,
-					f
-				);
+			super.handleStatus(b);
 		}
 	}
 
 	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbt) {
-		return this.method_13613(difficulty, entityData, nbt, true);
-	}
-
-	public EntityData method_13613(LocalDifficulty localDifficulty, @Nullable EntityData entityData, @Nullable NbtCompound nbtCompound, boolean bl) {
-		entityData = super.initialize(localDifficulty, entityData, nbtCompound);
-		if (bl) {
-			this.setProfession(this.world.random.nextInt(6));
+	public EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	) {
+		if (spawnType == SpawnType.field_16466) {
+			this.setVillagerData(this.getVillagerData().withProfession(VillagerProfession.field_17051));
 		}
 
-		this.method_11225();
-		this.getOffers();
-		return entityData;
+		if (spawnType == SpawnType.field_16462 || spawnType == SpawnType.field_16465 || spawnType == SpawnType.field_16469) {
+			this.setVillagerData(this.getVillagerData().withType(VillagerType.forBiome(iWorld.getBiome(new BlockPos(this)))));
+		}
+
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
-	public void method_4567() {
-		this.field_5396 = true;
-	}
+	public VillagerEntity method_7225(PassiveEntity passiveEntity) {
+		double d = this.random.nextDouble();
+		VillagerType villagerType;
+		if (d < 0.5) {
+			villagerType = VillagerType.forBiome(this.world.getBiome(new BlockPos(this)));
+		} else if (d < 0.75) {
+			villagerType = this.getVillagerData().getType();
+		} else {
+			villagerType = ((VillagerEntity)passiveEntity).getVillagerData().getType();
+		}
 
-	public VillagerEntity breed(PassiveEntity passiveEntity) {
-		VillagerEntity villagerEntity = new VillagerEntity(this.world);
-		villagerEntity.initialize(this.world.method_8482(new BlockPos(villagerEntity)), null, null);
+		VillagerEntity villagerEntity = new VillagerEntity(EntityType.field_6077, this.world, villagerType);
+		villagerEntity.initialize(this.world, this.world.getLocalDifficulty(new BlockPos(villagerEntity)), SpawnType.field_16466, null, null);
 		return villagerEntity;
 	}
 
 	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
-		return false;
+	public void onStruckByLightning(LightningEntity lightningEntity) {
+		WitchEntity witchEntity = EntityType.field_6145.create(this.world);
+		witchEntity.setPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
+		witchEntity.initialize(this.world, this.world.getLocalDifficulty(new BlockPos(witchEntity)), SpawnType.field_16468, null, null);
+		witchEntity.setAiDisabled(this.isAiDisabled());
+		if (this.hasCustomName()) {
+			witchEntity.setCustomName(this.getCustomName());
+			witchEntity.setCustomNameVisible(this.isCustomNameVisible());
+		}
+
+		this.world.spawnEntity(witchEntity);
+		this.remove();
 	}
 
 	@Override
-	public void onLightningStrike(LightningBoltEntity lightning) {
-		if (!this.world.isClient && !this.removed) {
-			WitchEntity witchEntity = new WitchEntity(this.world);
-			witchEntity.refreshPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
-			witchEntity.initialize(this.world.method_8482(new BlockPos(witchEntity)), null, null);
-			witchEntity.setAiDisabled(this.hasNoAi());
-			if (this.hasCustomName()) {
-				witchEntity.method_15578(this.method_15541());
-				witchEntity.setCustomNameVisible(this.isCustomNameVisible());
+	protected void loot(ItemEntity itemEntity) {
+		ItemStack itemStack = itemEntity.getStack();
+		Item item = itemStack.getItem();
+		if (this.canGather(item)) {
+			BasicInventory basicInventory = this.getInventory();
+			boolean bl = false;
+
+			for (int i = 0; i < basicInventory.getInvSize(); i++) {
+				ItemStack itemStack2 = basicInventory.getInvStack(i);
+				if (itemStack2.isEmpty() || itemStack2.getItem() == item && itemStack2.getCount() < itemStack2.getMaxCount()) {
+					bl = true;
+					break;
+				}
 			}
 
-			this.world.method_3686(witchEntity);
-			this.remove();
-		}
-	}
+			if (!bl) {
+				return;
+			}
 
-	public SimpleInventory method_11220() {
-		return this.villagerInventory;
-	}
+			int j = basicInventory.countInInv(item);
+			if (j == 256) {
+				return;
+			}
 
-	@Override
-	protected void loot(ItemEntity item) {
-		ItemStack itemStack = item.getItemStack();
-		Item item2 = itemStack.getItem();
-		if (this.canPickUp(item2)) {
-			ItemStack itemStack2 = this.villagerInventory.fillInventoryWith(itemStack);
-			if (itemStack2.isEmpty()) {
-				item.remove();
+			if (j > 256) {
+				basicInventory.poll(item, j - 256);
+				return;
+			}
+
+			this.sendPickup(itemEntity, itemStack.getCount());
+			ItemStack itemStack3 = basicInventory.add(itemStack);
+			if (itemStack3.isEmpty()) {
+				itemEntity.remove();
 			} else {
-				itemStack.setCount(itemStack2.getCount());
+				itemStack.setCount(itemStack3.getCount());
 			}
 		}
 	}
 
-	private boolean canPickUp(Item item) {
-		return item == Items.BREAD
-			|| item == Items.POTATO
-			|| item == Items.CARROT
-			|| item == Items.WHEAT
-			|| item == Items.WHEAT_SEEDS
-			|| item == Items.BEETROOT
-			|| item == Items.BEETROOT_SEED;
+	public boolean canGather(Item item) {
+		return GATHERABLE_ITEMS.contains(item) || this.getVillagerData().getProfession().getGatherableItems().contains(item);
 	}
 
-	public boolean method_11221() {
-		return this.method_11229(1);
+	public boolean wantsToStartBreeding() {
+		return this.getAvailableFood() >= 24;
 	}
 
-	public boolean method_11222() {
-		return this.method_11229(2);
+	public boolean canBreed() {
+		return this.getAvailableFood() < 12;
 	}
 
-	public boolean method_11223() {
-		boolean bl = this.profession() == 0;
-		return bl ? !this.method_11229(5) : !this.method_11229(1);
+	private int getAvailableFood() {
+		BasicInventory basicInventory = this.getInventory();
+		return ITEM_FOOD_VALUES.entrySet().stream().mapToInt(entry -> basicInventory.countInInv((Item)entry.getKey()) * (Integer)entry.getValue()).sum();
 	}
 
-	private boolean method_11229(int i) {
-		boolean bl = this.profession() == 0;
-
-		for (int j = 0; j < this.villagerInventory.getInvSize(); j++) {
-			ItemStack itemStack = this.villagerInventory.getInvStack(j);
-			Item item = itemStack.getItem();
-			int k = itemStack.getCount();
-			if (item == Items.BREAD && k >= 3 * i || item == Items.POTATO && k >= 12 * i || item == Items.CARROT && k >= 12 * i || item == Items.BEETROOT && k >= 12 * i
-				)
-			 {
-				return true;
-			}
-
-			if (bl && item == Items.WHEAT && k >= 9 * i) {
-				return true;
+	private void craftBread() {
+		BasicInventory basicInventory = this.getInventory();
+		int i = basicInventory.countInInv(Items.field_8861);
+		int j = i / 3;
+		if (j != 0) {
+			int k = j * 3;
+			basicInventory.poll(Items.field_8861, k);
+			ItemStack itemStack = basicInventory.add(new ItemStack(Items.field_8229, j));
+			if (!itemStack.isEmpty()) {
+				this.dropStack(itemStack, 0.5F);
 			}
 		}
-
-		return false;
 	}
 
 	public boolean hasSeedToPlant() {
-		for (int i = 0; i < this.villagerInventory.getInvSize(); i++) {
-			Item item = this.villagerInventory.getInvStack(i).getItem();
-			if (item == Items.WHEAT_SEEDS || item == Items.POTATO || item == Items.CARROT || item == Items.BEETROOT_SEED) {
-				return true;
-			}
-		}
-
-		return false;
+		BasicInventory basicInventory = this.getInventory();
+		return basicInventory.containsAnyInInv(ImmutableSet.of(Items.field_8317, Items.field_8567, Items.field_8179, Items.field_8309));
 	}
 
 	@Override
-	public boolean equip(int slot, ItemStack item) {
-		if (super.equip(slot, item)) {
-			return true;
+	protected void fillRecipes() {
+		VillagerData villagerData = this.getVillagerData();
+		Int2ObjectMap<TradeOffers.Factory[]> int2ObjectMap = (Int2ObjectMap<TradeOffers.Factory[]>)TradeOffers.PROFESSION_TO_LEVELED_TRADE
+			.get(villagerData.getProfession());
+		if (int2ObjectMap != null && !int2ObjectMap.isEmpty()) {
+			TradeOffers.Factory[] factorys = (TradeOffers.Factory[])int2ObjectMap.get(villagerData.getLevel());
+			if (factorys != null) {
+				TraderOfferList traderOfferList = this.getOffers();
+				this.fillRecipesFromPool(traderOfferList, factorys, 2);
+			}
+		}
+	}
+
+	public void talkWithVillager(VillagerEntity villagerEntity, long l) {
+		if ((l < this.gossipStartTime || l >= this.gossipStartTime + 1200L) && (l < villagerEntity.gossipStartTime || l >= villagerEntity.gossipStartTime + 1200L)) {
+			this.gossip.shareGossipFrom(villagerEntity.gossip, this.random, 10);
+			this.gossipStartTime = l;
+			villagerEntity.gossipStartTime = l;
+			this.summonGolem(l, 5);
+		}
+	}
+
+	private void decayGossip() {
+		long l = this.world.getTime();
+		if (this.lastGossipDecayTime == 0L) {
+			this.lastGossipDecayTime = l;
+		} else if (l >= this.lastGossipDecayTime + 24000L) {
+			this.gossip.decay();
+			this.lastGossipDecayTime = l;
+		}
+	}
+
+	public void summonGolem(long l, int i) {
+		if (this.canSummonGolem(l)) {
+			Box box = this.getBoundingBox().expand(10.0, 10.0, 10.0);
+			List<VillagerEntity> list = this.world.getEntities(VillagerEntity.class, box);
+			List<VillagerEntity> list2 = (List<VillagerEntity>)list.stream()
+				.filter(villagerEntity -> villagerEntity.canSummonGolem(l))
+				.limit(5L)
+				.collect(Collectors.toList());
+			if (list2.size() >= i) {
+				IronGolemEntity ironGolemEntity = this.spawnIronGolem();
+				if (ironGolemEntity != null) {
+					list.forEach(villagerEntity -> villagerEntity.setGolemLastSeenTime(l));
+				}
+			}
+		}
+	}
+
+	private void setGolemLastSeenTime(long l) {
+		this.brain.putMemory(MemoryModuleType.field_19355, l);
+	}
+
+	private boolean hasSeenGolemRecently(long l) {
+		Optional<Long> optional = this.brain.getOptionalMemory(MemoryModuleType.field_19355);
+		if (!optional.isPresent()) {
+			return false;
 		} else {
-			int i = slot - 300;
-			if (i >= 0 && i < this.villagerInventory.getInvSize()) {
-				this.villagerInventory.setInvStack(i, item);
-				return true;
-			} else {
-				return false;
-			}
+			Long long_ = (Long)optional.get();
+			return l - long_ <= 600L;
 		}
 	}
 
-	static class Cost extends Pair<Integer, Integer> {
-		public Cost(int i, int j) {
-			super(i, j);
-			if (j < i) {
-				VillagerEntity.VILLAGER_LOGGER.warn("PriceRange({}, {}) invalid, {} smaller than {}", i, j, j, i);
-			}
-		}
-
-		public int getCost(Random random) {
-			return this.getLeft() >= this.getRight() ? this.getLeft() : this.getLeft() + random.nextInt(this.getRight() - this.getLeft() + 1);
+	public boolean canSummonGolem(long l) {
+		VillagerData villagerData = this.getVillagerData();
+		if (villagerData.getProfession() == VillagerProfession.field_17051 || villagerData.getProfession() == VillagerProfession.field_17062) {
+			return false;
+		} else {
+			return !this.hasRecentlyWorkedAndSlept(this.world.getTime()) ? false : !this.hasSeenGolemRecently(l);
 		}
 	}
 
-	static class EmeraldToItem implements VillagerEntity.TradeProvider {
-		public ItemStack stack1;
-		public VillagerEntity.Cost field_12117;
-		public ItemStack field_12118;
-		public VillagerEntity.Cost field_12119;
+	@Nullable
+	private IronGolemEntity spawnIronGolem() {
+		BlockPos blockPos = new BlockPos(this);
 
-		public EmeraldToItem(Itemable itemable, VillagerEntity.Cost cost, Item item, VillagerEntity.Cost cost2) {
-			this.stack1 = new ItemStack(itemable);
-			this.field_12117 = cost;
-			this.field_12118 = new ItemStack(item);
-			this.field_12119 = cost2;
+		for (int i = 0; i < 10; i++) {
+			double d = (double)(this.world.random.nextInt(16) - 8);
+			double e = (double)(this.world.random.nextInt(16) - 8);
+			double f = 6.0;
+
+			for (int j = 0; j >= -12; j--) {
+				BlockPos blockPos2 = blockPos.add(d, f + (double)j, e);
+				if ((this.world.getBlockState(blockPos2).isAir() || this.world.getBlockState(blockPos2).getMaterial().isLiquid())
+					&& this.world.getBlockState(blockPos2.down()).getMaterial().blocksLight()) {
+					f += (double)j;
+					break;
+				}
+			}
+
+			BlockPos blockPos3 = blockPos.add(d, f, e);
+			IronGolemEntity ironGolemEntity = EntityType.field_6147.create(this.world, null, null, null, blockPos3, SpawnType.field_16471, false, false);
+			if (ironGolemEntity != null) {
+				if (ironGolemEntity.canSpawn(this.world, SpawnType.field_16471) && ironGolemEntity.canSpawn(this.world)) {
+					this.world.spawnEntity(ironGolemEntity);
+					return ironGolemEntity;
+				}
+
+				ironGolemEntity.remove();
+			}
 		}
 
-		@Override
-		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
-			int i = this.field_12117.getCost(random);
-			int j = this.field_12119.getCost(random);
-			traderOfferList.add(new TradeOffer(new ItemStack(this.stack1.getItem(), i), new ItemStack(Items.EMERALD), new ItemStack(this.field_12118.getItem(), j)));
+		return null;
+	}
+
+	@Override
+	public void onInteractionWith(EntityInteraction entityInteraction, Entity entity) {
+		if (entityInteraction == EntityInteraction.field_18474) {
+			this.gossip.startGossip(entity.getUuid(), VillageGossipType.field_18427, 20);
+			this.gossip.startGossip(entity.getUuid(), VillageGossipType.field_18426, 25);
+		} else if (entityInteraction == EntityInteraction.field_18478) {
+			this.gossip.startGossip(entity.getUuid(), VillageGossipType.field_18428, 2);
+		} else if (entityInteraction == EntityInteraction.field_18476) {
+			this.gossip.startGossip(entity.getUuid(), VillageGossipType.field_18425, 25);
+		} else if (entityInteraction == EntityInteraction.field_18477) {
+			this.gossip.startGossip(entity.getUuid(), VillageGossipType.field_18424, 25);
 		}
 	}
 
-	static class EnchantedBook implements VillagerEntity.TradeProvider {
-		public EnchantedBook() {
-		}
-
-		@Override
-		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
-			Enchantment enchantment = Registry.ENCHANTMENT.getRandom(random);
-			int i = MathHelper.nextInt(random, enchantment.getMinimumLevel(), enchantment.getMaximumLevel());
-			ItemStack itemStack = EnchantedBookItem.getAsItemStack(new EnchantmentLevelEntry(enchantment, i));
-			int j = 2 + random.nextInt(5 + i * 10) + 3 * i;
-			if (enchantment.isTreasure()) {
-				j *= 2;
-			}
-
-			if (j > 64) {
-				j = 64;
-			}
-
-			traderOfferList.add(new TradeOffer(new ItemStack(Items.BOOK), new ItemStack(Items.EMERALD, j), itemStack));
-		}
+	@Override
+	public int getExperience() {
+		return this.experience;
 	}
 
-	static class EnchantedItemStackTradeEntry implements VillagerEntity.TradeProvider {
-		public ItemStack item;
-		public VillagerEntity.Cost cost;
-
-		public EnchantedItemStackTradeEntry(Item item, VillagerEntity.Cost cost) {
-			this.item = new ItemStack(item);
-			this.cost = cost;
-		}
-
-		@Override
-		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
-			int i = 1;
-			if (this.cost != null) {
-				i = this.cost.getCost(random);
-			}
-
-			ItemStack itemStack = new ItemStack(Items.EMERALD, i);
-			ItemStack itemStack2 = EnchantmentHelper.enchant(random, new ItemStack(this.item.getItem()), 5 + random.nextInt(15), false);
-			traderOfferList.add(new TradeOffer(itemStack, itemStack2));
-		}
+	public void setExperience(int i) {
+		this.experience = i;
 	}
 
-	static class ItemStackTradeEntry implements VillagerEntity.TradeProvider {
-		public ItemStack field_17087;
-		public VillagerEntity.Cost field_17088;
-
-		public ItemStackTradeEntry(Block block, VillagerEntity.Cost cost) {
-			this(new ItemStack(block), cost);
-		}
-
-		public ItemStackTradeEntry(Item item, VillagerEntity.Cost cost) {
-			this(new ItemStack(item), cost);
-		}
-
-		public ItemStackTradeEntry(ItemStack itemStack, VillagerEntity.Cost cost) {
-			this.field_17087 = itemStack;
-			this.field_17088 = cost;
-		}
-
-		@Override
-		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
-			int i = 1;
-			if (this.field_17088 != null) {
-				i = this.field_17088.getCost(random);
-			}
-
-			ItemStack itemStack;
-			ItemStack itemStack2;
-			if (i < 0) {
-				itemStack = new ItemStack(Items.EMERALD);
-				itemStack2 = new ItemStack(this.field_17087.getItem(), -i);
-			} else {
-				itemStack = new ItemStack(Items.EMERALD, i);
-				itemStack2 = new ItemStack(this.field_17087.getItem());
-			}
-
-			traderOfferList.add(new TradeOffer(itemStack, itemStack2));
-		}
+	private void clearDailyRestockCount() {
+		this.method_21723();
+		this.restocksToday = 0;
 	}
 
-	static class ItemTradeEntry implements VillagerEntity.TradeProvider {
-		public Item item;
-		public VillagerEntity.Cost cost;
-
-		public ItemTradeEntry(Itemable itemable, VillagerEntity.Cost cost) {
-			this.item = itemable.getItem();
-			this.cost = cost;
-		}
-
-		@Override
-		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
-			ItemStack itemStack = new ItemStack(this.item, this.cost == null ? 1 : this.cost.getCost(random));
-			traderOfferList.add(new TradeOffer(itemStack, Items.EMERALD));
-		}
+	public VillagerGossips method_21651() {
+		return this.gossip;
 	}
 
-	interface TradeProvider {
-		void method_11230(Trader trader, TraderOfferList traderOfferList, Random random);
+	public void method_21650(Tag tag) {
+		this.gossip.deserialize(new Dynamic(NbtOps.INSTANCE, tag));
 	}
 
-	static class class_3051 implements VillagerEntity.TradeProvider {
-		public VillagerEntity.Cost field_15079;
-		public String field_15080;
-		public class_3082.class_3083 field_15081;
+	@Override
+	protected void sendAiDebugData() {
+		super.sendAiDebugData();
+		DebugRendererInfoManager.sendVillagerAiDebugData(this);
+	}
 
-		public class_3051(VillagerEntity.Cost cost, String string, class_3082.class_3083 arg) {
-			this.field_15079 = cost;
-			this.field_15080 = string;
-			this.field_15081 = arg;
-		}
+	@Override
+	public void sleep(BlockPos blockPos) {
+		super.sleep(blockPos);
+		this.brain.putMemory(MemoryModuleType.field_19385, Timestamp.of(this.world.getTime()));
+	}
 
-		@Override
-		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
-			int i = this.field_15079.getCost(random);
-			World world = trader.method_13682();
-			BlockPos blockPos = world.method_13688(this.field_15080, trader.method_13683(), 100, true);
-			if (blockPos != null) {
-				ItemStack itemStack = FilledMapItem.method_16113(world, blockPos.getX(), blockPos.getZ(), (byte)2, true, true);
-				FilledMapItem.method_13664(world, itemStack);
-				MapState.method_13830(itemStack, blockPos, "+", this.field_15081);
-				itemStack.setCustomName(new TranslatableText("filled_map." + this.field_15080.toLowerCase(Locale.ROOT)));
-				traderOfferList.add(new TradeOffer(new ItemStack(Items.EMERALD, i), new ItemStack(Items.COMPASS), itemStack));
-			}
-		}
+	private boolean hasRecentlyWorkedAndSlept(long l) {
+		Optional<Timestamp> optional = this.brain.getOptionalMemory(MemoryModuleType.field_19385);
+		Optional<Timestamp> optional2 = this.brain.getOptionalMemory(MemoryModuleType.field_19386);
+		return optional.isPresent() && optional2.isPresent()
+			? l - ((Timestamp)optional.get()).getTime() < 24000L && l - ((Timestamp)optional2.get()).getTime() < 36000L
+			: false;
 	}
 }

@@ -1,48 +1,28 @@
 package net.minecraft.block;
 
+import net.minecraft.entity.EntityContext;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
-import net.minecraft.util.shapes.VoxelShapes;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 
 public class AirBlock extends Block {
-	protected AirBlock(Block.Builder builder) {
-		super(builder);
+	protected AirBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState state) {
-		return BlockRenderType.INVISIBLE;
+	public BlockRenderType getRenderType(BlockState blockState) {
+		return BlockRenderType.field_11455;
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
 		return VoxelShapes.empty();
 	}
 
 	@Override
-	public boolean method_400(BlockState blockState) {
-		return false;
-	}
-
-	@Override
-	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
-	}
-
-	@Override
-	public boolean isAir(BlockState state) {
+	public boolean isAir(BlockState blockState) {
 		return true;
-	}
-
-	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
 	}
 }

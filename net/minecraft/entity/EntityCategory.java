@@ -1,41 +1,43 @@
 package net.minecraft.entity;
 
-import net.minecraft.entity.mob.AmbientEntity;
-import net.minecraft.entity.mob.Monster;
-import net.minecraft.entity.mob.WaterCreatureEntity;
-import net.minecraft.entity.passive.AnimalEntity;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public enum EntityCategory {
-	MONSTER(Monster.class, 70, false, false),
-	PASSIVE(AnimalEntity.class, 10, true, true),
-	AMBIENT(AmbientEntity.class, 15, true, false),
-	AQUATIC(WaterCreatureEntity.class, 15, true, false);
+	field_6302("monster", 70, false, false),
+	field_6294("creature", 10, true, true),
+	field_6303("ambient", 15, true, false),
+	field_6300("water_creature", 15, true, false),
+	field_17715("misc", 15, true, false);
 
-	private final Class<? extends EntityCategoryProvider> clazz;
+	private static final Map<String, EntityCategory> BY_NAME = (Map<String, EntityCategory>)Arrays.stream(values())
+		.collect(Collectors.toMap(EntityCategory::getName, entityCategory -> entityCategory));
 	private final int spawnCap;
-	private final boolean hostile;
-	private final boolean breedable;
+	private final boolean peaceful;
+	private final boolean animal;
+	private final String name;
 
-	private EntityCategory(Class<? extends EntityCategoryProvider> class_, int j, boolean bl, boolean bl2) {
-		this.clazz = class_;
+	private EntityCategory(String string2, int j, boolean bl, boolean bl2) {
+		this.name = string2;
 		this.spawnCap = j;
-		this.hostile = bl;
-		this.breedable = bl2;
+		this.peaceful = bl;
+		this.animal = bl2;
 	}
 
-	public Class<? extends EntityCategoryProvider> getCategoryClass() {
-		return this.clazz;
+	public String getName() {
+		return this.name;
 	}
 
 	public int getSpawnCap() {
 		return this.spawnCap;
 	}
 
-	public boolean isHostile() {
-		return this.hostile;
+	public boolean isPeaceful() {
+		return this.peaceful;
 	}
 
-	public boolean isBreedable() {
-		return this.breedable;
+	public boolean isAnimal() {
+		return this.animal;
 	}
 }

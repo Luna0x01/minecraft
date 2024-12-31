@@ -1,12 +1,12 @@
 package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.entity.model.ParrotEntityModel;
-import net.minecraft.entity.ParrotEntity;
+import net.minecraft.entity.passive.ParrotEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-public class ParrotEntityRenderer extends MobEntityRenderer<ParrotEntity> {
-	public static final Identifier[] TEXTURES = new Identifier[]{
+public class ParrotEntityRenderer extends MobEntityRenderer<ParrotEntity, ParrotEntityModel> {
+	public static final Identifier[] SKINS = new Identifier[]{
 		new Identifier("textures/entity/parrot/parrot_red_blue.png"),
 		new Identifier("textures/entity/parrot/parrot_blue.png"),
 		new Identifier("textures/entity/parrot/parrot_green.png"),
@@ -18,17 +18,13 @@ public class ParrotEntityRenderer extends MobEntityRenderer<ParrotEntity> {
 		super(entityRenderDispatcher, new ParrotEntityModel(), 0.3F);
 	}
 
-	protected Identifier getTexture(ParrotEntity parrotEntity) {
-		return TEXTURES[parrotEntity.method_14107()];
+	protected Identifier method_4080(ParrotEntity parrotEntity) {
+		return SKINS[parrotEntity.getVariant()];
 	}
 
-	public float method_5783(ParrotEntity parrotEntity, float f) {
-		return this.method_14695(parrotEntity, f);
-	}
-
-	private float method_14695(ParrotEntity parrotEntity, float f) {
-		float g = parrotEntity.field_15560 + (parrotEntity.field_15557 - parrotEntity.field_15560) * f;
-		float h = parrotEntity.field_15559 + (parrotEntity.field_15558 - parrotEntity.field_15559) * f;
+	public float method_4081(ParrotEntity parrotEntity, float f) {
+		float g = MathHelper.lerp(f, parrotEntity.field_6829, parrotEntity.field_6818);
+		float h = MathHelper.lerp(f, parrotEntity.field_6827, parrotEntity.field_6819);
 		return (MathHelper.sin(g) + 1.0F) * h;
 	}
 }

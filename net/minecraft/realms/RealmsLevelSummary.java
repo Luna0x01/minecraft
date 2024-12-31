@@ -10,15 +10,15 @@ public class RealmsLevelSummary implements Comparable<RealmsLevelSummary> {
 	}
 
 	public int getGameMode() {
-		return this.levelSummary.method_261().getGameModeId();
+		return this.levelSummary.getGameMode().getId();
 	}
 
 	public String getLevelId() {
-		return this.levelSummary.getFileName();
+		return this.levelSummary.getName();
 	}
 
 	public boolean hasCheats() {
-		return this.levelSummary.cheatsEnabled();
+		return this.levelSummary.hasCheats();
 	}
 
 	public boolean isHardcore() {
@@ -38,7 +38,7 @@ public class RealmsLevelSummary implements Comparable<RealmsLevelSummary> {
 	}
 
 	public int compareTo(LevelSummary levelSummary) {
-		return this.levelSummary.compareTo(levelSummary);
+		return this.levelSummary.method_251(levelSummary);
 	}
 
 	public long getSizeOnDisk() {
@@ -49,9 +49,7 @@ public class RealmsLevelSummary implements Comparable<RealmsLevelSummary> {
 		if (this.levelSummary.getLastPlayed() < realmsLevelSummary.getLastPlayed()) {
 			return 1;
 		} else {
-			return this.levelSummary.getLastPlayed() > realmsLevelSummary.getLastPlayed()
-				? -1
-				: this.levelSummary.getFileName().compareTo(realmsLevelSummary.getLevelId());
+			return this.levelSummary.getLastPlayed() > realmsLevelSummary.getLastPlayed() ? -1 : this.levelSummary.getName().compareTo(realmsLevelSummary.getLevelId());
 		}
 	}
 }

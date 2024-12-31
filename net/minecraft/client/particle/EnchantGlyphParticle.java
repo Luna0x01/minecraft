@@ -1,46 +1,50 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.world.World;
 
-public class EnchantGlyphParticle extends Particle {
+public class EnchantGlyphParticle extends SpriteBillboardParticle {
 	private final double startX;
 	private final double startY;
 	private final double startZ;
 
-	protected EnchantGlyphParticle(World world, double d, double e, double f, double g, double h, double i) {
-		super(world, d, e, f, g, h, i);
+	private EnchantGlyphParticle(World world, double d, double e, double f, double g, double h, double i) {
+		super(world, d, e, f);
 		this.velocityX = g;
 		this.velocityY = h;
 		this.velocityZ = i;
 		this.startX = d;
 		this.startY = e;
 		this.startZ = f;
-		this.field_13425 = d + g;
-		this.field_13426 = e + h;
-		this.field_13427 = f + i;
-		this.field_13428 = this.field_13425;
-		this.field_13429 = this.field_13426;
-		this.field_13430 = this.field_13427;
-		float j = this.field_13438.nextFloat() * 0.6F + 0.4F;
-		this.scale = this.field_13438.nextFloat() * 0.5F + 0.2F;
-		this.red = 0.9F * j;
-		this.green = 0.9F * j;
-		this.blue = j;
-		this.field_14950 = false;
+		this.prevPosX = d + g;
+		this.prevPosY = e + h;
+		this.prevPosZ = f + i;
+		this.x = this.prevPosX;
+		this.y = this.prevPosY;
+		this.z = this.prevPosZ;
+		this.scale = 0.1F * (this.random.nextFloat() * 0.5F + 0.2F);
+		float j = this.random.nextFloat() * 0.6F + 0.4F;
+		this.colorRed = 0.9F * j;
+		this.colorGreen = 0.9F * j;
+		this.colorBlue = j;
+		this.collidesWithWorld = false;
 		this.maxAge = (int)(Math.random() * 10.0) + 30;
-		this.setMiscTexture((int)(Math.random() * 26.0 + 1.0 + 224.0));
 	}
 
 	@Override
-	public void method_12242(double d, double e, double f) {
-		this.method_12246(this.method_12254().offset(d, e, f));
-		this.method_12252();
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
 	}
 
 	@Override
-	public int method_12243(float f) {
-		int i = super.method_12243(f);
+	public void move(double d, double e, double f) {
+		this.setBoundingBox(this.getBoundingBox().offset(d, e, f));
+		this.repositionFromBoundingBox();
+	}
+
+	@Override
+	public int getColorMultiplier(float f) {
+		int i = super.getColorMultiplier(f);
 		float g = (float)this.age / (float)this.maxAge;
 		g *= g;
 		g *= g;
@@ -55,33 +59,48 @@ public class EnchantGlyphParticle extends Particle {
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
-		float f = (float)this.age / (float)this.maxAge;
-		f = 1.0F - f;
-		float g = 1.0F - f;
-		g *= g;
-		g *= g;
-		this.field_13428 = this.startX + this.velocityX * (double)f;
-		this.field_13429 = this.startY + this.velocityY * (double)f - (double)(g * 1.2F);
-		this.field_13430 = this.startZ + this.velocityZ * (double)f;
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
+			this.markDead();
+		} else {
+			float f = (float)this.age / (float)this.maxAge;
+			f = 1.0F - f;
+			float g = 1.0F - f;
+			g *= g;
+			g *= g;
+			this.x = this.startX + this.velocityX * (double)f;
+			this.y = this.startY + this.velocityY * (double)f - (double)(g * 1.2F);
+			this.z = this.startZ + this.velocityZ * (double)f;
 		}
 	}
 
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new EnchantGlyphParticle(world, d, e, f, g, h, i);
-		}
-	}
+	public static class EnchantFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17803;
 
-	public static class class_4208 implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
+		public EnchantFactory(SpriteProvider spriteProvider) {
+			this.field_17803 = spriteProvider;
+		}
+
+		public Particle method_3021(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			EnchantGlyphParticle enchantGlyphParticle = new EnchantGlyphParticle(world, d, e, f, g, h, i);
-			enchantGlyphParticle.setMiscTexture(208);
+			enchantGlyphParticle.setSprite(this.field_17803);
+			return enchantGlyphParticle;
+		}
+	}
+
+	public static class NautilusFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17804;
+
+		public NautilusFactory(SpriteProvider spriteProvider) {
+			this.field_17804 = spriteProvider;
+		}
+
+		public Particle method_3020(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			EnchantGlyphParticle enchantGlyphParticle = new EnchantGlyphParticle(world, d, e, f, g, h, i);
+			enchantGlyphParticle.setSprite(this.field_17804);
 			return enchantGlyphParticle;
 		}
 	}

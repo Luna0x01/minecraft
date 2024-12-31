@@ -1,15 +1,15 @@
 package net.minecraft.block;
 
 public class SandBlock extends FallingBlock {
-	private final int field_18461;
+	private final int color;
 
-	public SandBlock(int i, Block.Builder builder) {
-		super(builder);
-		this.field_18461 = i;
+	public SandBlock(int i, Block.Settings settings) {
+		super(settings);
+		this.color = i;
 	}
 
 	@Override
-	public int getColor(BlockState state) {
-		return this.field_18461;
+	public int getColor(BlockState blockState) {
+		return this.color;
 	}
 }

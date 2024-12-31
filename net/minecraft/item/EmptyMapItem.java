@@ -14,19 +14,22 @@ public class EmptyMapItem extends NetworkSyncedItem {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = FilledMapItem.method_16113(world, MathHelper.floor(player.x), MathHelper.floor(player.z), (byte)0, true, false);
-		ItemStack itemStack2 = player.getStackInHand(hand);
-		itemStack2.decrement(1);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = FilledMapItem.createMap(world, MathHelper.floor(playerEntity.x), MathHelper.floor(playerEntity.z), (byte)0, true, false);
+		ItemStack itemStack2 = playerEntity.getStackInHand(hand);
+		if (!playerEntity.abilities.creativeMode) {
+			itemStack2.decrement(1);
+		}
+
 		if (itemStack2.isEmpty()) {
-			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 		} else {
-			if (!player.inventory.insertStack(itemStack.copy())) {
-				player.dropItem(itemStack, false);
+			if (!playerEntity.inventory.insertStack(itemStack.copy())) {
+				playerEntity.dropItem(itemStack, false);
 			}
 
-			player.method_15932(Stats.USED.method_21429(this));
-			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack2);
+			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+			return new TypedActionResult<>(ActionResult.field_5812, itemStack2);
 		}
 	}
 }

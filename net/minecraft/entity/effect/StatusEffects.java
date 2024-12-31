@@ -1,86 +1,114 @@
 package net.minecraft.entity.effect;
 
-import javax.annotation.Nullable;
-import net.minecraft.Bootstrap;
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.Difficulty;
 
 public class StatusEffects {
-	public static final StatusEffect SPEED;
-	public static final StatusEffect SLOWNESS;
-	public static final StatusEffect HASTE;
-	public static final StatusEffect MINING_FATIGUE;
-	public static final StatusEffect STRENGTH;
-	public static final StatusEffect INSTANT_HEALTH;
-	public static final StatusEffect INSTANT_DAMAGE;
-	public static final StatusEffect JUMP_BOOST;
-	public static final StatusEffect NAUSEA;
-	public static final StatusEffect REGENERATION;
-	public static final StatusEffect RESISTANCE;
-	public static final StatusEffect FIRE_RESISTANCE;
-	public static final StatusEffect WATER_BREATHING;
-	public static final StatusEffect INVISIBILITY;
-	public static final StatusEffect BLINDNESS;
-	public static final StatusEffect NIGHT_VISION;
-	public static final StatusEffect HUNGER;
-	public static final StatusEffect WEAKNESS;
-	public static final StatusEffect POISON;
-	public static final StatusEffect WITHER;
-	public static final StatusEffect HEALTH_BOOST;
-	public static final StatusEffect ABSORPTION;
-	public static final StatusEffect SATURATION;
-	public static final StatusEffect GLOWING;
-	public static final StatusEffect LEVITATION;
-	public static final StatusEffect LUCK;
-	public static final StatusEffect UNLUCK;
-	public static final StatusEffect SLOW_FALLING;
-	public static final StatusEffect CONDUIT_POWER;
-	public static final StatusEffect DOLPHINS_GRACE;
-
-	@Nullable
-	private static StatusEffect get(String id) {
-		StatusEffect statusEffect = Registry.MOB_EFFECT.getByIdentifier(new Identifier(id));
-		if (statusEffect == null) {
-			throw new IllegalStateException("Invalid MobEffect requested: " + id);
-		} else {
-			return statusEffect;
+	public static final StatusEffect field_5904 = register(
+		1,
+		"speed",
+		new StatusEffect(StatusEffectType.field_18271, 8171462)
+			.addAttributeModifier(EntityAttributes.MOVEMENT_SPEED, "91AEAA56-376B-4498-935B-2F7F68070635", 0.2F, EntityAttributeModifier.Operation.field_6331)
+	);
+	public static final StatusEffect field_5909 = register(
+		2,
+		"slowness",
+		new StatusEffect(StatusEffectType.field_18272, 5926017)
+			.addAttributeModifier(EntityAttributes.MOVEMENT_SPEED, "7107DE5E-7CE8-4030-940E-514C1F160890", -0.15F, EntityAttributeModifier.Operation.field_6331)
+	);
+	public static final StatusEffect field_5917 = register(
+		3,
+		"haste",
+		new StatusEffect(StatusEffectType.field_18271, 14270531)
+			.addAttributeModifier(EntityAttributes.ATTACK_SPEED, "AF8B6E3F-3328-4C0A-AA36-5BA2BB9DBEF3", 0.1F, EntityAttributeModifier.Operation.field_6331)
+	);
+	public static final StatusEffect field_5901 = register(
+		4,
+		"mining_fatigue",
+		new StatusEffect(StatusEffectType.field_18272, 4866583)
+			.addAttributeModifier(EntityAttributes.ATTACK_SPEED, "55FCED67-E92A-486E-9800-B47F202C4386", -0.1F, EntityAttributeModifier.Operation.field_6331)
+	);
+	public static final StatusEffect field_5910 = register(
+		5,
+		"strength",
+		new DamageModifierStatusEffect(StatusEffectType.field_18271, 9643043, 3.0)
+			.addAttributeModifier(EntityAttributes.ATTACK_DAMAGE, "648D7064-6A60-4F59-8ABE-C2C23A6DD7A9", 0.0, EntityAttributeModifier.Operation.field_6328)
+	);
+	public static final StatusEffect field_5915 = register(6, "instant_health", new InstantStatusEffect(StatusEffectType.field_18271, 16262179));
+	public static final StatusEffect field_5921 = register(7, "instant_damage", new InstantStatusEffect(StatusEffectType.field_18272, 4393481));
+	public static final StatusEffect field_5913 = register(8, "jump_boost", new StatusEffect(StatusEffectType.field_18271, 2293580));
+	public static final StatusEffect field_5916 = register(9, "nausea", new StatusEffect(StatusEffectType.field_18272, 5578058));
+	public static final StatusEffect field_5924 = register(10, "regeneration", new StatusEffect(StatusEffectType.field_18271, 13458603));
+	public static final StatusEffect field_5907 = register(11, "resistance", new StatusEffect(StatusEffectType.field_18271, 10044730));
+	public static final StatusEffect field_5918 = register(12, "fire_resistance", new StatusEffect(StatusEffectType.field_18271, 14981690));
+	public static final StatusEffect field_5923 = register(13, "water_breathing", new StatusEffect(StatusEffectType.field_18271, 3035801));
+	public static final StatusEffect field_5905 = register(14, "invisibility", new StatusEffect(StatusEffectType.field_18271, 8356754));
+	public static final StatusEffect field_5919 = register(15, "blindness", new StatusEffect(StatusEffectType.field_18272, 2039587));
+	public static final StatusEffect field_5925 = register(16, "night_vision", new StatusEffect(StatusEffectType.field_18271, 2039713));
+	public static final StatusEffect field_5903 = register(17, "hunger", new StatusEffect(StatusEffectType.field_18272, 5797459));
+	public static final StatusEffect field_5911 = register(
+		18,
+		"weakness",
+		new DamageModifierStatusEffect(StatusEffectType.field_18272, 4738376, -4.0)
+			.addAttributeModifier(EntityAttributes.ATTACK_DAMAGE, "22653B89-116E-49DC-9B6B-9971489B5BE5", 0.0, EntityAttributeModifier.Operation.field_6328)
+	);
+	public static final StatusEffect field_5899 = register(19, "poison", new StatusEffect(StatusEffectType.field_18272, 5149489));
+	public static final StatusEffect field_5920 = register(20, "wither", new StatusEffect(StatusEffectType.field_18272, 3484199));
+	public static final StatusEffect field_5914 = register(
+		21,
+		"health_boost",
+		new HealthBoostStatusEffect(StatusEffectType.field_18271, 16284963)
+			.addAttributeModifier(EntityAttributes.MAX_HEALTH, "5D6F0BA2-1186-46AC-B896-C61C5CEE99CC", 4.0, EntityAttributeModifier.Operation.field_6328)
+	);
+	public static final StatusEffect field_5898 = register(22, "absorption", new AbsorptionStatusEffect(StatusEffectType.field_18271, 2445989));
+	public static final StatusEffect field_5922 = register(23, "saturation", new InstantStatusEffect(StatusEffectType.field_18271, 16262179));
+	public static final StatusEffect field_5912 = register(24, "glowing", new StatusEffect(StatusEffectType.field_18273, 9740385));
+	public static final StatusEffect field_5902 = register(25, "levitation", new StatusEffect(StatusEffectType.field_18272, 13565951));
+	public static final StatusEffect field_5926 = register(
+		26,
+		"luck",
+		new StatusEffect(StatusEffectType.field_18271, 3381504)
+			.addAttributeModifier(EntityAttributes.LUCK, "03C3C89D-7037-4B42-869F-B146BCB64D2E", 1.0, EntityAttributeModifier.Operation.field_6328)
+	);
+	public static final StatusEffect field_5908 = register(
+		27,
+		"unluck",
+		new StatusEffect(StatusEffectType.field_18272, 12624973)
+			.addAttributeModifier(EntityAttributes.LUCK, "CC5AF142-2BD2-4215-B636-2605AED11727", -1.0, EntityAttributeModifier.Operation.field_6328)
+	);
+	public static final StatusEffect field_5906 = register(28, "slow_falling", new StatusEffect(StatusEffectType.field_18271, 16773073));
+	public static final StatusEffect field_5927 = register(29, "conduit_power", new StatusEffect(StatusEffectType.field_18271, 1950417));
+	public static final StatusEffect field_5900 = register(30, "dolphins_grace", new StatusEffect(StatusEffectType.field_18271, 8954814));
+	public static final StatusEffect field_16595 = register(31, "bad_omen", new StatusEffect(StatusEffectType.field_18273, 745784) {
+		@Override
+		public boolean canApplyUpdateEffect(int i, int j) {
+			return true;
 		}
-	}
 
-	static {
-		if (!Bootstrap.isInitialized()) {
-			throw new RuntimeException("Accessed MobEffects before Bootstrap!");
-		} else {
-			SPEED = get("speed");
-			SLOWNESS = get("slowness");
-			HASTE = get("haste");
-			MINING_FATIGUE = get("mining_fatigue");
-			STRENGTH = get("strength");
-			INSTANT_HEALTH = get("instant_health");
-			INSTANT_DAMAGE = get("instant_damage");
-			JUMP_BOOST = get("jump_boost");
-			NAUSEA = get("nausea");
-			REGENERATION = get("regeneration");
-			RESISTANCE = get("resistance");
-			FIRE_RESISTANCE = get("fire_resistance");
-			WATER_BREATHING = get("water_breathing");
-			INVISIBILITY = get("invisibility");
-			BLINDNESS = get("blindness");
-			NIGHT_VISION = get("night_vision");
-			HUNGER = get("hunger");
-			WEAKNESS = get("weakness");
-			POISON = get("poison");
-			WITHER = get("wither");
-			HEALTH_BOOST = get("health_boost");
-			ABSORPTION = get("absorption");
-			SATURATION = get("saturation");
-			GLOWING = get("glowing");
-			LEVITATION = get("levitation");
-			LUCK = get("luck");
-			UNLUCK = get("unluck");
-			SLOW_FALLING = get("slow_falling");
-			CONDUIT_POWER = get("conduit_power");
-			DOLPHINS_GRACE = get("dolphins_grace");
+		@Override
+		public void applyUpdateEffect(LivingEntity livingEntity, int i) {
+			if (livingEntity instanceof ServerPlayerEntity && !livingEntity.isSpectator()) {
+				ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)livingEntity;
+				ServerWorld serverWorld = serverPlayerEntity.getServerWorld();
+				if (serverWorld.getDifficulty() == Difficulty.field_5801) {
+					return;
+				}
+
+				if (serverWorld.isNearOccupiedPointOfInterest(new BlockPos(livingEntity))) {
+					serverWorld.getRaidManager().startRaid(serverPlayerEntity);
+				}
+			}
 		}
+	});
+	public static final StatusEffect field_18980 = register(32, "hero_of_the_village", new StatusEffect(StatusEffectType.field_18271, 4521796));
+
+	private static StatusEffect register(int i, String string, StatusEffect statusEffect) {
+		return Registry.register(Registry.STATUS_EFFECT, i, string, statusEffect);
 	}
 }

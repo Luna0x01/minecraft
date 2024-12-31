@@ -1,70 +1,36 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
+import net.minecraft.client.network.ClientDummyContainerProvider;
+import net.minecraft.container.BlockContext;
+import net.minecraft.container.CraftingTableContainer;
+import net.minecraft.container.NameableContainerProvider;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class CraftingTableBlock extends Block {
-	protected CraftingTableBlock(Block.Builder builder) {
-		super(builder);
+	private static final Text CONTAINER_NAME = new TranslatableText("container.crafting");
+
+	protected CraftingTableBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public boolean onUse(
-		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
-	) {
-		if (world.isClient) {
-			return true;
-		} else {
-			player.openHandledScreen(new CraftingTableBlock.ClientDummyScreenHandlerProvider(world, pos));
-			player.method_15928(Stats.INTERACT_WITH_CRAFTING_TABLE);
-			return true;
-		}
+	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		playerEntity.openContainer(blockState.createContainerProvider(world, blockPos));
+		playerEntity.incrementStat(Stats.field_15368);
+		return true;
 	}
 
-	public static class ClientDummyScreenHandlerProvider implements NamedScreenHandlerFactory {
-		private final World world;
-		private final BlockPos pos;
-
-		public ClientDummyScreenHandlerProvider(World world, BlockPos blockPos) {
-			this.world = world;
-			this.pos = blockPos;
-		}
-
-		@Override
-		public Text method_15540() {
-			return new TranslatableText(Blocks.CRAFTING_TABLE.getTranslationKey() + ".name");
-		}
-
-		@Override
-		public boolean hasCustomName() {
-			return false;
-		}
-
-		@Nullable
-		@Override
-		public Text method_15541() {
-			return null;
-		}
-
-		@Override
-		public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
-			return new CraftingScreenHandler(inventory, this.world, this.pos);
-		}
-
-		@Override
-		public String getId() {
-			return "minecraft:crafting_table";
-		}
+	@Override
+	public NameableContainerProvider createContainerProvider(BlockState blockState, World world, BlockPos blockPos) {
+		return new ClientDummyContainerProvider(
+			(i, playerInventory, playerEntity) -> new CraftingTableContainer(i, playerInventory, BlockContext.create(world, blockPos)), CONTAINER_NAME
+		);
 	}
 }

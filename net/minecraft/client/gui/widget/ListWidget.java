@@ -3,228 +3,240 @@ package net.minecraft.client.gui.widget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Collections;
 import java.util.List;
-import net.minecraft.class_4121;
-import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.AbstractParentElement;
+import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.math.MathHelper;
 
-public abstract class ListWidget extends class_4121 {
-	protected final MinecraftClient client;
+public abstract class ListWidget extends AbstractParentElement implements Drawable {
+	protected static final int NO_DRAG = -1;
+	protected static final int DRAG_OUTSIDE = -2;
+	protected final MinecraftClient minecraft;
 	protected int width;
 	protected int height;
-	protected int yStart;
-	protected int yEnd;
-	protected int xEnd;
-	protected int xStart;
-	protected final int entryHeight;
+	protected int field_2166;
+	protected int field_2165;
+	protected int field_2181;
+	protected int field_2180;
+	protected final int itemHeight;
 	protected boolean centerListVertically = true;
 	protected int yDrag = -2;
-	protected double field_20083;
-	protected int selectedEntry;
-	protected long time = Long.MIN_VALUE;
+	protected double field_2175;
 	protected boolean visible = true;
 	protected boolean renderSelection = true;
 	protected boolean renderHeader;
 	protected int headerHeight;
-	private boolean dragging;
+	private boolean scrolling;
 
 	public ListWidget(MinecraftClient minecraftClient, int i, int j, int k, int l, int m) {
-		this.client = minecraftClient;
+		this.minecraft = minecraftClient;
 		this.width = i;
 		this.height = j;
-		this.yStart = k;
-		this.yEnd = l;
-		this.entryHeight = m;
-		this.xStart = 0;
-		this.xEnd = i;
+		this.field_2166 = k;
+		this.field_2165 = l;
+		this.itemHeight = m;
+		this.field_2180 = 0;
+		this.field_2181 = i;
 	}
 
-	public void updateBounds(int right, int height, int top, int bottom) {
-		this.width = right;
-		this.height = height;
-		this.yStart = top;
-		this.yEnd = bottom;
-		this.xStart = 0;
-		this.xEnd = right;
+	public void updateSize(int i, int j, int k, int l) {
+		this.width = i;
+		this.height = j;
+		this.field_2166 = k;
+		this.field_2165 = l;
+		this.field_2180 = 0;
+		this.field_2181 = i;
 	}
 
-	public void setRenderSelection(boolean renderSelection) {
-		this.renderSelection = renderSelection;
+	public void setRenderSelection(boolean bl) {
+		this.renderSelection = bl;
 	}
 
-	protected void setHeader(boolean renderHeader, int headerHeight) {
-		this.renderHeader = renderHeader;
-		this.headerHeight = headerHeight;
-		if (!renderHeader) {
+	protected void setRenderHeader(boolean bl, int i) {
+		this.renderHeader = bl;
+		this.headerHeight = i;
+		if (!bl) {
 			this.headerHeight = 0;
 		}
 	}
 
-	public boolean method_18417() {
+	public void setVisible(boolean bl) {
+		this.visible = bl;
+	}
+
+	public boolean isVisible() {
 		return this.visible;
 	}
 
-	protected abstract int getEntryCount();
-
-	public void method_18416(int i) {
-	}
+	protected abstract int getItemCount();
 
 	@Override
-	protected List<? extends class_4122> method_18423() {
+	public List<? extends Element> children() {
 		return Collections.emptyList();
 	}
 
-	protected boolean method_18414(int i, int j, double d, double e) {
+	protected boolean selectItem(int i, int j, double d, double e) {
 		return true;
 	}
 
-	protected abstract boolean isEntrySelected(int index);
+	protected abstract boolean isSelectedItem(int i);
 
 	protected int getMaxPosition() {
-		return this.getEntryCount() * this.entryHeight + this.headerHeight;
+		return this.getItemCount() * this.itemHeight + this.headerHeight;
 	}
 
 	protected abstract void renderBackground();
 
-	protected void method_9528(int i, int j, int k, float f) {
+	protected void updateItemPosition(int i, int j, int k, float f) {
 	}
 
-	protected abstract void method_1055(int i, int j, int k, int l, int m, int n, float f);
+	protected abstract void renderItem(int i, int j, int k, int l, int m, int n, float f);
 
-	protected void renderHeader(int x, int y, Tessellator tessellator) {
+	protected void renderHeader(int i, int j, Tessellator tessellator) {
 	}
 
-	protected void clickedHeader(int mouseX, int mouseY) {
+	protected void clickedHeader(int i, int j) {
 	}
 
-	protected void renderDecorations(int mouseX, int mouseY) {
+	protected void renderDecorations(int i, int j) {
 	}
 
-	public int method_18411(double d, double e) {
-		int i = this.xStart + this.width / 2 - this.getRowWidth() / 2;
-		int j = this.xStart + this.width / 2 + this.getRowWidth() / 2;
-		int k = MathHelper.floor(e - (double)this.yStart) - this.headerHeight + (int)this.field_20083 - 4;
-		int l = k / this.entryHeight;
-		return d < (double)this.getScrollbarPosition() && d >= (double)i && d <= (double)j && l >= 0 && k >= 0 && l < this.getEntryCount() ? l : -1;
+	public int getItemAtPosition(double d, double e) {
+		int i = this.field_2180 + this.width / 2 - this.getRowWidth() / 2;
+		int j = this.field_2180 + this.width / 2 + this.getRowWidth() / 2;
+		int k = MathHelper.floor(e - (double)this.field_2166) - this.headerHeight + (int)this.field_2175 - 4;
+		int l = k / this.itemHeight;
+		return d < (double)this.getScrollbarPosition() && d >= (double)i && d <= (double)j && l >= 0 && k >= 0 && l < this.getItemCount() ? l : -1;
 	}
 
 	protected void capYPosition() {
-		this.field_20083 = MathHelper.clamp(this.field_20083, 0.0, (double)this.getMaxScroll());
+		this.field_2175 = MathHelper.clamp(this.field_2175, 0.0, (double)this.getMaxScroll());
 	}
 
 	public int getMaxScroll() {
-		return Math.max(0, this.getMaxPosition() - (this.yEnd - this.yStart - 4));
+		return Math.max(0, this.getMaxPosition() - (this.field_2165 - this.field_2166 - 4));
 	}
 
-	public int getScrollAmount() {
-		return (int)this.field_20083;
+	public void centerScrollOn(int i) {
+		this.field_2175 = (double)(i * this.itemHeight + this.itemHeight / 2 - (this.field_2165 - this.field_2166) / 2);
+		this.capYPosition();
 	}
 
-	public boolean method_18415(double d, double e) {
-		return e >= (double)this.yStart && e <= (double)this.yEnd && d >= (double)this.xStart && d <= (double)this.xEnd;
+	public int getScroll() {
+		return (int)this.field_2175;
 	}
 
-	public void scroll(int amount) {
-		this.field_20083 += (double)amount;
+	public boolean isMouseInList(double d, double e) {
+		return e >= (double)this.field_2166 && e <= (double)this.field_2165 && d >= (double)this.field_2180 && d <= (double)this.field_2181;
+	}
+
+	public int getScrollBottom() {
+		return (int)this.field_2175 - this.height - this.headerHeight;
+	}
+
+	public void scroll(int i) {
+		this.field_2175 += (double)i;
 		this.capYPosition();
 		this.yDrag = -2;
 	}
 
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	@Override
+	public void render(int i, int j, float f) {
 		if (this.visible) {
 			this.renderBackground();
-			int i = this.getScrollbarPosition();
-			int j = i + 6;
+			int k = this.getScrollbarPosition();
+			int l = k + 6;
 			this.capYPosition();
 			GlStateManager.disableLighting();
 			GlStateManager.disableFog();
 			Tessellator tessellator = Tessellator.getInstance();
-			BufferBuilder bufferBuilder = tessellator.getBuffer();
-			this.client.getTextureManager().bindTexture(DrawableHelper.OPTIONS_BACKGROUND_TEXTURE);
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			float f = 32.0F;
-			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-			bufferBuilder.vertex((double)this.xStart, (double)this.yEnd, 0.0)
-				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yEnd + (int)this.field_20083) / 32.0F))
+			BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+			this.minecraft.getTextureManager().bindTexture(DrawableHelper.BACKGROUND_LOCATION);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			float g = 32.0F;
+			bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+			bufferBuilder.vertex((double)this.field_2180, (double)this.field_2165, 0.0)
+				.texture((double)((float)this.field_2180 / 32.0F), (double)((float)(this.field_2165 + (int)this.field_2175) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
-			bufferBuilder.vertex((double)this.xEnd, (double)this.yEnd, 0.0)
-				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yEnd + (int)this.field_20083) / 32.0F))
+			bufferBuilder.vertex((double)this.field_2181, (double)this.field_2165, 0.0)
+				.texture((double)((float)this.field_2181 / 32.0F), (double)((float)(this.field_2165 + (int)this.field_2175) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
-			bufferBuilder.vertex((double)this.xEnd, (double)this.yStart, 0.0)
-				.texture((double)((float)this.xEnd / 32.0F), (double)((float)(this.yStart + (int)this.field_20083) / 32.0F))
+			bufferBuilder.vertex((double)this.field_2181, (double)this.field_2166, 0.0)
+				.texture((double)((float)this.field_2181 / 32.0F), (double)((float)(this.field_2166 + (int)this.field_2175) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
-			bufferBuilder.vertex((double)this.xStart, (double)this.yStart, 0.0)
-				.texture((double)((float)this.xStart / 32.0F), (double)((float)(this.yStart + (int)this.field_20083) / 32.0F))
+			bufferBuilder.vertex((double)this.field_2180, (double)this.field_2166, 0.0)
+				.texture((double)((float)this.field_2180 / 32.0F), (double)((float)(this.field_2166 + (int)this.field_2175) / 32.0F))
 				.color(32, 32, 32, 255)
 				.next();
 			tessellator.draw();
-			int k = this.xStart + this.width / 2 - this.getRowWidth() / 2 + 2;
-			int l = this.yStart + 4 - (int)this.field_20083;
+			int m = this.field_2180 + this.width / 2 - this.getRowWidth() / 2 + 2;
+			int n = this.field_2166 + 4 - (int)this.field_2175;
 			if (this.renderHeader) {
-				this.renderHeader(k, l, tessellator);
+				this.renderHeader(m, n, tessellator);
 			}
 
-			this.method_6704(k, l, mouseX, mouseY, tickDelta);
+			this.renderList(m, n, i, j, f);
 			GlStateManager.disableDepthTest();
-			this.renderHoleBackground(0, this.yStart, 255, 255);
-			this.renderHoleBackground(this.yEnd, this.height, 255, 255);
+			this.renderHoleBackground(0, this.field_2166, 255, 255);
+			this.renderHoleBackground(this.field_2165, this.height, 255, 255);
 			GlStateManager.enableBlend();
-			GlStateManager.method_12288(
-				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ZERO, GlStateManager.class_2866.ONE
+			GlStateManager.blendFuncSeparate(
+				GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE
 			);
 			GlStateManager.disableAlphaTest();
 			GlStateManager.shadeModel(7425);
 			GlStateManager.disableTexture();
-			int m = 4;
-			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-			bufferBuilder.vertex((double)this.xStart, (double)(this.yStart + 4), 0.0).texture(0.0, 1.0).color(0, 0, 0, 0).next();
-			bufferBuilder.vertex((double)this.xEnd, (double)(this.yStart + 4), 0.0).texture(1.0, 1.0).color(0, 0, 0, 0).next();
-			bufferBuilder.vertex((double)this.xEnd, (double)this.yStart, 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
-			bufferBuilder.vertex((double)this.xStart, (double)this.yStart, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
+			int o = 4;
+			bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+			bufferBuilder.vertex((double)this.field_2180, (double)(this.field_2166 + 4), 0.0).texture(0.0, 1.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.field_2181, (double)(this.field_2166 + 4), 0.0).texture(1.0, 1.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.field_2181, (double)this.field_2166, 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
+			bufferBuilder.vertex((double)this.field_2180, (double)this.field_2166, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
 			tessellator.draw();
-			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-			bufferBuilder.vertex((double)this.xStart, (double)this.yEnd, 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
-			bufferBuilder.vertex((double)this.xEnd, (double)this.yEnd, 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
-			bufferBuilder.vertex((double)this.xEnd, (double)(this.yEnd - 4), 0.0).texture(1.0, 0.0).color(0, 0, 0, 0).next();
-			bufferBuilder.vertex((double)this.xStart, (double)(this.yEnd - 4), 0.0).texture(0.0, 0.0).color(0, 0, 0, 0).next();
+			bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+			bufferBuilder.vertex((double)this.field_2180, (double)this.field_2165, 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
+			bufferBuilder.vertex((double)this.field_2181, (double)this.field_2165, 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
+			bufferBuilder.vertex((double)this.field_2181, (double)(this.field_2165 - 4), 0.0).texture(1.0, 0.0).color(0, 0, 0, 0).next();
+			bufferBuilder.vertex((double)this.field_2180, (double)(this.field_2165 - 4), 0.0).texture(0.0, 0.0).color(0, 0, 0, 0).next();
 			tessellator.draw();
-			int n = this.getMaxScroll();
-			if (n > 0) {
-				int o = (int)((float)((this.yEnd - this.yStart) * (this.yEnd - this.yStart)) / (float)this.getMaxPosition());
-				o = MathHelper.clamp(o, 32, this.yEnd - this.yStart - 8);
-				int p = (int)this.field_20083 * (this.yEnd - this.yStart - o) / n + this.yStart;
-				if (p < this.yStart) {
-					p = this.yStart;
+			int p = this.getMaxScroll();
+			if (p > 0) {
+				int q = (int)((float)((this.field_2165 - this.field_2166) * (this.field_2165 - this.field_2166)) / (float)this.getMaxPosition());
+				q = MathHelper.clamp(q, 32, this.field_2165 - this.field_2166 - 8);
+				int r = (int)this.field_2175 * (this.field_2165 - this.field_2166 - q) / p + this.field_2166;
+				if (r < this.field_2166) {
+					r = this.field_2166;
 				}
 
-				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)i, (double)this.yEnd, 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)j, (double)this.yEnd, 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)j, (double)this.yStart, 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)i, (double)this.yStart, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
+				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+				bufferBuilder.vertex((double)k, (double)this.field_2165, 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)l, (double)this.field_2165, 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)l, (double)this.field_2166, 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)k, (double)this.field_2166, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
 				tessellator.draw();
-				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)i, (double)(p + o), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)j, (double)(p + o), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)j, (double)p, 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)i, (double)p, 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+				bufferBuilder.vertex((double)k, (double)(r + q), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)l, (double)(r + q), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)l, (double)r, 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)k, (double)r, 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
 				tessellator.draw();
-				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)i, (double)(p + o - 1), 0.0).texture(0.0, 1.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)(j - 1), (double)(p + o - 1), 0.0).texture(1.0, 1.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)(j - 1), (double)p, 0.0).texture(1.0, 0.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)i, (double)p, 0.0).texture(0.0, 0.0).color(192, 192, 192, 255).next();
+				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+				bufferBuilder.vertex((double)k, (double)(r + q - 1), 0.0).texture(0.0, 1.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)(l - 1), (double)(r + q - 1), 0.0).texture(1.0, 1.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)(l - 1), (double)r, 0.0).texture(1.0, 0.0).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)k, (double)r, 0.0).texture(0.0, 0.0).color(192, 192, 192, 255).next();
 				tessellator.draw();
 			}
 
-			this.renderDecorations(mouseX, mouseY);
+			this.renderDecorations(i, j);
 			GlStateManager.enableTexture();
 			GlStateManager.shadeModel(7424);
 			GlStateManager.enableAlphaTest();
@@ -232,28 +244,29 @@ public abstract class ListWidget extends class_4121 {
 		}
 	}
 
-	protected void method_18412(double d, double e, int i) {
-		this.dragging = i == 0 && d >= (double)this.getScrollbarPosition() && d < (double)(this.getScrollbarPosition() + 6);
+	protected void updateScrollingState(double d, double e, int i) {
+		this.scrolling = i == 0 && d >= (double)this.getScrollbarPosition() && d < (double)(this.getScrollbarPosition() + 6);
 	}
 
 	@Override
 	public boolean mouseClicked(double d, double e, int i) {
-		this.method_18412(d, e, i);
-		if (this.method_18417() && this.method_18415(d, e)) {
-			int j = this.method_18411(d, e);
+		this.updateScrollingState(d, e, i);
+		if (this.isVisible() && this.isMouseInList(d, e)) {
+			int j = this.getItemAtPosition(d, e);
 			if (j == -1 && i == 0) {
-				this.clickedHeader((int)(d - (double)(this.xStart + this.width / 2 - this.getRowWidth() / 2)), (int)(e - (double)this.yStart) + (int)this.field_20083 - 4);
+				this.clickedHeader(
+					(int)(d - (double)(this.field_2180 + this.width / 2 - this.getRowWidth() / 2)), (int)(e - (double)this.field_2166) + (int)this.field_2175 - 4
+				);
 				return true;
-			} else if (j != -1 && this.method_18414(j, i, d, e)) {
-				if (this.method_18423().size() > j) {
-					this.method_18421((class_4122)this.method_18423().get(j));
+			} else if (j != -1 && this.selectItem(j, i, d, e)) {
+				if (this.children().size() > j) {
+					this.setFocused((Element)this.children().get(j));
 				}
 
-				this.method_18425(true);
-				this.method_18416(j);
+				this.setDragging(true);
 				return true;
 			} else {
-				return this.dragging;
+				return this.scrolling;
 			}
 		} else {
 			return false;
@@ -266,7 +279,6 @@ public abstract class ListWidget extends class_4121 {
 			this.getFocused().mouseReleased(d, e, i);
 		}
 
-		this.method_18423().forEach(arg -> arg.mouseReleased(d, e, i));
 		return false;
 	}
 
@@ -274,25 +286,25 @@ public abstract class ListWidget extends class_4121 {
 	public boolean mouseDragged(double d, double e, int i, double f, double g) {
 		if (super.mouseDragged(d, e, i, f, g)) {
 			return true;
-		} else if (this.method_18417() && i == 0 && this.dragging) {
-			if (e < (double)this.yStart) {
-				this.field_20083 = 0.0;
-			} else if (e > (double)this.yEnd) {
-				this.field_20083 = (double)this.getMaxScroll();
+		} else if (this.isVisible() && i == 0 && this.scrolling) {
+			if (e < (double)this.field_2166) {
+				this.field_2175 = 0.0;
+			} else if (e > (double)this.field_2165) {
+				this.field_2175 = (double)this.getMaxScroll();
 			} else {
 				double h = (double)this.getMaxScroll();
 				if (h < 1.0) {
 					h = 1.0;
 				}
 
-				int j = (int)((float)((this.yEnd - this.yStart) * (this.yEnd - this.yStart)) / (float)this.getMaxPosition());
-				j = MathHelper.clamp(j, 32, this.yEnd - this.yStart - 8);
-				double k = h / (double)(this.yEnd - this.yStart - j);
+				int j = (int)((float)((this.field_2165 - this.field_2166) * (this.field_2165 - this.field_2166)) / (float)this.getMaxPosition());
+				j = MathHelper.clamp(j, 32, this.field_2165 - this.field_2166 - 8);
+				double k = h / (double)(this.field_2165 - this.field_2166 - j);
 				if (k < 1.0) {
 					k = 1.0;
 				}
 
-				this.field_20083 += g * k;
+				this.field_2175 += g * k;
 				this.capYPosition();
 			}
 
@@ -303,93 +315,121 @@ public abstract class ListWidget extends class_4121 {
 	}
 
 	@Override
-	public boolean mouseScrolled(double d) {
-		if (!this.method_18417()) {
+	public boolean mouseScrolled(double d, double e, double f) {
+		if (!this.isVisible()) {
 			return false;
 		} else {
-			this.field_20083 = this.field_20083 - d * (double)this.entryHeight / 2.0;
+			this.field_2175 = this.field_2175 - f * (double)this.itemHeight / 2.0;
 			return true;
 		}
 	}
 
 	@Override
 	public boolean keyPressed(int i, int j, int k) {
-		return !this.method_18417() ? false : super.keyPressed(i, j, k);
+		if (!this.isVisible()) {
+			return false;
+		} else if (super.keyPressed(i, j, k)) {
+			return true;
+		} else if (i == 264) {
+			this.moveSelection(1);
+			return true;
+		} else if (i == 265) {
+			this.moveSelection(-1);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	protected void moveSelection(int i) {
 	}
 
 	@Override
 	public boolean charTyped(char c, int i) {
-		return !this.method_18417() ? false : super.charTyped(c, i);
+		return !this.isVisible() ? false : super.charTyped(c, i);
+	}
+
+	@Override
+	public boolean isMouseOver(double d, double e) {
+		return this.isMouseInList(d, e);
 	}
 
 	public int getRowWidth() {
 		return 220;
 	}
 
-	protected void method_6704(int i, int j, int k, int l, float f) {
-		int m = this.getEntryCount();
+	protected void renderList(int i, int j, int k, int l, float f) {
+		int m = this.getItemCount();
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
 
 		for (int n = 0; n < m; n++) {
-			int o = j + n * this.entryHeight + this.headerHeight;
-			int p = this.entryHeight - 4;
-			if (o > this.yEnd || o + p < this.yStart) {
-				this.method_9528(n, i, o, f);
+			int o = j + n * this.itemHeight + this.headerHeight;
+			int p = this.itemHeight - 4;
+			if (o > this.field_2165 || o + p < this.field_2166) {
+				this.updateItemPosition(n, i, o, f);
 			}
 
-			if (this.renderSelection && this.isEntrySelected(n)) {
-				int q = this.xStart + this.width / 2 - this.getRowWidth() / 2;
-				int r = this.xStart + this.width / 2 + this.getRowWidth() / 2;
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+			if (this.renderSelection && this.isSelectedItem(n)) {
+				int q = this.field_2180 + this.width / 2 - this.getRowWidth() / 2;
+				int r = this.field_2180 + this.width / 2 + this.getRowWidth() / 2;
 				GlStateManager.disableTexture();
-				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-				bufferBuilder.vertex((double)q, (double)(o + p + 2), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)r, (double)(o + p + 2), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)r, (double)(o - 2), 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)q, (double)(o - 2), 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)(q + 1), (double)(o + p + 1), 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)(r - 1), (double)(o + p + 1), 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)(r - 1), (double)(o - 1), 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)(q + 1), (double)(o - 1), 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
+				float g = this.isFocused() ? 1.0F : 0.5F;
+				GlStateManager.color4f(g, g, g, 1.0F);
+				bufferBuilder.begin(7, VertexFormats.POSITION);
+				bufferBuilder.vertex((double)q, (double)(o + p + 2), 0.0).next();
+				bufferBuilder.vertex((double)r, (double)(o + p + 2), 0.0).next();
+				bufferBuilder.vertex((double)r, (double)(o - 2), 0.0).next();
+				bufferBuilder.vertex((double)q, (double)(o - 2), 0.0).next();
+				tessellator.draw();
+				GlStateManager.color4f(0.0F, 0.0F, 0.0F, 1.0F);
+				bufferBuilder.begin(7, VertexFormats.POSITION);
+				bufferBuilder.vertex((double)(q + 1), (double)(o + p + 1), 0.0).next();
+				bufferBuilder.vertex((double)(r - 1), (double)(o + p + 1), 0.0).next();
+				bufferBuilder.vertex((double)(r - 1), (double)(o - 1), 0.0).next();
+				bufferBuilder.vertex((double)(q + 1), (double)(o - 1), 0.0).next();
 				tessellator.draw();
 				GlStateManager.enableTexture();
 			}
 
-			this.method_1055(n, i, o, p, k, l, f);
+			this.renderItem(n, i, o, p, k, l, f);
 		}
+	}
+
+	protected boolean isFocused() {
+		return false;
 	}
 
 	protected int getScrollbarPosition() {
 		return this.width / 2 + 124;
 	}
 
-	protected void renderHoleBackground(int top, int bottom, int topAlpha, int bottomAlpha) {
+	protected void renderHoleBackground(int i, int j, int k, int l) {
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		this.client.getTextureManager().bindTexture(DrawableHelper.OPTIONS_BACKGROUND_TEXTURE);
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+		this.minecraft.getTextureManager().bindTexture(DrawableHelper.BACKGROUND_LOCATION);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		float f = 32.0F;
-		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-		bufferBuilder.vertex((double)this.xStart, (double)bottom, 0.0).texture(0.0, (double)((float)bottom / 32.0F)).color(64, 64, 64, bottomAlpha).next();
-		bufferBuilder.vertex((double)(this.xStart + this.width), (double)bottom, 0.0)
-			.texture((double)((float)this.width / 32.0F), (double)((float)bottom / 32.0F))
-			.color(64, 64, 64, bottomAlpha)
+		bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+		bufferBuilder.vertex((double)this.field_2180, (double)j, 0.0).texture(0.0, (double)((float)j / 32.0F)).color(64, 64, 64, l).next();
+		bufferBuilder.vertex((double)(this.field_2180 + this.width), (double)j, 0.0)
+			.texture((double)((float)this.width / 32.0F), (double)((float)j / 32.0F))
+			.color(64, 64, 64, l)
 			.next();
-		bufferBuilder.vertex((double)(this.xStart + this.width), (double)top, 0.0)
-			.texture((double)((float)this.width / 32.0F), (double)((float)top / 32.0F))
-			.color(64, 64, 64, topAlpha)
+		bufferBuilder.vertex((double)(this.field_2180 + this.width), (double)i, 0.0)
+			.texture((double)((float)this.width / 32.0F), (double)((float)i / 32.0F))
+			.color(64, 64, 64, k)
 			.next();
-		bufferBuilder.vertex((double)this.xStart, (double)top, 0.0).texture(0.0, (double)((float)top / 32.0F)).color(64, 64, 64, topAlpha).next();
+		bufferBuilder.vertex((double)this.field_2180, (double)i, 0.0).texture(0.0, (double)((float)i / 32.0F)).color(64, 64, 64, k).next();
 		tessellator.draw();
 	}
 
-	public void setXPos(int x) {
-		this.xStart = x;
-		this.xEnd = x + this.width;
+	public void setLeftPos(int i) {
+		this.field_2180 = i;
+		this.field_2181 = i + this.width;
 	}
 
 	public int getItemHeight() {
-		return this.entryHeight;
+		return this.itemHeight;
 	}
 }

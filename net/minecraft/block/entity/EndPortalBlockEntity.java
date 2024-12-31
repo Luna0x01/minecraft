@@ -8,10 +8,10 @@ public class EndPortalBlockEntity extends BlockEntity {
 	}
 
 	public EndPortalBlockEntity() {
-		this(BlockEntityType.END_PORTAL);
+		this(BlockEntityType.field_11898);
 	}
 
-	public boolean method_11689(Direction direction) {
-		return direction == Direction.UP;
+	public boolean shouldDrawSide(Direction direction) {
+		return direction == Direction.field_11036;
 	}
 }

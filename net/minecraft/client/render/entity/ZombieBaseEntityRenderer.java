@@ -1,42 +1,27 @@
 package net.minecraft.client.render.entity;
 
-import net.minecraft.client.render.entity.feature.ArmorRenderer;
-import net.minecraft.client.render.entity.model.AbstractZombieModel;
-import net.minecraft.client.render.entity.model.BiPedModel;
+import net.minecraft.client.render.entity.feature.ArmorBipedFeatureRenderer;
+import net.minecraft.client.render.entity.model.ZombieEntityModel;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.util.Identifier;
 
-public class ZombieBaseEntityRenderer extends BipedEntityRenderer<ZombieEntity> {
-	private static final Identifier ZOMBIE = new Identifier("textures/entity/zombie/zombie.png");
+public abstract class ZombieBaseEntityRenderer<T extends ZombieEntity, M extends ZombieEntityModel<T>> extends BipedEntityRenderer<T, M> {
+	private static final Identifier SKIN = new Identifier("textures/entity/zombie/zombie.png");
 
-	public ZombieBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, BiPedModel biPedModel) {
-		super(entityRenderDispatcher, biPedModel, 0.5F);
-		this.addFeature(this.method_19431());
+	protected ZombieBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, M zombieEntityModel, M zombieEntityModel2, M zombieEntityModel3) {
+		super(entityRenderDispatcher, zombieEntityModel, 0.5F);
+		this.addFeature(new ArmorBipedFeatureRenderer<>(this, zombieEntityModel2, zombieEntityModel3));
 	}
 
-	public ZombieBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		this(entityRenderDispatcher, new AbstractZombieModel());
+	protected Identifier method_4163(ZombieEntity zombieEntity) {
+		return SKIN;
 	}
 
-	protected ArmorRenderer method_19431() {
-		return new ArmorRenderer(this) {
-			@Override
-			protected void init() {
-				this.secondLayer = new AbstractZombieModel(0.5F, true);
-				this.firstLayer = new AbstractZombieModel(1.0F, true);
-			}
-		};
-	}
-
-	protected Identifier getTexture(ZombieEntity zombieEntity) {
-		return ZOMBIE;
-	}
-
-	protected void method_5777(ZombieEntity zombieEntity, float f, float g, float h) {
-		if (zombieEntity.method_15902()) {
-			g += (float)(Math.cos((double)zombieEntity.ticksAlive * 3.25) * Math.PI * 0.25);
+	protected void method_17144(T zombieEntity, float f, float g, float h) {
+		if (zombieEntity.isConvertingInWater()) {
+			g += (float)(Math.cos((double)zombieEntity.age * 3.25) * Math.PI * 0.25);
 		}
 
-		super.method_5777(zombieEntity, f, g, h);
+		super.setupTransforms(zombieEntity, f, g, h);
 	}
 }

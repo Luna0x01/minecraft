@@ -1,68 +1,109 @@
 package net.minecraft.entity.ai.goal;
 
 import com.google.common.collect.Lists;
+import java.util.EnumSet;
 import java.util.List;
-import net.minecraft.entity.PathAwareEntity;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
+import net.minecraft.entity.ai.PathfindingUtil;
 import net.minecraft.entity.ai.pathing.MobNavigation;
-import net.minecraft.entity.ai.pathing.PathMinHeap;
-import net.minecraft.util.RandomVectorGenerator;
+import net.minecraft.entity.ai.pathing.Path;
+import net.minecraft.entity.ai.pathing.PathNode;
+import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.village.Village;
-import net.minecraft.village.VillageDoor;
+import net.minecraft.village.PointOfInterestStorage;
+import net.minecraft.village.PointOfInterestType;
 
 public class MoveThroughVillageGoal extends Goal {
-	private final PathAwareEntity mob;
+	protected final MobEntityWithAi mob;
 	private final double speed;
-	private PathMinHeap field_14583;
-	private VillageDoor target;
+	private Path targetPath;
+	private BlockPos target;
 	private final boolean requiresNighttime;
-	private final List<VillageDoor> visitedTargets = Lists.newArrayList();
+	private final List<BlockPos> field_18413 = Lists.newArrayList();
+	private final int field_18414;
+	private final BooleanSupplier field_18415;
 
-	public MoveThroughVillageGoal(PathAwareEntity pathAwareEntity, double d, boolean bl) {
-		this.mob = pathAwareEntity;
+	public MoveThroughVillageGoal(MobEntityWithAi mobEntityWithAi, double d, boolean bl, int i, BooleanSupplier booleanSupplier) {
+		this.mob = mobEntityWithAi;
 		this.speed = d;
 		this.requiresNighttime = bl;
-		this.setCategoryBits(1);
-		if (!(pathAwareEntity.getNavigation() instanceof MobNavigation)) {
+		this.field_18414 = i;
+		this.field_18415 = booleanSupplier;
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
+		if (!(mobEntityWithAi.getNavigation() instanceof MobNavigation)) {
 			throw new IllegalArgumentException("Unsupported mob for MoveThroughVillageGoal");
 		}
 	}
 
 	@Override
 	public boolean canStart() {
-		this.forgetOldTarget();
-		if (this.requiresNighttime && this.mob.world.isDay()) {
+		this.method_6297();
+		if (this.requiresNighttime && this.mob.world.isDaylight()) {
 			return false;
 		} else {
-			Village village = this.mob.world.getVillageState().method_11062(new BlockPos(this.mob), 0);
-			if (village == null) {
+			ServerWorld serverWorld = (ServerWorld)this.mob.world;
+			BlockPos blockPos = new BlockPos(this.mob);
+			if (!serverWorld.isNearOccupiedPointOfInterest(blockPos, 6)) {
 				return false;
 			} else {
-				this.target = this.method_2761(village);
-				if (this.target == null) {
+				Vec3d vec3d = PathfindingUtil.findTargetStraight(
+					this.mob,
+					15,
+					7,
+					blockPos2x -> {
+						if (!serverWorld.isNearOccupiedPointOfInterest(blockPos2x)) {
+							return Double.NEGATIVE_INFINITY;
+						} else {
+							Optional<BlockPos> optionalx = serverWorld.getPointOfInterestStorage()
+								.getPosition(PointOfInterestType.ALWAYS_TRUE, this::method_19052, blockPos2x, 10, PointOfInterestStorage.OccupationStatus.field_18488);
+							return !optionalx.isPresent() ? Double.NEGATIVE_INFINITY : -((BlockPos)optionalx.get()).getSquaredDistance(blockPos);
+						}
+					}
+				);
+				if (vec3d == null) {
 					return false;
 				} else {
-					MobNavigation mobNavigation = (MobNavigation)this.mob.getNavigation();
-					boolean bl = mobNavigation.canEnterOpenDoors();
-					mobNavigation.setCanPathThroughDoors(false);
-					this.field_14583 = mobNavigation.method_13108(this.target.getPos1());
-					mobNavigation.setCanPathThroughDoors(bl);
-					if (this.field_14583 != null) {
-						return true;
+					Optional<BlockPos> optional = serverWorld.getPointOfInterestStorage()
+						.getPosition(PointOfInterestType.ALWAYS_TRUE, this::method_19052, new BlockPos(vec3d), 10, PointOfInterestStorage.OccupationStatus.field_18488);
+					if (!optional.isPresent()) {
+						return false;
 					} else {
-						Vec3d vec3d = RandomVectorGenerator.method_2800(
-							this.mob, 10, 7, new Vec3d((double)this.target.getPos1().getX(), (double)this.target.getPos1().getY(), (double)this.target.getPos1().getZ())
-						);
-						if (vec3d == null) {
-							return false;
-						} else {
-							mobNavigation.setCanPathThroughDoors(false);
-							this.field_14583 = this.mob.getNavigation().method_2772(vec3d.x, vec3d.y, vec3d.z);
+						this.target = ((BlockPos)optional.get()).toImmutable();
+						MobNavigation mobNavigation = (MobNavigation)this.mob.getNavigation();
+						boolean bl = mobNavigation.canEnterOpenDoors();
+						mobNavigation.setCanPathThroughDoors(this.field_18415.getAsBoolean());
+						this.targetPath = mobNavigation.findPathTo(this.target, 0);
+						mobNavigation.setCanPathThroughDoors(bl);
+						if (this.targetPath == null) {
+							Vec3d vec3d2 = PathfindingUtil.method_6373(
+								this.mob, 10, 7, new Vec3d((double)this.target.getX(), (double)this.target.getY(), (double)this.target.getZ())
+							);
+							if (vec3d2 == null) {
+								return false;
+							}
+
+							mobNavigation.setCanPathThroughDoors(this.field_18415.getAsBoolean());
+							this.targetPath = this.mob.getNavigation().findPathTo(vec3d2.x, vec3d2.y, vec3d2.z, 0);
 							mobNavigation.setCanPathThroughDoors(bl);
-							return this.field_14583 != null;
+							if (this.targetPath == null) {
+								return false;
+							}
 						}
+
+						for (int i = 0; i < this.targetPath.getLength(); i++) {
+							PathNode pathNode = this.targetPath.getNode(i);
+							BlockPos blockPos2 = new BlockPos(pathNode.x, pathNode.y + 1, pathNode.z);
+							if (DoorInteractGoal.getDoor(this.mob.world, blockPos2)) {
+								this.targetPath = this.mob.getNavigation().findPathTo((double)pathNode.x, (double)pathNode.y, (double)pathNode.z, 0);
+								break;
+							}
+						}
+
+						return this.targetPath != null;
 					}
 				}
 			}
@@ -71,54 +112,34 @@ public class MoveThroughVillageGoal extends Goal {
 
 	@Override
 	public boolean shouldContinue() {
-		if (this.mob.getNavigation().isIdle()) {
-			return false;
-		} else {
-			float f = this.mob.width + 4.0F;
-			return this.mob.squaredDistanceTo(this.target.getPos1()) > (double)(f * f);
-		}
+		return this.mob.getNavigation().isIdle() ? false : !this.target.isWithinDistance(this.mob.getPos(), (double)(this.mob.getWidth() + (float)this.field_18414));
 	}
 
 	@Override
 	public void start() {
-		this.mob.getNavigation().method_13107(this.field_14583, this.speed);
+		this.mob.getNavigation().startMovingAlong(this.targetPath, this.speed);
 	}
 
 	@Override
 	public void stop() {
-		if (this.mob.getNavigation().isIdle() || this.mob.squaredDistanceTo(this.target.getPos1()) < 16.0) {
-			this.visitedTargets.add(this.target);
+		if (this.mob.getNavigation().isIdle() || this.target.isWithinDistance(this.mob.getPos(), (double)this.field_18414)) {
+			this.field_18413.add(this.target);
 		}
 	}
 
-	private VillageDoor method_2761(Village village) {
-		VillageDoor villageDoor = null;
-		int i = Integer.MAX_VALUE;
-
-		for (VillageDoor villageDoor2 : village.getDoors()) {
-			int j = villageDoor2.method_2806(MathHelper.floor(this.mob.x), MathHelper.floor(this.mob.y), MathHelper.floor(this.mob.z));
-			if (j < i && !this.method_2760(villageDoor2)) {
-				villageDoor = villageDoor2;
-				i = j;
+	private boolean method_19052(BlockPos blockPos) {
+		for (BlockPos blockPos2 : this.field_18413) {
+			if (Objects.equals(blockPos, blockPos2)) {
+				return false;
 			}
 		}
 
-		return villageDoor;
+		return true;
 	}
 
-	private boolean method_2760(VillageDoor villageDoor) {
-		for (VillageDoor villageDoor2 : this.visitedTargets) {
-			if (villageDoor.getPos1().equals(villageDoor2.getPos1())) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private void forgetOldTarget() {
-		if (this.visitedTargets.size() > 15) {
-			this.visitedTargets.remove(0);
+	private void method_6297() {
+		if (this.field_18413.size() > 15) {
+			this.field_18413.remove(0);
 		}
 	}
 }

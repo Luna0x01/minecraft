@@ -3,43 +3,37 @@ package net.minecraft.stat;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
-import net.minecraft.class_4472;
-import net.minecraft.class_4473;
 import net.minecraft.util.registry.Registry;
 
-public class StatType<T> implements Iterable<class_4472<T>> {
-	private final Registry<T> field_22072;
-	private final Map<T, class_4472<T>> field_22073 = new IdentityHashMap();
+public class StatType<T> implements Iterable<Stat<T>> {
+	private final Registry<T> registry;
+	private final Map<T, Stat<T>> stats = new IdentityHashMap();
 
 	public StatType(Registry<T> registry) {
-		this.field_22072 = registry;
+		this.registry = registry;
 	}
 
-	public boolean method_21425(T object) {
-		return this.field_22073.containsKey(object);
+	public boolean hasStat(T object) {
+		return this.stats.containsKey(object);
 	}
 
-	public class_4472<T> method_21426(T object, class_4473 arg) {
-		return (class_4472<T>)this.field_22073.computeIfAbsent(object, objectx -> new class_4472<>(this, (T)objectx, arg));
+	public Stat<T> getOrCreateStat(T object, StatFormatter statFormatter) {
+		return (Stat<T>)this.stats.computeIfAbsent(object, objectx -> new Stat<>(this, (T)objectx, statFormatter));
 	}
 
-	public Registry<T> method_21424() {
-		return this.field_22072;
+	public Registry<T> getRegistry() {
+		return this.registry;
 	}
 
-	public int method_21428() {
-		return this.field_22073.size();
+	public Iterator<Stat<T>> iterator() {
+		return this.stats.values().iterator();
 	}
 
-	public Iterator<class_4472<T>> iterator() {
-		return this.field_22073.values().iterator();
+	public Stat<T> getOrCreateStat(T object) {
+		return this.getOrCreateStat(object, StatFormatter.DEFAULT);
 	}
 
-	public class_4472<T> method_21429(T object) {
-		return this.method_21426(object, class_4473.DEFAULT);
-	}
-
-	public String method_21430() {
-		return "stat_type." + Registry.STATS.getId(this).toString().replace(':', '.');
+	public String getTranslationKey() {
+		return "stat_type." + Registry.STAT_TYPE.getId(this).toString().replace(':', '.');
 	}
 }

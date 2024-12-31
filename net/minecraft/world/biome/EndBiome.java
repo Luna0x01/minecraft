@@ -1,36 +1,40 @@
 package net.minecraft.world.biome;
 
-import net.minecraft.class_3801;
-import net.minecraft.class_3830;
-import net.minecraft.class_3841;
-import net.minecraft.class_3844;
-import net.minecraft.class_3845;
+import com.google.common.collect.ImmutableList;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityType;
-import net.minecraft.gen.surfacebuilder.SurfaceBuilder;
+import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.decorator.Decorator;
+import net.minecraft.world.gen.decorator.DecoratorConfig;
+import net.minecraft.world.gen.feature.EndSpikeFeatureConfig;
+import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 
 public final class EndBiome extends Biome {
 	public EndBiome() {
 		super(
-			new Biome.Builder()
-				.setSurfaceBuilder(new SurfaceBuilder<>(field_17594, field_17593))
-				.setPrecipitation(Biome.Precipitation.NONE)
-				.setCategory(Biome.Category.THEEND)
-				.setDepth(0.1F)
-				.setScale(0.2F)
-				.setTemperature(0.5F)
-				.setDownfall(0.5F)
-				.setWaterColor(4159204)
-				.setWaterFogColor(329011)
-				.setParent(null)
+			new Biome.Settings()
+				.configureSurfaceBuilder(SurfaceBuilder.field_15701, SurfaceBuilder.END_CONFIG)
+				.precipitation(Biome.Precipitation.NONE)
+				.category(Biome.Category.THEEND)
+				.depth(0.1F)
+				.scale(0.2F)
+				.temperature(0.5F)
+				.downfall(0.5F)
+				.waterColor(4159204)
+				.waterFogColor(329011)
+				.parent(null)
 		);
-		this.method_16432(class_3801.class_3803.SURFACE_STRUCTURES, method_16433(class_3844.field_19175, class_3845.field_19203, field_17546, class_3830.field_19084));
-		this.method_16432(class_3801.class_3803.SURFACE_STRUCTURES, method_16433(class_3844.field_19193, new class_3841(), field_17612, class_3830.field_19084));
-		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.ENDERMAN, 10, 4, 4));
+		this.addFeature(
+			GenerationStep.Feature.field_13173,
+			configureFeature(Feature.field_13522, new EndSpikeFeatureConfig(false, ImmutableList.of(), null), Decorator.field_14250, DecoratorConfig.DEFAULT)
+		);
+		DefaultBiomeFeatures.method_20826(this);
+		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6091, 10, 4, 4));
 	}
 
 	@Override
-	public int getSkyColor(float temperature) {
+	public int getSkyColor(float f) {
 		return 0;
 	}
 }

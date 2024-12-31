@@ -4,19 +4,19 @@ import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 
 public class OffsetDoubleList extends AbstractDoubleList {
-	private final DoubleList field_19847;
-	private final double field_19848;
+	private final DoubleList oldList;
+	private final double offset;
 
 	public OffsetDoubleList(DoubleList doubleList, double d) {
-		this.field_19847 = doubleList;
-		this.field_19848 = d;
+		this.oldList = doubleList;
+		this.offset = d;
 	}
 
 	public double getDouble(int i) {
-		return this.field_19847.getDouble(i) + this.field_19848;
+		return this.oldList.getDouble(i) + this.offset;
 	}
 
 	public int size() {
-		return this.field_19847.size();
+		return this.oldList.size();
 	}
 }

@@ -2,23 +2,22 @@ package net.minecraft.item;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.AchievementsAndCriterions;
-import net.minecraft.client.TooltipContext;
+import net.minecraft.advancement.criterion.Criterions;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
@@ -28,85 +27,85 @@ public class PotionItem extends Item {
 	}
 
 	@Override
-	public ItemStack getDefaultStack() {
-		return PotionUtil.setPotion(super.getDefaultStack(), Potions.WATER);
+	public ItemStack getStackForRender() {
+		return PotionUtil.setPotion(super.getStackForRender(), Potions.field_8991);
 	}
 
 	@Override
-	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
-		PlayerEntity playerEntity = entity instanceof PlayerEntity ? (PlayerEntity)entity : null;
+	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
+		PlayerEntity playerEntity = livingEntity instanceof PlayerEntity ? (PlayerEntity)livingEntity : null;
 		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
-			stack.decrement(1);
+			itemStack.decrement(1);
 		}
 
 		if (playerEntity instanceof ServerPlayerEntity) {
-			AchievementsAndCriterions.field_16353.method_15090((ServerPlayerEntity)playerEntity, stack);
+			Criterions.CONSUME_ITEM.handle((ServerPlayerEntity)playerEntity, itemStack);
 		}
 
 		if (!world.isClient) {
-			for (StatusEffectInstance statusEffectInstance : PotionUtil.getPotionEffects(stack)) {
-				if (statusEffectInstance.getStatusEffect().isInstant()) {
-					statusEffectInstance.getStatusEffect().method_6088(playerEntity, playerEntity, entity, statusEffectInstance.getAmplifier(), 1.0);
+			for (StatusEffectInstance statusEffectInstance : PotionUtil.getPotionEffects(itemStack)) {
+				if (statusEffectInstance.getEffectType().isInstant()) {
+					statusEffectInstance.getEffectType().applyInstantEffect(playerEntity, playerEntity, livingEntity, statusEffectInstance.getAmplifier(), 1.0);
 				} else {
-					entity.method_2654(new StatusEffectInstance(statusEffectInstance));
+					livingEntity.addPotionEffect(new StatusEffectInstance(statusEffectInstance));
 				}
 			}
 		}
 
 		if (playerEntity != null) {
-			playerEntity.method_15932(Stats.USED.method_21429(this));
+			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
 		}
 
 		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
-			if (stack.isEmpty()) {
-				return new ItemStack(Items.GLASS_BOTTLE);
+			if (itemStack.isEmpty()) {
+				return new ItemStack(Items.field_8469);
 			}
 
 			if (playerEntity != null) {
-				playerEntity.inventory.insertStack(new ItemStack(Items.GLASS_BOTTLE));
+				playerEntity.inventory.insertStack(new ItemStack(Items.field_8469));
 			}
 		}
 
-		return stack;
+		return itemStack;
 	}
 
 	@Override
-	public int getMaxUseTime(ItemStack stack) {
+	public int getMaxUseTime(ItemStack itemStack) {
 		return 32;
 	}
 
 	@Override
-	public UseAction getUseAction(ItemStack stack) {
-		return UseAction.DRINK;
+	public UseAction getUseAction(ItemStack itemStack) {
+		return UseAction.field_8946;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		player.method_13050(hand);
-		return new TypedActionResult<>(ActionResult.SUCCESS, player.getStackInHand(hand));
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		playerEntity.setCurrentHand(hand);
+		return new TypedActionResult<>(ActionResult.field_5812, playerEntity.getStackInHand(hand));
 	}
 
 	@Override
-	public String getTranslationKey(ItemStack stack) {
-		return PotionUtil.getPotion(stack).method_11414(this.getTranslationKey() + ".effect.");
+	public String getTranslationKey(ItemStack itemStack) {
+		return PotionUtil.getPotion(itemStack).getName(this.getTranslationKey() + ".effect.");
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
-		PotionUtil.buildTooltip(stack, tooltip, 1.0F);
+	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
+		PotionUtil.buildTooltip(itemStack, list, 1.0F);
 	}
 
 	@Override
-	public boolean hasEnchantmentGlint(ItemStack stack) {
-		return super.hasEnchantmentGlint(stack) || !PotionUtil.getPotionEffects(stack).isEmpty();
+	public boolean hasEnchantmentGlint(ItemStack itemStack) {
+		return super.hasEnchantmentGlint(itemStack) || !PotionUtil.getPotionEffects(itemStack).isEmpty();
 	}
 
 	@Override
-	public void appendToItemGroup(ItemGroup group, DefaultedList<ItemStack> stacks) {
-		if (this.canAddTo(group)) {
+	public void appendStacks(ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		if (this.isIn(itemGroup)) {
 			for (Potion potion : Registry.POTION) {
-				if (potion != Potions.EMPTY) {
-					stacks.add(PotionUtil.setPotion(new ItemStack(this), potion));
+				if (potion != Potions.field_8984) {
+					defaultedList.add(PotionUtil.setPotion(new ItemStack(this), potion));
 				}
 			}
 		}

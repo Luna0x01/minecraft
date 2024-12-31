@@ -1,65 +1,65 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class SnowmanEntityModel extends EntityModel {
-	private final ModelPart field_1530;
-	private final ModelPart field_1531;
-	private final ModelPart field_1532;
-	private final ModelPart field_1533;
-	private final ModelPart field_1534;
+public class SnowmanEntityModel<T extends Entity> extends EntityModel<T> {
+	private final Cuboid field_3567;
+	private final Cuboid field_3569;
+	private final Cuboid field_3568;
+	private final Cuboid field_3566;
+	private final Cuboid field_3565;
 
 	public SnowmanEntityModel() {
 		float f = 4.0F;
 		float g = 0.0F;
-		this.field_1532 = new ModelPart(this, 0, 0).setTextureSize(64, 64);
-		this.field_1532.addCuboid(-4.0F, -8.0F, -4.0F, 8, 8, 8, -0.5F);
-		this.field_1532.setPivot(0.0F, 4.0F, 0.0F);
-		this.field_1533 = new ModelPart(this, 32, 0).setTextureSize(64, 64);
-		this.field_1533.addCuboid(-1.0F, 0.0F, -1.0F, 12, 2, 2, -0.5F);
-		this.field_1533.setPivot(0.0F, 6.0F, 0.0F);
-		this.field_1534 = new ModelPart(this, 32, 0).setTextureSize(64, 64);
-		this.field_1534.addCuboid(-1.0F, 0.0F, -1.0F, 12, 2, 2, -0.5F);
-		this.field_1534.setPivot(0.0F, 6.0F, 0.0F);
-		this.field_1530 = new ModelPart(this, 0, 16).setTextureSize(64, 64);
-		this.field_1530.addCuboid(-5.0F, -10.0F, -5.0F, 10, 10, 10, -0.5F);
-		this.field_1530.setPivot(0.0F, 13.0F, 0.0F);
-		this.field_1531 = new ModelPart(this, 0, 36).setTextureSize(64, 64);
-		this.field_1531.addCuboid(-6.0F, -12.0F, -6.0F, 12, 12, 12, -0.5F);
-		this.field_1531.setPivot(0.0F, 24.0F, 0.0F);
+		this.field_3568 = new Cuboid(this, 0, 0).setTextureSize(64, 64);
+		this.field_3568.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, -0.5F);
+		this.field_3568.setRotationPoint(0.0F, 4.0F, 0.0F);
+		this.field_3566 = new Cuboid(this, 32, 0).setTextureSize(64, 64);
+		this.field_3566.addBox(-1.0F, 0.0F, -1.0F, 12, 2, 2, -0.5F);
+		this.field_3566.setRotationPoint(0.0F, 6.0F, 0.0F);
+		this.field_3565 = new Cuboid(this, 32, 0).setTextureSize(64, 64);
+		this.field_3565.addBox(-1.0F, 0.0F, -1.0F, 12, 2, 2, -0.5F);
+		this.field_3565.setRotationPoint(0.0F, 6.0F, 0.0F);
+		this.field_3567 = new Cuboid(this, 0, 16).setTextureSize(64, 64);
+		this.field_3567.addBox(-5.0F, -10.0F, -5.0F, 10, 10, 10, -0.5F);
+		this.field_3567.setRotationPoint(0.0F, 13.0F, 0.0F);
+		this.field_3569 = new Cuboid(this, 0, 36).setTextureSize(64, 64);
+		this.field_3569.addBox(-6.0F, -12.0F, -6.0F, 12, 12, 12, -0.5F);
+		this.field_3569.setRotationPoint(0.0F, 24.0F, 0.0F);
 	}
 
 	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_1532.posY = age * (float) (Math.PI / 180.0);
-		this.field_1532.posX = headPitch * (float) (Math.PI / 180.0);
-		this.field_1530.posY = age * (float) (Math.PI / 180.0) * 0.25F;
-		float f = MathHelper.sin(this.field_1530.posY);
-		float g = MathHelper.cos(this.field_1530.posY);
-		this.field_1533.posZ = 1.0F;
-		this.field_1534.posZ = -1.0F;
-		this.field_1533.posY = 0.0F + this.field_1530.posY;
-		this.field_1534.posY = (float) Math.PI + this.field_1530.posY;
-		this.field_1533.pivotX = g * 5.0F;
-		this.field_1533.pivotZ = -f * 5.0F;
-		this.field_1534.pivotX = -g * 5.0F;
-		this.field_1534.pivotZ = f * 5.0F;
+	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+		super.setAngles(entity, f, g, h, i, j, k);
+		this.field_3568.yaw = i * (float) (Math.PI / 180.0);
+		this.field_3568.pitch = j * (float) (Math.PI / 180.0);
+		this.field_3567.yaw = i * (float) (Math.PI / 180.0) * 0.25F;
+		float l = MathHelper.sin(this.field_3567.yaw);
+		float m = MathHelper.cos(this.field_3567.yaw);
+		this.field_3566.roll = 1.0F;
+		this.field_3565.roll = -1.0F;
+		this.field_3566.yaw = 0.0F + this.field_3567.yaw;
+		this.field_3565.yaw = (float) Math.PI + this.field_3567.yaw;
+		this.field_3566.rotationPointX = m * 5.0F;
+		this.field_3566.rotationPointZ = -l * 5.0F;
+		this.field_3565.rotationPointX = -m * 5.0F;
+		this.field_3565.rotationPointZ = l * 5.0F;
 	}
 
 	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_1530.render(scale);
-		this.field_1531.render(scale);
-		this.field_1532.render(scale);
-		this.field_1533.render(scale);
-		this.field_1534.render(scale);
+	public void render(T entity, float f, float g, float h, float i, float j, float k) {
+		this.setAngles(entity, f, g, h, i, j, k);
+		this.field_3567.render(k);
+		this.field_3569.render(k);
+		this.field_3568.render(k);
+		this.field_3566.render(k);
+		this.field_3565.render(k);
 	}
 
-	public ModelPart method_18942() {
-		return this.field_1532;
+	public Cuboid method_2834() {
+		return this.field_3568;
 	}
 }

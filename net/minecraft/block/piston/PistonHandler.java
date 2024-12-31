@@ -13,18 +13,18 @@ import net.minecraft.world.World;
 public class PistonHandler {
 	private final World world;
 	private final BlockPos posFrom;
-	private final boolean field_18682;
+	private final boolean field_12247;
 	private final BlockPos posTo;
 	private final Direction direction;
 	private final List<BlockPos> movedBlocks = Lists.newArrayList();
 	private final List<BlockPos> brokenBlocks = Lists.newArrayList();
-	private final Direction field_18683;
+	private final Direction field_12248;
 
 	public PistonHandler(World world, BlockPos blockPos, Direction direction, boolean bl) {
 		this.world = world;
 		this.posFrom = blockPos;
-		this.field_18683 = direction;
-		this.field_18682 = bl;
+		this.field_12248 = direction;
+		this.field_12247 = bl;
 		if (bl) {
 			this.direction = direction;
 			this.posTo = blockPos.offset(direction);
@@ -38,19 +38,19 @@ public class PistonHandler {
 		this.movedBlocks.clear();
 		this.brokenBlocks.clear();
 		BlockState blockState = this.world.getBlockState(this.posTo);
-		if (!PistonBlock.method_9001(blockState, this.world, this.posTo, this.direction, false, this.field_18683)) {
-			if (this.field_18682 && blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
+		if (!PistonBlock.isMovable(blockState, this.world, this.posTo, this.direction, false, this.field_12248)) {
+			if (this.field_12247 && blockState.getPistonBehavior() == PistonBehavior.field_15971) {
 				this.brokenBlocks.add(this.posTo);
 				return true;
 			} else {
 				return false;
 			}
-		} else if (!this.method_9017(this.posTo, this.direction)) {
+		} else if (!this.tryMove(this.posTo, this.direction)) {
 			return false;
 		} else {
 			for (int i = 0; i < this.movedBlocks.size(); i++) {
 				BlockPos blockPos = (BlockPos)this.movedBlocks.get(i);
-				if (this.world.getBlockState(blockPos).getBlock() == Blocks.SLIME_BLOCK && !this.canMoveAdjacentBlock(blockPos)) {
+				if (this.world.getBlockState(blockPos).getBlock() == Blocks.field_10030 && !this.method_11538(blockPos)) {
 					return false;
 				}
 			}
@@ -59,12 +59,12 @@ public class PistonHandler {
 		}
 	}
 
-	private boolean method_9017(BlockPos blockPos, Direction direction) {
+	private boolean tryMove(BlockPos blockPos, Direction direction) {
 		BlockState blockState = this.world.getBlockState(blockPos);
 		Block block = blockState.getBlock();
 		if (blockState.isAir()) {
 			return true;
-		} else if (!PistonBlock.method_9001(blockState, this.world, blockPos, this.direction, false, direction)) {
+		} else if (!PistonBlock.isMovable(blockState, this.world, blockPos, this.direction, false, direction)) {
 			return true;
 		} else if (blockPos.equals(this.posFrom)) {
 			return true;
@@ -75,12 +75,12 @@ public class PistonHandler {
 			if (i + this.movedBlocks.size() > 12) {
 				return false;
 			} else {
-				while (block == Blocks.SLIME_BLOCK) {
+				while (block == Blocks.field_10030) {
 					BlockPos blockPos2 = blockPos.offset(this.direction.getOpposite(), i);
 					blockState = this.world.getBlockState(blockPos2);
 					block = blockState.getBlock();
 					if (blockState.isAir()
-						|| !PistonBlock.method_9001(blockState, this.world, blockPos2, this.direction, false, this.direction.getOpposite())
+						|| !PistonBlock.isMovable(blockState, this.world, blockPos2, this.direction, false, this.direction.getOpposite())
 						|| blockPos2.equals(this.posFrom)) {
 						break;
 					}
@@ -103,11 +103,11 @@ public class PistonHandler {
 					BlockPos blockPos3 = blockPos.offset(this.direction, l);
 					int m = this.movedBlocks.indexOf(blockPos3);
 					if (m > -1) {
-						this.setMovedBlocks(j, m);
+						this.method_11539(j, m);
 
 						for (int n = 0; n <= m + j; n++) {
 							BlockPos blockPos4 = (BlockPos)this.movedBlocks.get(n);
-							if (this.world.getBlockState(blockPos4).getBlock() == Blocks.SLIME_BLOCK && !this.canMoveAdjacentBlock(blockPos4)) {
+							if (this.world.getBlockState(blockPos4).getBlock() == Blocks.field_10030 && !this.method_11538(blockPos4)) {
 								return false;
 							}
 						}
@@ -120,11 +120,11 @@ public class PistonHandler {
 						return true;
 					}
 
-					if (!PistonBlock.method_9001(blockState, this.world, blockPos3, this.direction, true, this.direction) || blockPos3.equals(this.posFrom)) {
+					if (!PistonBlock.isMovable(blockState, this.world, blockPos3, this.direction, true, this.direction) || blockPos3.equals(this.posFrom)) {
 						return false;
 					}
 
-					if (blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
+					if (blockState.getPistonBehavior() == PistonBehavior.field_15971) {
 						this.brokenBlocks.add(blockPos3);
 						return true;
 					}
@@ -141,22 +141,22 @@ public class PistonHandler {
 		}
 	}
 
-	private void setMovedBlocks(int from, int to) {
+	private void method_11539(int i, int j) {
 		List<BlockPos> list = Lists.newArrayList();
 		List<BlockPos> list2 = Lists.newArrayList();
 		List<BlockPos> list3 = Lists.newArrayList();
-		list.addAll(this.movedBlocks.subList(0, to));
-		list2.addAll(this.movedBlocks.subList(this.movedBlocks.size() - from, this.movedBlocks.size()));
-		list3.addAll(this.movedBlocks.subList(to, this.movedBlocks.size() - from));
+		list.addAll(this.movedBlocks.subList(0, j));
+		list2.addAll(this.movedBlocks.subList(this.movedBlocks.size() - i, this.movedBlocks.size()));
+		list3.addAll(this.movedBlocks.subList(j, this.movedBlocks.size() - i));
 		this.movedBlocks.clear();
 		this.movedBlocks.addAll(list);
 		this.movedBlocks.addAll(list2);
 		this.movedBlocks.addAll(list3);
 	}
 
-	private boolean canMoveAdjacentBlock(BlockPos pos) {
+	private boolean method_11538(BlockPos blockPos) {
 		for (Direction direction : Direction.values()) {
-			if (direction.getAxis() != this.direction.getAxis() && !this.method_9017(pos.offset(direction), direction)) {
+			if (direction.getAxis() != this.direction.getAxis() && !this.tryMove(blockPos.offset(direction), direction)) {
 				return false;
 			}
 		}

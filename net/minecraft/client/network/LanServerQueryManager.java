@@ -10,8 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.class_4325;
 import net.minecraft.server.LanServerPinger;
+import net.minecraft.util.UncaughtExceptionLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,7 +28,7 @@ public class LanServerQueryManager {
 			super("LanServerDetector #" + LanServerQueryManager.THREAD_ID.incrementAndGet());
 			this.entryList = lanServerEntryList;
 			this.setDaemon(true);
-			this.setUncaughtExceptionHandler(new class_4325(LanServerQueryManager.LOGGER));
+			this.setUncaughtExceptionHandler(new UncaughtExceptionLogger(LanServerQueryManager.LOGGER));
 			this.socket = new MulticastSocket(4445);
 			this.multicastAddress = InetAddress.getByName("224.0.2.60");
 			this.socket.setSoTimeout(5000);
@@ -65,7 +65,7 @@ public class LanServerQueryManager {
 	}
 
 	public static class LanServerEntryList {
-		private final List<ServerEntry> serverEntries = Lists.newArrayList();
+		private final List<LanServerEntry> serverEntries = Lists.newArrayList();
 		private boolean dirty;
 
 		public synchronized boolean needsUpdate() {
@@ -76,27 +76,27 @@ public class LanServerQueryManager {
 			this.dirty = false;
 		}
 
-		public synchronized List<ServerEntry> getServers() {
+		public synchronized List<LanServerEntry> getServers() {
 			return Collections.unmodifiableList(this.serverEntries);
 		}
 
-		public synchronized void addServer(String name, InetAddress address) {
-			String string = LanServerPinger.parseAnnouncementMotd(name);
-			String string2 = LanServerPinger.parseAnnouncementAddressPort(name);
-			if (string2 != null) {
-				string2 = address.getHostAddress() + ":" + string2;
+		public synchronized void addServer(String string, InetAddress inetAddress) {
+			String string2 = LanServerPinger.parseAnnouncementMotd(string);
+			String string3 = LanServerPinger.parseAnnouncementAddressPort(string);
+			if (string3 != null) {
+				string3 = inetAddress.getHostAddress() + ":" + string3;
 				boolean bl = false;
 
-				for (ServerEntry serverEntry : this.serverEntries) {
-					if (serverEntry.getAddress().equals(string2)) {
-						serverEntry.updateTime();
+				for (LanServerEntry lanServerEntry : this.serverEntries) {
+					if (lanServerEntry.getAddressPort().equals(string3)) {
+						lanServerEntry.updateLastTime();
 						bl = true;
 						break;
 					}
 				}
 
 				if (!bl) {
-					this.serverEntries.add(new ServerEntry(string, string2));
+					this.serverEntries.add(new LanServerEntry(string2, string3));
 					this.dirty = true;
 				}
 			}

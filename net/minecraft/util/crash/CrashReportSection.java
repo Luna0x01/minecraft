@@ -18,19 +18,19 @@ public class CrashReportSection {
 		this.title = string;
 	}
 
-	public static String createPositionString(double x, double y, double z) {
-		return String.format(Locale.ROOT, "%.2f,%.2f,%.2f - %s", x, y, z, createPositionString(new BlockPos(x, y, z)));
+	public static String createPositionString(double d, double e, double f) {
+		return String.format(Locale.ROOT, "%.2f,%.2f,%.2f - %s", d, e, f, createPositionString(new BlockPos(d, e, f)));
 	}
 
-	public static String createPositionString(BlockPos pos) {
-		return createPositionString(pos.getX(), pos.getY(), pos.getZ());
+	public static String createPositionString(BlockPos blockPos) {
+		return createPositionString(blockPos.getX(), blockPos.getY(), blockPos.getZ());
 	}
 
-	public static String createPositionString(int x, int y, int z) {
+	public static String createPositionString(int i, int j, int k) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		try {
-			stringBuilder.append(String.format("World: (%d,%d,%d)", x, y, z));
+			stringBuilder.append(String.format("World: (%d,%d,%d)", i, j, k));
 		} catch (Throwable var16) {
 			stringBuilder.append("(Error finding world loc)");
 		}
@@ -38,16 +38,16 @@ public class CrashReportSection {
 		stringBuilder.append(", ");
 
 		try {
-			int i = x >> 4;
-			int j = z >> 4;
-			int k = x & 15;
-			int l = y >> 4;
-			int m = z & 15;
-			int n = i << 4;
-			int o = j << 4;
-			int p = (i + 1 << 4) - 1;
-			int q = (j + 1 << 4) - 1;
-			stringBuilder.append(String.format("Chunk: (at %d,%d,%d in %d,%d; contains blocks %d,0,%d to %d,255,%d)", k, l, m, i, j, n, o, p, q));
+			int l = i >> 4;
+			int m = k >> 4;
+			int n = i & 15;
+			int o = j >> 4;
+			int p = k & 15;
+			int q = l << 4;
+			int r = m << 4;
+			int s = (l + 1 << 4) - 1;
+			int t = (m + 1 << 4) - 1;
+			stringBuilder.append(String.format("Chunk: (at %d,%d,%d in %d,%d; contains blocks %d,0,%d to %d,255,%d)", n, o, p, l, m, q, r, s, t));
 		} catch (Throwable var15) {
 			stringBuilder.append("(Error finding chunk loc)");
 		}
@@ -55,17 +55,17 @@ public class CrashReportSection {
 		stringBuilder.append(", ");
 
 		try {
-			int r = x >> 9;
-			int s = z >> 9;
-			int t = r << 5;
-			int u = s << 5;
-			int v = (r + 1 << 5) - 1;
-			int w = (s + 1 << 5) - 1;
-			int aa = r << 9;
-			int ab = s << 9;
-			int ac = (r + 1 << 9) - 1;
-			int ad = (s + 1 << 9) - 1;
-			stringBuilder.append(String.format("Region: (%d,%d; contains chunks %d,%d to %d,%d, blocks %d,0,%d to %d,255,%d)", r, s, t, u, v, w, aa, ab, ac, ad));
+			int u = i >> 9;
+			int v = k >> 9;
+			int w = u << 5;
+			int x = v << 5;
+			int y = (u + 1 << 5) - 1;
+			int z = (v + 1 << 5) - 1;
+			int aa = u << 9;
+			int ab = v << 9;
+			int ac = (u + 1 << 9) - 1;
+			int ad = (v + 1 << 9) - 1;
+			stringBuilder.append(String.format("Region: (%d,%d; contains chunks %d,%d to %d,%d, blocks %d,0,%d to %d,255,%d)", u, v, w, x, y, z, aa, ab, ac, ad));
 		} catch (Throwable var14) {
 			stringBuilder.append("(Error finding world loc)");
 		}
@@ -73,34 +73,37 @@ public class CrashReportSection {
 		return stringBuilder.toString();
 	}
 
-	public void add(String name, CrashCallable<String> crashCallable) {
+	public CrashReportSection add(String string, CrashCallable<String> crashCallable) {
 		try {
-			this.add(name, crashCallable.call());
+			this.add(string, crashCallable.call());
 		} catch (Throwable var4) {
-			this.add(name, var4);
+			this.add(string, var4);
 		}
+
+		return this;
 	}
 
-	public void add(String name, Object detail) {
-		this.elements.add(new CrashReportSection.Element(name, detail));
+	public CrashReportSection add(String string, Object object) {
+		this.elements.add(new CrashReportSection.Element(string, object));
+		return this;
 	}
 
-	public void add(String name, Throwable throwable) {
-		this.add(name, (Object)throwable);
+	public void add(String string, Throwable throwable) {
+		this.add(string, (Object)throwable);
 	}
 
-	public int initStackTrace(int ignoredCallCount) {
+	public int trimStackTrace(int i) {
 		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 		if (stackTraceElements.length <= 0) {
 			return 0;
 		} else {
-			this.stackTrace = new StackTraceElement[stackTraceElements.length - 3 - ignoredCallCount];
-			System.arraycopy(stackTraceElements, 3 + ignoredCallCount, this.stackTrace, 0, this.stackTrace.length);
+			this.stackTrace = new StackTraceElement[stackTraceElements.length - 3 - i];
+			System.arraycopy(stackTraceElements, 3 + i, this.stackTrace, 0, this.stackTrace.length);
 			return this.stackTrace.length;
 		}
 	}
 
-	public boolean method_4426(StackTraceElement stackTraceElement, StackTraceElement stackTraceElement2) {
+	public boolean method_584(StackTraceElement stackTraceElement, StackTraceElement stackTraceElement2) {
 		if (this.stackTrace.length != 0 && stackTraceElement != null) {
 			StackTraceElement stackTraceElement3 = this.stackTrace[0];
 			if (stackTraceElement3.isNativeMethod() == stackTraceElement.isNativeMethod()
@@ -123,8 +126,8 @@ public class CrashReportSection {
 		}
 	}
 
-	public void trimStackTraceEnd(int callCount) {
-		StackTraceElement[] stackTraceElements = new StackTraceElement[this.stackTrace.length - callCount];
+	public void method_580(int i) {
+		StackTraceElement[] stackTraceElements = new StackTraceElement[this.stackTrace.length - i];
 		System.arraycopy(this.stackTrace, 0, stackTraceElements, 0, stackTraceElements.length);
 		this.stackTrace = stackTraceElements;
 	}
@@ -154,12 +157,12 @@ public class CrashReportSection {
 		return this.stackTrace;
 	}
 
-	public static void addBlockInfo(CrashReportSection element, BlockPos pos, @Nullable BlockState state) {
-		if (state != null) {
-			element.add("Block", state::toString);
+	public static void addBlockInfo(CrashReportSection crashReportSection, BlockPos blockPos, @Nullable BlockState blockState) {
+		if (blockState != null) {
+			crashReportSection.add("Block", blockState::toString);
 		}
 
-		element.add("Block location", (CrashCallable<String>)(() -> createPositionString(pos)));
+		crashReportSection.add("Block location", (CrashCallable<String>)(() -> createPositionString(blockPos)));
 	}
 
 	static class Element {

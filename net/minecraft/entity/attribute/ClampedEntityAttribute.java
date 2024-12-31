@@ -21,8 +21,8 @@ public class ClampedEntityAttribute extends AbstractEntityAttribute {
 		}
 	}
 
-	public ClampedEntityAttribute setName(String name) {
-		this.name = name;
+	public ClampedEntityAttribute setName(String string) {
+		this.name = string;
 		return this;
 	}
 
@@ -31,7 +31,7 @@ public class ClampedEntityAttribute extends AbstractEntityAttribute {
 	}
 
 	@Override
-	public double clamp(double value) {
-		return MathHelper.clamp(value, this.minValue, this.maxValue);
+	public double clamp(double d) {
+		return MathHelper.clamp(d, this.minValue, this.maxValue);
 	}
 }

@@ -5,23 +5,23 @@ import net.minecraft.util.math.MathHelper;
 
 @Immutable
 public class LocalDifficulty {
-	private final Difficulty difficulty;
+	private final Difficulty globalDifficulty;
 	private final float localDifficulty;
 
 	public LocalDifficulty(Difficulty difficulty, long l, long m, float f) {
-		this.difficulty = difficulty;
-		this.localDifficulty = this.calculateLocalDifficulty(difficulty, l, m, f);
+		this.globalDifficulty = difficulty;
+		this.localDifficulty = this.setLocalDifficulty(difficulty, l, m, f);
 	}
 
-	public Difficulty method_15539() {
-		return this.difficulty;
+	public Difficulty getGlobalDifficulty() {
+		return this.globalDifficulty;
 	}
 
 	public float getLocalDifficulty() {
 		return this.localDifficulty;
 	}
 
-	public boolean method_15040(float f) {
+	public boolean isHarderThan(float f) {
 		return this.localDifficulty > f;
 	}
 
@@ -33,23 +33,23 @@ public class LocalDifficulty {
 		}
 	}
 
-	private float calculateLocalDifficulty(Difficulty difficulty, long daytimeTicks, long chunkInhibitedTimeTicks, float moonPhase) {
-		if (difficulty == Difficulty.PEACEFUL) {
+	private float setLocalDifficulty(Difficulty difficulty, long l, long m, float f) {
+		if (difficulty == Difficulty.field_5801) {
 			return 0.0F;
 		} else {
-			boolean bl = difficulty == Difficulty.HARD;
-			float f = 0.75F;
-			float g = MathHelper.clamp(((float)daytimeTicks + -72000.0F) / 1440000.0F, 0.0F, 1.0F) * 0.25F;
-			f += g;
-			float h = 0.0F;
-			h += MathHelper.clamp((float)chunkInhibitedTimeTicks / 3600000.0F, 0.0F, 1.0F) * (bl ? 1.0F : 0.75F);
-			h += MathHelper.clamp(moonPhase * 0.25F, 0.0F, g);
-			if (difficulty == Difficulty.EASY) {
-				h *= 0.5F;
+			boolean bl = difficulty == Difficulty.field_5807;
+			float g = 0.75F;
+			float h = MathHelper.clamp(((float)l + -72000.0F) / 1440000.0F, 0.0F, 1.0F) * 0.25F;
+			g += h;
+			float i = 0.0F;
+			i += MathHelper.clamp((float)m / 3600000.0F, 0.0F, 1.0F) * (bl ? 1.0F : 0.75F);
+			i += MathHelper.clamp(f * 0.25F, 0.0F, h);
+			if (difficulty == Difficulty.field_5805) {
+				i *= 0.5F;
 			}
 
-			f += h;
-			return (float)difficulty.getId() * f;
+			g += i;
+			return (float)difficulty.getId() * g;
 		}
 	}
 }

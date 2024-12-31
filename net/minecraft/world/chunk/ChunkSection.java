@@ -1,151 +1,155 @@
 package net.minecraft.world.chunk;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.world.chunk.palette.Palette;
-import net.minecraft.world.chunk.palette.PaletteContainer;
-import net.minecraft.world.chunk.palette.RegistryPalette;
+import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.TagHelper;
 
 public class ChunkSection {
-	private static final Palette<BlockState> field_18896 = new RegistryPalette<>(Block.BLOCK_STATES, Blocks.AIR.getDefaultState());
+	private static final Palette<BlockState> palette = new IdListPalette<>(Block.STATE_IDS, Blocks.field_10124.getDefaultState());
 	private final int yOffset;
-	private int containedBlockCount;
-	private int tickableBlockCount;
-	private int field_18897;
-	private final PaletteContainer<BlockState> field_18898;
-	private ChunkNibbleArray blockLight;
-	private ChunkNibbleArray skyLight;
+	private short nonEmptyBlockCount;
+	private short randomTickableBlockCount;
+	private short nonEmptyFluidCount;
+	private final PalettedContainer<BlockState> container;
 
-	public ChunkSection(int i, boolean bl) {
+	public ChunkSection(int i) {
+		this(i, (short)0, (short)0, (short)0);
+	}
+
+	public ChunkSection(int i, short s, short t, short u) {
 		this.yOffset = i;
-		this.field_18898 = new PaletteContainer<>(field_18896, Block.BLOCK_STATES, NbtHelper::toBlockState, NbtHelper::method_20139, Blocks.AIR.getDefaultState());
-		this.blockLight = new ChunkNibbleArray();
+		this.nonEmptyBlockCount = s;
+		this.randomTickableBlockCount = t;
+		this.nonEmptyFluidCount = u;
+		this.container = new PalettedContainer<>(
+			palette, Block.STATE_IDS, TagHelper::deserializeBlockState, TagHelper::serializeBlockState, Blocks.field_10124.getDefaultState()
+		);
+	}
+
+	public BlockState getBlockState(int i, int j, int k) {
+		return this.container.get(i, j, k);
+	}
+
+	public FluidState getFluidState(int i, int j, int k) {
+		return this.container.get(i, j, k).getFluidState();
+	}
+
+	public void lock() {
+		this.container.lock();
+	}
+
+	public void unlock() {
+		this.container.unlock();
+	}
+
+	public BlockState setBlockState(int i, int j, int k, BlockState blockState) {
+		return this.setBlockState(i, j, k, blockState, true);
+	}
+
+	public BlockState setBlockState(int i, int j, int k, BlockState blockState, boolean bl) {
+		BlockState blockState2;
 		if (bl) {
-			this.skyLight = new ChunkNibbleArray();
+			blockState2 = this.container.setSync(i, j, k, blockState);
+		} else {
+			blockState2 = this.container.set(i, j, k, blockState);
 		}
-	}
 
-	public BlockState getBlockState(int x, int y, int z) {
-		return this.field_18898.method_17100(x, y, z);
-	}
-
-	public FluidState method_17093(int i, int j, int k) {
-		return this.field_18898.method_17100(i, j, k).getFluidState();
-	}
-
-	public void setBlockState(int x, int y, int z, BlockState state) {
-		BlockState blockState = this.getBlockState(x, y, z);
-		FluidState fluidState = this.method_17093(x, y, z);
-		FluidState fluidState2 = state.getFluidState();
-		if (!blockState.isAir()) {
-			this.containedBlockCount--;
-			if (blockState.hasRandomTicks()) {
-				this.tickableBlockCount--;
+		FluidState fluidState = blockState2.getFluidState();
+		FluidState fluidState2 = blockState.getFluidState();
+		if (!blockState2.isAir()) {
+			this.nonEmptyBlockCount--;
+			if (blockState2.hasRandomTicks()) {
+				this.randomTickableBlockCount--;
 			}
 		}
 
 		if (!fluidState.isEmpty()) {
-			this.field_18897--;
+			this.nonEmptyFluidCount--;
 		}
 
-		if (!state.isAir()) {
-			this.containedBlockCount++;
-			if (state.hasRandomTicks()) {
-				this.tickableBlockCount++;
+		if (!blockState.isAir()) {
+			this.nonEmptyBlockCount++;
+			if (blockState.hasRandomTicks()) {
+				this.randomTickableBlockCount++;
 			}
 		}
 
 		if (!fluidState2.isEmpty()) {
-			this.field_18897--;
+			this.nonEmptyFluidCount++;
 		}
 
-		this.field_18898.method_17101(x, y, z, state);
+		return blockState2;
 	}
 
 	public boolean isEmpty() {
-		return this.containedBlockCount == 0;
+		return this.nonEmptyBlockCount == 0;
 	}
 
-	public boolean method_17092() {
-		return this.hasTickableBlocks() || this.method_17094();
+	public static boolean isEmpty(@Nullable ChunkSection chunkSection) {
+		return chunkSection == WorldChunk.EMPTY_SECTION || chunkSection.isEmpty();
 	}
 
-	public boolean hasTickableBlocks() {
-		return this.tickableBlockCount > 0;
+	public boolean hasRandomTicks() {
+		return this.hasRandomBlockTicks() || this.hasRandomFluidTicks();
 	}
 
-	public boolean method_17094() {
-		return this.field_18897 > 0;
+	public boolean hasRandomBlockTicks() {
+		return this.randomTickableBlockCount > 0;
+	}
+
+	public boolean hasRandomFluidTicks() {
+		return this.nonEmptyFluidCount > 0;
 	}
 
 	public int getYOffset() {
 		return this.yOffset;
 	}
 
-	public void setSkyLight(int x, int y, int z, int lightLevel) {
-		this.skyLight.set(x, y, z, lightLevel);
-	}
-
-	public int getSkyLight(int x, int y, int z) {
-		return this.skyLight.get(x, y, z);
-	}
-
-	public void setBlockLight(int x, int y, int z, int lightLevel) {
-		this.blockLight.set(x, y, z, lightLevel);
-	}
-
-	public int getBlockLight(int x, int y, int z) {
-		return this.blockLight.get(x, y, z);
-	}
-
 	public void calculateCounts() {
-		this.containedBlockCount = 0;
-		this.tickableBlockCount = 0;
-		this.field_18897 = 0;
-
-		for (int i = 0; i < 16; i++) {
-			for (int j = 0; j < 16; j++) {
-				for (int k = 0; k < 16; k++) {
-					BlockState blockState = this.getBlockState(i, j, k);
-					FluidState fluidState = this.method_17093(i, j, k);
-					if (!blockState.isAir()) {
-						this.containedBlockCount++;
-						if (blockState.hasRandomTicks()) {
-							this.tickableBlockCount++;
-						}
-					}
-
-					if (!fluidState.isEmpty()) {
-						this.containedBlockCount++;
-						if (fluidState.method_17812()) {
-							this.field_18897++;
-						}
-					}
+		this.nonEmptyBlockCount = 0;
+		this.randomTickableBlockCount = 0;
+		this.nonEmptyFluidCount = 0;
+		this.container.method_21732((blockState, i) -> {
+			FluidState fluidState = blockState.getFluidState();
+			if (!blockState.isAir()) {
+				this.nonEmptyBlockCount = (short)(this.nonEmptyBlockCount + i);
+				if (blockState.hasRandomTicks()) {
+					this.randomTickableBlockCount = (short)(this.randomTickableBlockCount + i);
 				}
 			}
-		}
+
+			if (!fluidState.isEmpty()) {
+				this.nonEmptyBlockCount = (short)(this.nonEmptyBlockCount + i);
+				if (fluidState.hasRandomTicks()) {
+					this.nonEmptyFluidCount = (short)(this.nonEmptyFluidCount + i);
+				}
+			}
+		});
 	}
 
-	public PaletteContainer<BlockState> getBlockData() {
-		return this.field_18898;
+	public PalettedContainer<BlockState> getContainer() {
+		return this.container;
 	}
 
-	public ChunkNibbleArray getBlockLight() {
-		return this.blockLight;
+	public void fromPacket(PacketByteBuf packetByteBuf) {
+		this.nonEmptyBlockCount = packetByteBuf.readShort();
+		this.container.fromPacket(packetByteBuf);
 	}
 
-	public ChunkNibbleArray getSkyLight() {
-		return this.skyLight;
+	public void toPacket(PacketByteBuf packetByteBuf) {
+		packetByteBuf.writeShort(this.nonEmptyBlockCount);
+		this.container.toPacket(packetByteBuf);
 	}
 
-	public void setBlockLight(ChunkNibbleArray blockLight) {
-		this.blockLight = blockLight;
+	public int getPacketSize() {
+		return 2 + this.container.getPacketSize();
 	}
 
-	public void setSkyLight(ChunkNibbleArray skyLight) {
-		this.skyLight = skyLight;
+	public boolean method_19523(BlockState blockState) {
+		return this.container.method_19526(blockState);
 	}
 }

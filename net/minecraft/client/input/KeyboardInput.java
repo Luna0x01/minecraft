@@ -1,49 +1,25 @@
 package net.minecraft.client.input;
 
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.options.GameOptions;
 
 public class KeyboardInput extends Input {
-	private final GameOptions options;
+	private final GameOptions settings;
 
 	public KeyboardInput(GameOptions gameOptions) {
-		this.options = gameOptions;
+		this.settings = gameOptions;
 	}
 
 	@Override
-	public void tick() {
-		this.movementSideways = 0.0F;
-		this.movementForward = 0.0F;
-		if (this.options.forwardKey.isPressed()) {
-			this.movementForward++;
-			this.pressingForward = true;
-		} else {
-			this.pressingForward = false;
-		}
-
-		if (this.options.backKey.isPressed()) {
-			this.movementForward--;
-			this.pressingBack = true;
-		} else {
-			this.pressingBack = false;
-		}
-
-		if (this.options.leftKey.isPressed()) {
-			this.movementSideways++;
-			this.pressingLeft = true;
-		} else {
-			this.pressingLeft = false;
-		}
-
-		if (this.options.rightKey.isPressed()) {
-			this.movementSideways--;
-			this.pressingRight = true;
-		} else {
-			this.pressingRight = false;
-		}
-
-		this.jumping = this.options.jumpKey.isPressed();
-		this.sneaking = this.options.sneakKey.isPressed();
-		if (this.sneaking) {
+	public void tick(boolean bl, boolean bl2) {
+		this.pressingForward = this.settings.keyForward.isPressed();
+		this.pressingBack = this.settings.keyBack.isPressed();
+		this.pressingLeft = this.settings.keyLeft.isPressed();
+		this.pressingRight = this.settings.keyRight.isPressed();
+		this.movementForward = this.pressingForward == this.pressingBack ? 0.0F : (float)(this.pressingForward ? 1 : -1);
+		this.movementSideways = this.pressingLeft == this.pressingRight ? 0.0F : (float)(this.pressingLeft ? 1 : -1);
+		this.jumping = this.settings.keyJump.isPressed();
+		this.sneaking = this.settings.keySneak.isPressed();
+		if (!bl2 && (this.sneaking || bl)) {
 			this.movementSideways = (float)((double)this.movementSideways * 0.3);
 			this.movementForward = (float)((double)this.movementForward * 0.3);
 		}

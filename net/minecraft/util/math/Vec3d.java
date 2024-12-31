@@ -2,7 +2,7 @@ package net.minecraft.util.math;
 
 import java.util.EnumSet;
 
-public class Vec3d {
+public class Vec3d implements Position {
 	public static final Vec3d ZERO = new Vec3d(0.0, 0.0, 0.0);
 	public final double x;
 	public final double y;
@@ -18,8 +18,8 @@ public class Vec3d {
 		this((double)vec3i.getX(), (double)vec3i.getY(), (double)vec3i.getZ());
 	}
 
-	public Vec3d reverseSubtract(Vec3d vec) {
-		return new Vec3d(vec.x - this.x, vec.y - this.y, vec.z - this.z);
+	public Vec3d reverseSubtract(Vec3d vec3d) {
+		return new Vec3d(vec3d.x - this.x, vec3d.y - this.y, vec3d.z - this.z);
 	}
 
 	public Vec3d normalize() {
@@ -27,60 +27,72 @@ public class Vec3d {
 		return d < 1.0E-4 ? ZERO : new Vec3d(this.x / d, this.y / d, this.z / d);
 	}
 
-	public double dotProduct(Vec3d vec) {
-		return this.x * vec.x + this.y * vec.y + this.z * vec.z;
+	public double dotProduct(Vec3d vec3d) {
+		return this.x * vec3d.x + this.y * vec3d.y + this.z * vec3d.z;
 	}
 
-	public Vec3d crossProduct(Vec3d vec) {
-		return new Vec3d(this.y * vec.z - this.z * vec.y, this.z * vec.x - this.x * vec.z, this.x * vec.y - this.y * vec.x);
+	public Vec3d crossProduct(Vec3d vec3d) {
+		return new Vec3d(this.y * vec3d.z - this.z * vec3d.y, this.z * vec3d.x - this.x * vec3d.z, this.x * vec3d.y - this.y * vec3d.x);
 	}
 
-	public Vec3d subtract(Vec3d vec) {
-		return this.subtract(vec.x, vec.y, vec.z);
+	public Vec3d subtract(Vec3d vec3d) {
+		return this.subtract(vec3d.x, vec3d.y, vec3d.z);
 	}
 
-	public Vec3d subtract(double x, double y, double z) {
-		return this.add(-x, -y, -z);
+	public Vec3d subtract(double d, double e, double f) {
+		return this.add(-d, -e, -f);
 	}
 
-	public Vec3d add(Vec3d vec) {
-		return this.add(vec.x, vec.y, vec.z);
+	public Vec3d add(Vec3d vec3d) {
+		return this.add(vec3d.x, vec3d.y, vec3d.z);
 	}
 
-	public Vec3d add(double x, double y, double z) {
-		return new Vec3d(this.x + x, this.y + y, this.z + z);
+	public Vec3d add(double d, double e, double f) {
+		return new Vec3d(this.x + d, this.y + e, this.z + f);
 	}
 
-	public double distanceTo(Vec3d vec) {
-		double d = vec.x - this.x;
-		double e = vec.y - this.y;
-		double f = vec.z - this.z;
+	public double distanceTo(Vec3d vec3d) {
+		double d = vec3d.x - this.x;
+		double e = vec3d.y - this.y;
+		double f = vec3d.z - this.z;
 		return (double)MathHelper.sqrt(d * d + e * e + f * f);
 	}
 
-	public double squaredDistanceTo(Vec3d vec) {
-		double d = vec.x - this.x;
-		double e = vec.y - this.y;
-		double f = vec.z - this.z;
+	public double squaredDistanceTo(Vec3d vec3d) {
+		double d = vec3d.x - this.x;
+		double e = vec3d.y - this.y;
+		double f = vec3d.z - this.z;
 		return d * d + e * e + f * f;
 	}
 
-	public double method_12126(double d, double e, double f) {
+	public double squaredDistanceTo(double d, double e, double f) {
 		double g = d - this.x;
 		double h = e - this.y;
 		double i = f - this.z;
 		return g * g + h * h + i * i;
 	}
 
-	public Vec3d multiply(double value) {
-		return new Vec3d(this.x * value, this.y * value, this.z * value);
+	public Vec3d multiply(double d) {
+		return this.multiply(d, d, d);
+	}
+
+	public Vec3d negate() {
+		return this.multiply(-1.0);
+	}
+
+	public Vec3d multiply(Vec3d vec3d) {
+		return this.multiply(vec3d.x, vec3d.y, vec3d.z);
+	}
+
+	public Vec3d multiply(double d, double e, double f) {
+		return new Vec3d(this.x * d, this.y * e, this.z * f);
 	}
 
 	public double length() {
 		return (double)MathHelper.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
 	}
 
-	public double squaredLength() {
+	public double lengthSquared() {
 		return this.x * this.x + this.y * this.y + this.z * this.z;
 	}
 
@@ -112,40 +124,59 @@ public class Vec3d {
 		return "(" + this.x + ", " + this.y + ", " + this.z + ")";
 	}
 
-	public Vec3d rotateX(float degrees) {
-		float f = MathHelper.cos(degrees);
-		float g = MathHelper.sin(degrees);
+	public Vec3d rotateX(float f) {
+		float g = MathHelper.cos(f);
+		float h = MathHelper.sin(f);
 		double d = this.x;
-		double e = this.y * (double)f + this.z * (double)g;
-		double h = this.z * (double)f - this.y * (double)g;
-		return new Vec3d(d, e, h);
+		double e = this.y * (double)g + this.z * (double)h;
+		double i = this.z * (double)g - this.y * (double)h;
+		return new Vec3d(d, e, i);
 	}
 
-	public Vec3d rotateY(float degrees) {
-		float f = MathHelper.cos(degrees);
-		float g = MathHelper.sin(degrees);
-		double d = this.x * (double)f + this.z * (double)g;
+	public Vec3d rotateY(float f) {
+		float g = MathHelper.cos(f);
+		float h = MathHelper.sin(f);
+		double d = this.x * (double)g + this.z * (double)h;
 		double e = this.y;
-		double h = this.z * (double)f - this.x * (double)g;
-		return new Vec3d(d, e, h);
+		double i = this.z * (double)g - this.x * (double)h;
+		return new Vec3d(d, e, i);
 	}
 
-	public static Vec3d fromPolar(Vec2f polar) {
-		return fromPolar(polar.x, polar.y);
+	public static Vec3d fromPolar(Vec2f vec2f) {
+		return fromPolar(vec2f.x, vec2f.y);
 	}
 
-	public static Vec3d fromPolar(float x, float y) {
-		float f = MathHelper.cos(-y * (float) (Math.PI / 180.0) - (float) Math.PI);
-		float g = MathHelper.sin(-y * (float) (Math.PI / 180.0) - (float) Math.PI);
-		float h = -MathHelper.cos(-x * (float) (Math.PI / 180.0));
-		float i = MathHelper.sin(-x * (float) (Math.PI / 180.0));
-		return new Vec3d((double)(g * h), (double)i, (double)(f * h));
+	public static Vec3d fromPolar(float f, float g) {
+		float h = MathHelper.cos(-g * (float) (Math.PI / 180.0) - (float) Math.PI);
+		float i = MathHelper.sin(-g * (float) (Math.PI / 180.0) - (float) Math.PI);
+		float j = -MathHelper.cos(-f * (float) (Math.PI / 180.0));
+		float k = MathHelper.sin(-f * (float) (Math.PI / 180.0));
+		return new Vec3d((double)(i * j), (double)k, (double)(h * j));
 	}
 
-	public Vec3d method_18012(EnumSet<Direction.Axis> enumSet) {
-		double d = enumSet.contains(Direction.Axis.X) ? (double)MathHelper.floor(this.x) : this.x;
-		double e = enumSet.contains(Direction.Axis.Y) ? (double)MathHelper.floor(this.y) : this.y;
-		double f = enumSet.contains(Direction.Axis.Z) ? (double)MathHelper.floor(this.z) : this.z;
+	public Vec3d floorAlongAxes(EnumSet<Direction.Axis> enumSet) {
+		double d = enumSet.contains(Direction.Axis.field_11048) ? (double)MathHelper.floor(this.x) : this.x;
+		double e = enumSet.contains(Direction.Axis.field_11052) ? (double)MathHelper.floor(this.y) : this.y;
+		double f = enumSet.contains(Direction.Axis.field_11051) ? (double)MathHelper.floor(this.z) : this.z;
 		return new Vec3d(d, e, f);
+	}
+
+	public double getComponentAlongAxis(Direction.Axis axis) {
+		return axis.choose(this.x, this.y, this.z);
+	}
+
+	@Override
+	public final double getX() {
+		return this.x;
+	}
+
+	@Override
+	public final double getY() {
+		return this.y;
+	}
+
+	@Override
+	public final double getZ() {
+		return this.z;
 	}
 }

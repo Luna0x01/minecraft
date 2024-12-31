@@ -18,7 +18,7 @@ public class Tessellator {
 		this.renderer.draw(this.buffer);
 	}
 
-	public BufferBuilder getBuffer() {
+	public BufferBuilder getBufferBuilder() {
 		return this.buffer;
 	}
 }

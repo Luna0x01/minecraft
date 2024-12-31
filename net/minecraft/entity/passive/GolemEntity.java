@@ -1,37 +1,36 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityCategoryProvider;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.sound.Sound;
+import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.world.World;
 
-public abstract class GolemEntity extends PathAwareEntity implements EntityCategoryProvider {
-	protected GolemEntity(EntityType<?> entityType, World world) {
+public abstract class GolemEntity extends MobEntityWithAi {
+	protected GolemEntity(EntityType<? extends GolemEntity> entityType, World world) {
 		super(entityType, world);
 	}
 
 	@Override
-	public void handleFallDamage(float fallDistance, float damageMultiplier) {
+	public void handleFallDamage(float f, float g) {
 	}
 
 	@Nullable
 	@Override
-	protected Sound ambientSound() {
+	protected SoundEvent getAmbientSound() {
 		return null;
 	}
 
 	@Nullable
 	@Override
-	protected Sound getHurtSound(DamageSource damageSource) {
+	protected SoundEvent getHurtSound(DamageSource damageSource) {
 		return null;
 	}
 
 	@Nullable
 	@Override
-	protected Sound deathSound() {
+	protected SoundEvent getDeathSound() {
 		return null;
 	}
 
@@ -41,7 +40,7 @@ public abstract class GolemEntity extends PathAwareEntity implements EntityCateg
 	}
 
 	@Override
-	public boolean canImmediatelyDespawn() {
+	public boolean canImmediatelyDespawn(double d) {
 		return false;
 	}
 }

@@ -2,22 +2,22 @@ package net.minecraft.client.render.entity;
 
 import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
-import net.minecraft.client.render.entity.feature.HeldItemRenderer;
-import net.minecraft.client.render.entity.model.BiPedModel;
+import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
+import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.Identifier;
 
-public class BipedEntityRenderer<T extends MobEntity> extends MobEntityRenderer<T> {
-	private static final Identifier STEVE_TEXTURE = new Identifier("textures/entity/steve.png");
+public class BipedEntityRenderer<T extends MobEntity, M extends BipedEntityModel<T>> extends MobEntityRenderer<T, M> {
+	private static final Identifier SKIN = new Identifier("textures/entity/steve.png");
 
-	public BipedEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, BiPedModel biPedModel, float f) {
-		super(entityRenderDispatcher, biPedModel, f);
-		this.addFeature(new HeadFeatureRenderer(biPedModel.head));
-		this.addFeature(new ElytraFeatureRenderer(this));
-		this.addFeature(new HeldItemRenderer(this));
+	public BipedEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, M bipedEntityModel, float f) {
+		super(entityRenderDispatcher, bipedEntityModel, f);
+		this.addFeature(new HeadFeatureRenderer<>(this));
+		this.addFeature(new ElytraFeatureRenderer<>(this));
+		this.addFeature(new HeldItemFeatureRenderer<>(this));
 	}
 
-	protected Identifier getTexture(T mobEntity) {
-		return STEVE_TEXTURE;
+	protected Identifier method_3982(T mobEntity) {
+		return SKIN;
 	}
 }

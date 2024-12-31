@@ -3,13 +3,13 @@ package net.minecraft.entity.attribute;
 import javax.annotation.Nullable;
 
 public abstract class AbstractEntityAttribute implements EntityAttribute {
-	private final EntityAttribute field_11926;
+	private final EntityAttribute parent;
 	private final String id;
 	private final double defaultValue;
 	private boolean tracked;
 
 	protected AbstractEntityAttribute(@Nullable EntityAttribute entityAttribute, String string, double d) {
-		this.field_11926 = entityAttribute;
+		this.parent = entityAttribute;
 		this.id = string;
 		this.defaultValue = d;
 		if (string == null) {
@@ -32,15 +32,15 @@ public abstract class AbstractEntityAttribute implements EntityAttribute {
 		return this.tracked;
 	}
 
-	public AbstractEntityAttribute setTracked(boolean tracked) {
-		this.tracked = tracked;
+	public AbstractEntityAttribute setTracked(boolean bl) {
+		this.tracked = bl;
 		return this;
 	}
 
 	@Nullable
 	@Override
 	public EntityAttribute getParent() {
-		return this.field_11926;
+		return this.parent;
 	}
 
 	public int hashCode() {

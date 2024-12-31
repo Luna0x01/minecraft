@@ -6,154 +6,152 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractBannerBlock;
 import net.minecraft.block.BannerBlock;
-import net.minecraft.block.BannerPattern;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.text.Nameable;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Nameable;
 
 public class BannerBlockEntity extends BlockEntity implements Nameable {
-	private Text field_18590;
-	private DyeColor field_15148 = DyeColor.WHITE;
-	private NbtList patternsNbt;
+	private Text customName;
+	private DyeColor baseColor = DyeColor.field_7952;
+	private ListTag patternListTag;
 	private boolean patternListTagRead;
 	private List<BannerPattern> patterns;
-	private List<DyeColor> colors;
-	private String textureIdentifier;
+	private List<DyeColor> patternColors;
+	private String patternCacheKey;
 
 	public BannerBlockEntity() {
-		super(BlockEntityType.BANNER);
+		super(BlockEntityType.field_11905);
 	}
 
 	public BannerBlockEntity(DyeColor dyeColor) {
 		this();
-		this.field_15148 = dyeColor;
+		this.baseColor = dyeColor;
 	}
 
-	public void method_16774(ItemStack itemStack, DyeColor dyeColor) {
-		this.patternsNbt = null;
-		NbtCompound nbtCompound = itemStack.getNbtCompound("BlockEntityTag");
-		if (nbtCompound != null && nbtCompound.contains("Patterns", 9)) {
-			this.patternsNbt = nbtCompound.getList("Patterns", 10).copy();
+	public void deserialize(ItemStack itemStack, DyeColor dyeColor) {
+		this.patternListTag = null;
+		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
+		if (compoundTag != null && compoundTag.containsKey("Patterns", 9)) {
+			this.patternListTag = compoundTag.getList("Patterns", 10).method_10612();
 		}
 
-		this.field_15148 = dyeColor;
+		this.baseColor = dyeColor;
 		this.patterns = null;
-		this.colors = null;
-		this.textureIdentifier = "";
+		this.patternColors = null;
+		this.patternCacheKey = "";
 		this.patternListTagRead = true;
-		this.field_18590 = itemStack.hasCustomName() ? itemStack.getName() : null;
+		this.customName = itemStack.hasCustomName() ? itemStack.getName() : null;
 	}
 
 	@Override
-	public Text method_15540() {
-		return (Text)(this.field_18590 != null ? this.field_18590 : new TranslatableText("block.minecraft.banner"));
-	}
-
-	@Override
-	public boolean hasCustomName() {
-		return this.field_18590 != null;
+	public Text getName() {
+		return (Text)(this.customName != null ? this.customName : new TranslatableText("block.minecraft.banner"));
 	}
 
 	@Nullable
 	@Override
-	public Text method_15541() {
-		return this.field_18590;
+	public Text getCustomName() {
+		return this.customName;
+	}
+
+	public void setCustomName(Text text) {
+		this.customName = text;
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
-		if (this.patternsNbt != null) {
-			nbt.put("Patterns", this.patternsNbt);
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
+		if (this.patternListTag != null) {
+			compoundTag.put("Patterns", this.patternListTag);
 		}
 
-		if (this.field_18590 != null) {
-			nbt.putString("CustomName", Text.Serializer.serialize(this.field_18590));
+		if (this.customName != null) {
+			compoundTag.putString("CustomName", Text.Serializer.toJson(this.customName));
 		}
 
-		return nbt;
+		return compoundTag;
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		super.fromNbt(nbt);
-		if (nbt.contains("CustomName", 8)) {
-			this.field_18590 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
+	public void fromTag(CompoundTag compoundTag) {
+		super.fromTag(compoundTag);
+		if (compoundTag.containsKey("CustomName", 8)) {
+			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
 		}
 
 		if (this.hasWorld()) {
-			this.field_15148 = ((AbstractBannerBlock)this.method_16783().getBlock()).getColor();
+			this.baseColor = ((AbstractBannerBlock)this.getCachedState().getBlock()).getColor();
 		} else {
-			this.field_15148 = null;
+			this.baseColor = null;
 		}
 
-		this.patternsNbt = nbt.getList("Patterns", 10);
+		this.patternListTag = compoundTag.getList("Patterns", 10);
 		this.patterns = null;
-		this.colors = null;
-		this.textureIdentifier = null;
+		this.patternColors = null;
+		this.patternCacheKey = null;
 		this.patternListTagRead = true;
 	}
 
 	@Nullable
 	@Override
-	public BlockEntityUpdateS2CPacket getUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 6, this.getUpdatePacketContent());
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 6, this.toInitialChunkDataTag());
 	}
 
 	@Override
-	public NbtCompound getUpdatePacketContent() {
-		return this.toNbt(new NbtCompound());
+	public CompoundTag toInitialChunkDataTag() {
+		return this.toTag(new CompoundTag());
 	}
 
-	public static int getPatternCount(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getNbtCompound("BlockEntityTag");
-		return nbtCompound != null && nbtCompound.contains("Patterns") ? nbtCompound.getList("Patterns", 10).size() : 0;
+	public static int getPatternCount(ItemStack itemStack) {
+		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
+		return compoundTag != null && compoundTag.containsKey("Patterns") ? compoundTag.getList("Patterns", 10).size() : 0;
 	}
 
 	public List<BannerPattern> getPatterns() {
-		this.buildTextureIdentifier();
+		this.readPattern();
 		return this.patterns;
 	}
 
-	public List<DyeColor> getColors() {
-		this.buildTextureIdentifier();
-		return this.colors;
+	public List<DyeColor> getPatternColors() {
+		this.readPattern();
+		return this.patternColors;
 	}
 
-	public String getTextureIdentifier() {
-		this.buildTextureIdentifier();
-		return this.textureIdentifier;
+	public String getPatternCacheKey() {
+		this.readPattern();
+		return this.patternCacheKey;
 	}
 
-	private void buildTextureIdentifier() {
-		if (this.patterns == null || this.colors == null || this.textureIdentifier == null) {
+	private void readPattern() {
+		if (this.patterns == null || this.patternColors == null || this.patternCacheKey == null) {
 			if (!this.patternListTagRead) {
-				this.textureIdentifier = "";
+				this.patternCacheKey = "";
 			} else {
 				this.patterns = Lists.newArrayList();
-				this.colors = Lists.newArrayList();
-				DyeColor dyeColor = this.method_16776(this::method_16783);
+				this.patternColors = Lists.newArrayList();
+				DyeColor dyeColor = this.getColorForState(this::getCachedState);
 				if (dyeColor == null) {
-					this.textureIdentifier = "banner_missing";
+					this.patternCacheKey = "banner_missing";
 				} else {
 					this.patterns.add(BannerPattern.BASE);
-					this.colors.add(dyeColor);
-					this.textureIdentifier = "b" + dyeColor.getId();
-					if (this.patternsNbt != null) {
-						for (int i = 0; i < this.patternsNbt.size(); i++) {
-							NbtCompound nbtCompound = this.patternsNbt.getCompound(i);
-							BannerPattern bannerPattern = BannerPattern.getById(nbtCompound.getString("Pattern"));
+					this.patternColors.add(dyeColor);
+					this.patternCacheKey = "b" + dyeColor.getId();
+					if (this.patternListTag != null) {
+						for (int i = 0; i < this.patternListTag.size(); i++) {
+							CompoundTag compoundTag = this.patternListTag.getCompoundTag(i);
+							BannerPattern bannerPattern = BannerPattern.byId(compoundTag.getString("Pattern"));
 							if (bannerPattern != null) {
 								this.patterns.add(bannerPattern);
-								int j = nbtCompound.getInt("Color");
-								this.colors.add(DyeColor.byId(j));
-								this.textureIdentifier = this.textureIdentifier + bannerPattern.getId() + j;
+								int j = compoundTag.getInt("Color");
+								this.patternColors.add(DyeColor.byId(j));
+								this.patternCacheKey = this.patternCacheKey + bannerPattern.getId() + j;
 							}
 						}
 					}
@@ -162,37 +160,37 @@ public class BannerBlockEntity extends BlockEntity implements Nameable {
 		}
 	}
 
-	public static void loadFromItemStack(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getNbtCompound("BlockEntityTag");
-		if (nbtCompound != null && nbtCompound.contains("Patterns", 9)) {
-			NbtList nbtList = nbtCompound.getList("Patterns", 10);
-			if (!nbtList.isEmpty()) {
-				nbtList.remove(nbtList.size() - 1);
-				if (nbtList.isEmpty()) {
-					stack.removeNbt("BlockEntityTag");
+	public static void loadFromItemStack(ItemStack itemStack) {
+		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
+		if (compoundTag != null && compoundTag.containsKey("Patterns", 9)) {
+			ListTag listTag = compoundTag.getList("Patterns", 10);
+			if (!listTag.isEmpty()) {
+				listTag.method_10536(listTag.size() - 1);
+				if (listTag.isEmpty()) {
+					itemStack.removeSubTag("BlockEntityTag");
 				}
 			}
 		}
 	}
 
-	public ItemStack method_16775(BlockState blockState) {
-		ItemStack itemStack = new ItemStack(BannerBlock.getForColor(this.method_16776(() -> blockState)));
-		if (this.patternsNbt != null && !this.patternsNbt.isEmpty()) {
-			itemStack.getOrCreateNbtCompound("BlockEntityTag").put("Patterns", this.patternsNbt.copy());
+	public ItemStack getPickStack(BlockState blockState) {
+		ItemStack itemStack = new ItemStack(BannerBlock.getForColor(this.getColorForState(() -> blockState)));
+		if (this.patternListTag != null && !this.patternListTag.isEmpty()) {
+			itemStack.getOrCreateSubTag("BlockEntityTag").put("Patterns", this.patternListTag.method_10612());
 		}
 
-		if (this.field_18590 != null) {
-			itemStack.setCustomName(this.field_18590);
+		if (this.customName != null) {
+			itemStack.setCustomName(this.customName);
 		}
 
 		return itemStack;
 	}
 
-	public DyeColor method_16776(Supplier<BlockState> supplier) {
-		if (this.field_15148 == null) {
-			this.field_15148 = ((AbstractBannerBlock)((BlockState)supplier.get()).getBlock()).getColor();
+	public DyeColor getColorForState(Supplier<BlockState> supplier) {
+		if (this.baseColor == null) {
+			this.baseColor = ((AbstractBannerBlock)((BlockState)supplier.get()).getBlock()).getColor();
 		}
 
-		return this.field_15148;
+		return this.baseColor;
 	}
 }

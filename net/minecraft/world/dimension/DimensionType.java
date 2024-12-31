@@ -1,72 +1,86 @@
 package net.minecraft.world.dimension;
 
+import com.mojang.datafixers.Dynamic;
+import com.mojang.datafixers.types.DynamicOps;
 import java.io.File;
-import java.util.function.Supplier;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
-import net.minecraft.class_3794;
+import net.minecraft.util.DynamicSerializable;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.World;
 
-public class DimensionType {
-	public static final DimensionType OVERWORLD = method_17198("overworld", new DimensionType(1, "", "", class_3794::new));
-	public static final DimensionType THE_NETHER = method_17198("the_nether", new DimensionType(0, "_nether", "DIM-1", TheNetherDimension::new));
-	public static final DimensionType THE_END = method_17198("the_end", new DimensionType(2, "_end", "DIM1", TheEndDimension::new));
-	private final int field_18957;
-	private final String field_18958;
-	private final String field_18959;
-	private final Supplier<? extends Dimension> field_18960;
+public class DimensionType implements DynamicSerializable {
+	public static final DimensionType field_13072 = register("overworld", new DimensionType(1, "", "", OverworldDimension::new, true));
+	public static final DimensionType field_13076 = register("the_nether", new DimensionType(0, "_nether", "DIM-1", TheNetherDimension::new, false));
+	public static final DimensionType field_13078 = register("the_end", new DimensionType(2, "_end", "DIM1", TheEndDimension::new, false));
+	private final int id;
+	private final String suffix;
+	private final String saveDir;
+	private final BiFunction<World, DimensionType, ? extends Dimension> factory;
+	private final boolean hasSkyLight;
 
-	public static void method_17194() {
+	private static DimensionType register(String string, DimensionType dimensionType) {
+		return Registry.register(Registry.DIMENSION, dimensionType.id, string, dimensionType);
 	}
 
-	private static DimensionType method_17198(String string, DimensionType dimensionType) {
-		Registry.DIMENSION_TYPE.set(dimensionType.field_18957, new Identifier(string), dimensionType);
-		return dimensionType;
+	protected DimensionType(int i, String string, String string2, BiFunction<World, DimensionType, ? extends Dimension> biFunction, boolean bl) {
+		this.id = i;
+		this.suffix = string;
+		this.saveDir = string2;
+		this.factory = biFunction;
+		this.hasSkyLight = bl;
 	}
 
-	protected DimensionType(int i, String string, String string2, Supplier<? extends Dimension> supplier) {
-		this.field_18957 = i;
-		this.field_18958 = string;
-		this.field_18959 = string2;
-		this.field_18960 = supplier;
+	public static DimensionType deserialize(Dynamic<?> dynamic) {
+		return Registry.DIMENSION.get(new Identifier(dynamic.asString("")));
 	}
 
-	public static Iterable<DimensionType> method_17200() {
-		return Registry.DIMENSION_TYPE;
+	public static Iterable<DimensionType> getAll() {
+		return Registry.DIMENSION;
 	}
 
-	public int method_17201() {
-		return this.field_18957 + -1;
+	public int getRawId() {
+		return this.id + -1;
 	}
 
-	public String method_17202() {
-		return this.field_18958;
+	public String getSuffix() {
+		return this.suffix;
 	}
 
-	public File method_17197(File file) {
-		return this.field_18959.isEmpty() ? file : new File(file, this.field_18959);
+	public File getFile(File file) {
+		return this.saveDir.isEmpty() ? file : new File(file, this.saveDir);
 	}
 
-	public Dimension method_17203() {
-		return (Dimension)this.field_18960.get();
+	public Dimension create(World world) {
+		return (Dimension)this.factory.apply(world, this);
 	}
 
 	public String toString() {
-		return method_17196(this).toString();
+		return getId(this).toString();
 	}
 
 	@Nullable
-	public static DimensionType method_17195(int i) {
-		return Registry.DIMENSION_TYPE.getByRawId(i - -1);
+	public static DimensionType byRawId(int i) {
+		return Registry.DIMENSION.get(i - -1);
 	}
 
 	@Nullable
-	public static DimensionType method_17199(Identifier identifier) {
-		return Registry.DIMENSION_TYPE.getByIdentifier(identifier);
+	public static DimensionType byId(Identifier identifier) {
+		return Registry.DIMENSION.get(identifier);
 	}
 
 	@Nullable
-	public static Identifier method_17196(DimensionType dimensionType) {
-		return Registry.DIMENSION_TYPE.getId(dimensionType);
+	public static Identifier getId(DimensionType dimensionType) {
+		return Registry.DIMENSION.getId(dimensionType);
+	}
+
+	public boolean hasSkyLight() {
+		return this.hasSkyLight;
+	}
+
+	@Override
+	public <T> T serialize(DynamicOps<T> dynamicOps) {
+		return (T)dynamicOps.createString(Registry.DIMENSION.getId(this).toString());
 	}
 }

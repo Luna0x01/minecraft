@@ -6,11 +6,11 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 public class BufferRenderer {
-	public void draw(BufferBuilder builder) {
-		if (builder.getVertexCount() > 0) {
-			VertexFormat vertexFormat = builder.getFormat();
+	public void draw(BufferBuilder bufferBuilder) {
+		if (bufferBuilder.getVertexCount() > 0) {
+			VertexFormat vertexFormat = bufferBuilder.getVertexFormat();
 			int i = vertexFormat.getVertexSize();
-			ByteBuffer byteBuffer = builder.getByteBuffer();
+			ByteBuffer byteBuffer = bufferBuilder.getByteBuffer();
 			List<VertexFormatElement> list = vertexFormat.getElements();
 
 			for (int j = 0; j < list.size(); j++) {
@@ -18,29 +18,29 @@ public class BufferRenderer {
 				VertexFormatElement.Type type = vertexFormatElement.getType();
 				int k = vertexFormatElement.getFormat().getGlId();
 				int l = vertexFormatElement.getIndex();
-				byteBuffer.position(vertexFormat.getIndex(j));
+				byteBuffer.position(vertexFormat.getElementOffset(j));
 				switch (type) {
-					case POSITION:
-						GlStateManager.method_12296(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GlStateManager.method_12317(32884);
+					case field_1633:
+						GlStateManager.vertexPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
+						GlStateManager.enableClientState(32884);
 						break;
-					case UV:
-						GLX.gl13ClientActiveTexture(GLX.textureUnit + l);
-						GlStateManager.method_12279(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GlStateManager.method_12317(32888);
-						GLX.gl13ClientActiveTexture(GLX.textureUnit);
+					case field_1636:
+						GLX.glClientActiveTexture(GLX.GL_TEXTURE0 + l);
+						GlStateManager.texCoordPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
+						GlStateManager.enableClientState(32888);
+						GLX.glClientActiveTexture(GLX.GL_TEXTURE0);
 						break;
 					case COLOR:
-						GlStateManager.method_12303(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GlStateManager.method_12317(32886);
+						GlStateManager.colorPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
+						GlStateManager.enableClientState(32886);
 						break;
-					case NORMAL:
-						GlStateManager.method_12280(k, i, byteBuffer);
-						GlStateManager.method_12317(32885);
+					case field_1635:
+						GlStateManager.normalPointer(k, i, byteBuffer);
+						GlStateManager.enableClientState(32885);
 				}
 			}
 
-			GlStateManager.method_12313(builder.getDrawMode(), 0, builder.getVertexCount());
+			GlStateManager.drawArrays(bufferBuilder.getDrawMode(), 0, bufferBuilder.getVertexCount());
 			int m = 0;
 
 			for (int n = list.size(); m < n; m++) {
@@ -48,24 +48,24 @@ public class BufferRenderer {
 				VertexFormatElement.Type type2 = vertexFormatElement2.getType();
 				int o = vertexFormatElement2.getIndex();
 				switch (type2) {
-					case POSITION:
-						GlStateManager.method_12316(32884);
+					case field_1633:
+						GlStateManager.disableClientState(32884);
 						break;
-					case UV:
-						GLX.gl13ClientActiveTexture(GLX.textureUnit + o);
-						GlStateManager.method_12316(32888);
-						GLX.gl13ClientActiveTexture(GLX.textureUnit);
+					case field_1636:
+						GLX.glClientActiveTexture(GLX.GL_TEXTURE0 + o);
+						GlStateManager.disableClientState(32888);
+						GLX.glClientActiveTexture(GLX.GL_TEXTURE0);
 						break;
 					case COLOR:
-						GlStateManager.method_12316(32886);
-						GlStateManager.clearColor();
+						GlStateManager.disableClientState(32886);
+						GlStateManager.clearCurrentColor();
 						break;
-					case NORMAL:
-						GlStateManager.method_12316(32885);
+					case field_1635:
+						GlStateManager.disableClientState(32885);
 				}
 			}
 		}
 
-		builder.reset();
+		bufferBuilder.clear();
 	}
 }

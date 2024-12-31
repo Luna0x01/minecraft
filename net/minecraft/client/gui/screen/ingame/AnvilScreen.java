@@ -1,153 +1,150 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.class_4122;
-import net.minecraft.class_4388;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.container.AnvilContainer;
+import net.minecraft.container.Container;
+import net.minecraft.container.ContainerListener;
+import net.minecraft.container.Slot;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.AnvilScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerListener;
+import net.minecraft.server.network.packet.RenameItemC2SPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.world.World;
 
-public class AnvilScreen extends HandledScreen implements ScreenHandlerListener {
-	private static final Identifier TEXTURE = new Identifier("textures/gui/container/anvil.png");
-	private final AnvilScreenHandler anvilScreenHandler;
-	private TextFieldWidget renameTextField;
-	private final PlayerInventory playerInventory;
+public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> implements ContainerListener {
+	private static final Identifier BG_TEX = new Identifier("textures/gui/container/anvil.png");
+	private TextFieldWidget nameField;
 
-	public AnvilScreen(PlayerInventory playerInventory, World world) {
-		super(new AnvilScreenHandler(playerInventory, world, MinecraftClient.getInstance().player));
-		this.playerInventory = playerInventory;
-		this.anvilScreenHandler = (AnvilScreenHandler)this.screenHandler;
-	}
-
-	@Override
-	public class_4122 getFocused() {
-		return this.renameTextField.isFocused() ? this.renameTextField : null;
+	public AnvilScreen(AnvilContainer anvilContainer, PlayerInventory playerInventory, Text text) {
+		super(anvilContainer, playerInventory, text);
 	}
 
 	@Override
 	protected void init() {
 		super.init();
-		this.client.field_19946.method_18191(true);
-		int i = (this.width - this.backgroundWidth) / 2;
-		int j = (this.height - this.backgroundHeight) / 2;
-		this.renameTextField = new TextFieldWidget(0, this.textRenderer, i + 62, j + 24, 103, 12);
-		this.renameTextField.setEditableColor(-1);
-		this.renameTextField.setUneditableColor(-1);
-		this.renameTextField.setHasBorder(false);
-		this.renameTextField.setMaxLength(35);
-		this.renameTextField.method_18387(this::method_18682);
-		this.field_20307.add(this.renameTextField);
-		this.screenHandler.removeListener(this);
-		this.screenHandler.addListener(this);
+		this.minecraft.keyboard.enableRepeatEvents(true);
+		int i = (this.width - this.containerWidth) / 2;
+		int j = (this.height - this.containerHeight) / 2;
+		this.nameField = new TextFieldWidget(this.font, i + 62, j + 24, 103, 12, I18n.translate("container.repair"));
+		this.nameField.method_1856(false);
+		this.nameField.changeFocus(true);
+		this.nameField.setEditableColor(-1);
+		this.nameField.setUneditableColor(-1);
+		this.nameField.setHasBorder(false);
+		this.nameField.setMaxLength(35);
+		this.nameField.setChangedListener(this::onRenamed);
+		this.children.add(this.nameField);
+		this.container.addListener(this);
+		this.setInitialFocus(this.nameField);
 	}
 
 	@Override
-	public void resize(MinecraftClient client, int width, int height) {
-		String string = this.renameTextField.getText();
-		this.init(client, width, height);
-		this.renameTextField.setText(string);
+	public void resize(MinecraftClient minecraftClient, int i, int j) {
+		String string = this.nameField.getText();
+		this.init(minecraftClient, i, j);
+		this.nameField.setText(string);
 	}
 
 	@Override
 	public void removed() {
 		super.removed();
-		this.client.field_19946.method_18191(false);
-		this.screenHandler.removeListener(this);
+		this.minecraft.keyboard.enableRepeatEvents(false);
+		this.container.removeListener(this);
 	}
 
 	@Override
-	protected void drawForeground(int mouseX, int mouseY) {
+	public boolean keyPressed(int i, int j, int k) {
+		if (i == 256) {
+			this.minecraft.player.closeContainer();
+		}
+
+		return !this.nameField.keyPressed(i, j, k) && !this.nameField.method_20315() ? super.keyPressed(i, j, k) : true;
+	}
+
+	@Override
+	protected void drawForeground(int i, int j) {
 		GlStateManager.disableLighting();
 		GlStateManager.disableBlend();
-		this.textRenderer.method_18355(I18n.translate("container.repair"), 60.0F, 6.0F, 4210752);
-		if (this.anvilScreenHandler.repairCost > 0) {
-			int i = 8453920;
+		this.font.draw(this.title.asFormattedString(), 60.0F, 6.0F, 4210752);
+		int k = this.container.getLevelCost();
+		if (k > 0) {
+			int l = 8453920;
 			boolean bl = true;
-			String string = I18n.translate("container.repair.cost", this.anvilScreenHandler.repairCost);
-			if (this.anvilScreenHandler.repairCost >= 40 && !this.client.player.abilities.creativeMode) {
+			String string = I18n.translate("container.repair.cost", k);
+			if (k >= 40 && !this.minecraft.player.abilities.creativeMode) {
 				string = I18n.translate("container.repair.expensive");
-				i = 16736352;
-			} else if (!this.anvilScreenHandler.getSlot(2).hasStack()) {
+				l = 16736352;
+			} else if (!this.container.getSlot(2).hasStack()) {
 				bl = false;
-			} else if (!this.anvilScreenHandler.getSlot(2).canTakeItems(this.playerInventory.player)) {
-				i = 16736352;
+			} else if (!this.container.getSlot(2).canTakeItems(this.playerInventory.player)) {
+				l = 16736352;
 			}
 
 			if (bl) {
-				int j = this.backgroundWidth - 8 - this.textRenderer.getStringWidth(string) - 2;
-				int k = 69;
-				fill(j - 2, 67, this.backgroundWidth - 8, 79, 1325400064);
-				this.textRenderer.drawWithShadow(string, (float)j, 69.0F, i);
+				int m = this.containerWidth - 8 - this.font.getStringWidth(string) - 2;
+				int n = 69;
+				fill(m - 2, 67, this.containerWidth - 8, 79, 1325400064);
+				this.font.drawWithShadow(string, (float)m, 69.0F, l);
 			}
 		}
 
 		GlStateManager.enableLighting();
 	}
 
-	private void method_18682(int i, String string) {
+	private void onRenamed(String string) {
 		if (!string.isEmpty()) {
 			String string2 = string;
-			Slot slot = this.anvilScreenHandler.getSlot(0);
+			Slot slot = this.container.getSlot(0);
 			if (slot != null && slot.hasStack() && !slot.getStack().hasCustomName() && string.equals(slot.getStack().getName().getString())) {
 				string2 = "";
 			}
 
-			this.anvilScreenHandler.rename(string2);
-			this.client.player.networkHandler.sendPacket(new class_4388(string2));
+			this.container.setNewItemName(string2);
+			this.minecraft.player.networkHandler.sendPacket(new RenameItemC2SPacket(string2));
 		}
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		super.render(mouseX, mouseY, tickDelta);
-		this.renderTooltip(mouseX, mouseY);
+		super.render(i, j, f);
+		this.drawMouseoverTooltip(i, j);
 		GlStateManager.disableLighting();
 		GlStateManager.disableBlend();
-		this.renameTextField.method_18385(mouseX, mouseY, tickDelta);
+		this.nameField.render(i, j, f);
 	}
 
 	@Override
-	protected void drawBackground(float delta, int mouseX, int mouseY) {
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
-		int i = (this.width - this.backgroundWidth) / 2;
-		int j = (this.height - this.backgroundHeight) / 2;
-		this.drawTexture(i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
-		this.drawTexture(i + 59, j + 20, 0, this.backgroundHeight + (this.anvilScreenHandler.getSlot(0).hasStack() ? 0 : 16), 110, 16);
-		if ((this.anvilScreenHandler.getSlot(0).hasStack() || this.anvilScreenHandler.getSlot(1).hasStack()) && !this.anvilScreenHandler.getSlot(2).hasStack()) {
-			this.drawTexture(i + 99, j + 45, this.backgroundWidth, 0, 28, 21);
+	protected void drawBackground(float f, int i, int j) {
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		this.minecraft.getTextureManager().bindTexture(BG_TEX);
+		int k = (this.width - this.containerWidth) / 2;
+		int l = (this.height - this.containerHeight) / 2;
+		this.blit(k, l, 0, 0, this.containerWidth, this.containerHeight);
+		this.blit(k + 59, l + 20, 0, this.containerHeight + (this.container.getSlot(0).hasStack() ? 0 : 16), 110, 16);
+		if ((this.container.getSlot(0).hasStack() || this.container.getSlot(1).hasStack()) && !this.container.getSlot(2).hasStack()) {
+			this.blit(k + 99, l + 45, this.containerWidth, 0, 28, 21);
 		}
 	}
 
 	@Override
-	public void method_13643(ScreenHandler screenHandler, DefaultedList<ItemStack> defaultedList) {
-		this.onScreenHandlerSlotUpdate(screenHandler, 0, screenHandler.getSlot(0).getStack());
+	public void onContainerRegistered(Container container, DefaultedList<ItemStack> defaultedList) {
+		this.onContainerSlotUpdate(container, 0, container.getSlot(0).getStack());
 	}
 
 	@Override
-	public void onScreenHandlerSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
-		if (slotId == 0) {
-			this.renameTextField.setText(stack.isEmpty() ? "" : stack.getName().getString());
-			this.renameTextField.setEditable(!stack.isEmpty());
+	public void onContainerSlotUpdate(Container container, int i, ItemStack itemStack) {
+		if (i == 0) {
+			this.nameField.setText(itemStack.isEmpty() ? "" : itemStack.getName().getString());
+			this.nameField.setIsEditable(!itemStack.isEmpty());
 		}
 	}
 
 	@Override
-	public void onScreenHandlerPropertyUpdate(ScreenHandler handler, int propertyId, int value) {
-	}
-
-	@Override
-	public void onScreenHandlerInventoryUpdate(ScreenHandler handler, Inventory inventory) {
+	public void onContainerPropertyUpdate(Container container, int i, int j) {
 	}
 }

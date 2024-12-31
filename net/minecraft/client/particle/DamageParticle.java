@@ -1,19 +1,11 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class DamageParticle extends Particle {
-	private final float field_10610;
-
-	protected DamageParticle(World world, double d, double e, double f, double g, double h, double i) {
-		this(world, d, e, f, g, h, i, 1.0F);
-	}
-
-	protected DamageParticle(World world, double d, double e, double f, double g, double h, double i, float j) {
+public class DamageParticle extends SpriteBillboardParticle {
+	private DamageParticle(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.velocityX *= 0.1F;
 		this.velocityY *= 0.1F;
@@ -21,72 +13,90 @@ public class DamageParticle extends Particle {
 		this.velocityX += g * 0.4;
 		this.velocityY += h * 0.4;
 		this.velocityZ += i * 0.4;
-		float k = (float)(Math.random() * 0.3F + 0.6F);
-		this.red = k;
-		this.green = k;
-		this.blue = k;
+		float j = (float)(Math.random() * 0.3F + 0.6F);
+		this.colorRed = j;
+		this.colorGreen = j;
+		this.colorBlue = j;
 		this.scale *= 0.75F;
-		this.scale *= j;
-		this.field_10610 = this.scale;
-		this.maxAge = (int)(6.0 / (Math.random() * 0.8 + 0.6));
-		this.maxAge = (int)((float)this.maxAge * j);
-		this.maxAge = Math.max(this.maxAge, 1);
-		this.field_14950 = false;
-		this.setMiscTexture(65);
-		this.method_12241();
+		this.maxAge = Math.max((int)(6.0 / (Math.random() * 0.8 + 0.6)), 1);
+		this.collidesWithWorld = false;
+		this.tick();
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge * 32.0F;
-		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		this.scale = this.field_10610 * f;
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
+	public float getSize(float f) {
+		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
-		}
-
-		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		this.green = (float)((double)this.green * 0.96);
-		this.blue = (float)((double)this.blue * 0.9);
-		this.velocityX *= 0.7F;
-		this.velocityY *= 0.7F;
-		this.velocityZ *= 0.7F;
-		this.velocityY -= 0.02F;
-		if (this.field_13434) {
+			this.markDead();
+		} else {
+			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.colorGreen = (float)((double)this.colorGreen * 0.96);
+			this.colorBlue = (float)((double)this.colorBlue * 0.9);
 			this.velocityX *= 0.7F;
+			this.velocityY *= 0.7F;
 			this.velocityZ *= 0.7F;
+			this.velocityY -= 0.02F;
+			if (this.onGround) {
+				this.velocityX *= 0.7F;
+				this.velocityZ *= 0.7F;
+			}
 		}
 	}
 
-	public static class CritFactory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new DamageParticle(world, d, e, f, g, h, i);
+	@Override
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
+	}
+
+	public static class DefaultFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17790;
+
+		public DefaultFactory(SpriteProvider spriteProvider) {
+			this.field_17790 = spriteProvider;
+		}
+
+		public Particle method_3013(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			DamageParticle damageParticle = new DamageParticle(world, d, e, f, g, h + 1.0, i);
+			damageParticle.setMaxAge(20);
+			damageParticle.setSprite(this.field_17790);
+			return damageParticle;
 		}
 	}
 
-	public static class CritMagicFactory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			Particle particle = new DamageParticle(world, d, e, f, g, h, i);
-			particle.setColor(particle.getRed() * 0.3F, particle.getGreen() * 0.8F, particle.getBlue());
-			particle.method_5133();
-			return particle;
+	public static class EnchantedHitFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17791;
+
+		public EnchantedHitFactory(SpriteProvider spriteProvider) {
+			this.field_17791 = spriteProvider;
+		}
+
+		public Particle method_3014(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			DamageParticle damageParticle = new DamageParticle(world, d, e, f, g, h, i);
+			damageParticle.colorRed *= 0.3F;
+			damageParticle.colorGreen *= 0.8F;
+			damageParticle.setSprite(this.field_17791);
+			return damageParticle;
 		}
 	}
 
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			Particle particle = new DamageParticle(world, d, e, f, g, h + 1.0, i, 1.0F);
-			particle.method_12245(20);
-			particle.setMiscTexture(67);
-			return particle;
+	public static class Factory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_18291;
+
+		public Factory(SpriteProvider spriteProvider) {
+			this.field_18291 = spriteProvider;
+		}
+
+		public Particle method_17580(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			DamageParticle damageParticle = new DamageParticle(world, d, e, f, g, h, i);
+			damageParticle.setSprite(this.field_18291);
+			return damageParticle;
 		}
 	}
 }

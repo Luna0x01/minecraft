@@ -7,6 +7,7 @@ import io.netty.handler.codec.EncoderException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
@@ -21,15 +22,15 @@ import org.apache.logging.log4j.Logger;
 
 public class DataTracker {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Map<Class<? extends Entity>, Integer> field_13832 = Maps.newHashMap();
-	private final Entity entity;
-	private final Map<Integer, DataTracker.DataEntry<?>> field_13833 = Maps.newHashMap();
+	private static final Map<Class<? extends Entity>, Integer> trackedEntities = Maps.newHashMap();
+	private final Entity trackedEntity;
+	private final Map<Integer, DataTracker.Entry<?>> entries = Maps.newHashMap();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	private boolean empty = true;
 	private boolean dirty;
 
 	public DataTracker(Entity entity) {
-		this.entity = entity;
+		this.trackedEntity = entity;
 	}
 
 	public static <T> TrackedData<T> registerData(Class<? extends Entity> class_, TrackedDataHandler<T> trackedDataHandler) {
@@ -44,16 +45,16 @@ public class DataTracker {
 		}
 
 		int i;
-		if (field_13832.containsKey(class_)) {
-			i = (Integer)field_13832.get(class_) + 1;
+		if (trackedEntities.containsKey(class_)) {
+			i = (Integer)trackedEntities.get(class_) + 1;
 		} else {
 			int j = 0;
 			Class<?> class3 = class_;
 
 			while (class3 != Entity.class) {
 				class3 = class3.getSuperclass();
-				if (field_13832.containsKey(class3)) {
-					j = (Integer)field_13832.get(class3) + 1;
+				if (trackedEntities.containsKey(class3)) {
+					j = (Integer)trackedEntities.get(class3) + 1;
 					break;
 				}
 			}
@@ -64,59 +65,60 @@ public class DataTracker {
 		if (i > 254) {
 			throw new IllegalArgumentException("Data value id is too big with " + i + "! (Max is " + 254 + ")");
 		} else {
-			field_13832.put(class_, i);
+			trackedEntities.put(class_, i);
 			return trackedDataHandler.create(i);
 		}
 	}
 
 	public <T> void startTracking(TrackedData<T> trackedData, T object) {
-		int i = trackedData.method_12713();
+		int i = trackedData.getId();
 		if (i > 254) {
 			throw new IllegalArgumentException("Data value id is too big with " + i + "! (Max is " + 254 + ")");
-		} else if (this.field_13833.containsKey(i)) {
+		} else if (this.entries.containsKey(i)) {
 			throw new IllegalArgumentException("Duplicate id value for " + i + "!");
-		} else if (TrackedDataHandlerRegistry.method_12720(trackedData.method_12714()) < 0) {
-			throw new IllegalArgumentException("Unregistered serializer " + trackedData.method_12714() + " for " + i + "!");
+		} else if (TrackedDataHandlerRegistry.getId(trackedData.getType()) < 0) {
+			throw new IllegalArgumentException("Unregistered serializer " + trackedData.getType() + " for " + i + "!");
 		} else {
-			this.method_12757(trackedData, object);
+			this.addTrackedData(trackedData, object);
 		}
 	}
 
-	private <T> void method_12757(TrackedData<T> trackedData, T object) {
-		DataTracker.DataEntry<T> dataEntry = new DataTracker.DataEntry<>(trackedData, object);
+	private <T> void addTrackedData(TrackedData<T> trackedData, T object) {
+		DataTracker.Entry<T> entry = new DataTracker.Entry<>(trackedData, object);
 		this.lock.writeLock().lock();
-		this.field_13833.put(trackedData.method_12713(), dataEntry);
+		this.entries.put(trackedData.getId(), entry);
 		this.empty = false;
 		this.lock.writeLock().unlock();
 	}
 
-	private <T> DataTracker.DataEntry<T> method_12756(TrackedData<T> trackedData) {
+	private <T> DataTracker.Entry<T> getEntry(TrackedData<T> trackedData) {
 		this.lock.readLock().lock();
 
-		DataTracker.DataEntry<T> dataEntry;
+		DataTracker.Entry<T> entry;
 		try {
-			dataEntry = (DataTracker.DataEntry<T>)this.field_13833.get(trackedData.method_12713());
-		} catch (Throwable var6) {
-			CrashReport crashReport = CrashReport.create(var6, "Getting synched entity data");
+			entry = (DataTracker.Entry<T>)this.entries.get(trackedData.getId());
+		} catch (Throwable var9) {
+			CrashReport crashReport = CrashReport.create(var9, "Getting synched entity data");
 			CrashReportSection crashReportSection = crashReport.addElement("Synched entity data");
 			crashReportSection.add("Data ID", trackedData);
 			throw new CrashException(crashReport);
+		} finally {
+			this.lock.readLock().unlock();
 		}
 
-		this.lock.readLock().unlock();
-		return dataEntry;
+		return entry;
 	}
 
 	public <T> T get(TrackedData<T> trackedData) {
-		return this.method_12756(trackedData).getValue();
+		return this.getEntry(trackedData).get();
 	}
 
 	public <T> void set(TrackedData<T> trackedData, T object) {
-		DataTracker.DataEntry<T> dataEntry = this.method_12756(trackedData);
-		if (ObjectUtils.notEqual(object, dataEntry.getValue())) {
-			dataEntry.setValue(object);
-			this.entity.onTrackedDataSet(trackedData);
-			dataEntry.setModified(true);
+		DataTracker.Entry<T> entry = this.getEntry(trackedData);
+		if (ObjectUtils.notEqual(object, entry.get())) {
+			entry.set(object);
+			this.trackedEntity.onTrackedDataSet(trackedData);
+			entry.setDirty(true);
 			this.dirty = true;
 		}
 	}
@@ -125,12 +127,12 @@ public class DataTracker {
 		return this.dirty;
 	}
 
-	public static void method_12749(List<DataTracker.DataEntry<?>> list, PacketByteBuf packetByteBuf) throws IOException {
+	public static void entriesToPacket(List<DataTracker.Entry<?>> list, PacketByteBuf packetByteBuf) throws IOException {
 		if (list != null) {
 			int i = 0;
 
 			for (int j = list.size(); i < j; i++) {
-				method_12747(packetByteBuf, (DataTracker.DataEntry)list.get(i));
+				writeEntryToPacket(packetByteBuf, (DataTracker.Entry)list.get(i));
 			}
 		}
 
@@ -138,19 +140,19 @@ public class DataTracker {
 	}
 
 	@Nullable
-	public List<DataTracker.DataEntry<?>> getChangedEntries() {
-		List<DataTracker.DataEntry<?>> list = null;
+	public List<DataTracker.Entry<?>> getDirtyEntries() {
+		List<DataTracker.Entry<?>> list = null;
 		if (this.dirty) {
 			this.lock.readLock().lock();
 
-			for (DataTracker.DataEntry<?> dataEntry : this.field_13833.values()) {
-				if (dataEntry.isModified()) {
-					dataEntry.setModified(false);
+			for (DataTracker.Entry<?> entry : this.entries.values()) {
+				if (entry.isDirty()) {
+					entry.setDirty(false);
 					if (list == null) {
 						list = Lists.newArrayList();
 					}
 
-					list.add(dataEntry.method_14902());
+					list.add(entry.copy());
 				}
 			}
 
@@ -161,49 +163,49 @@ public class DataTracker {
 		return list;
 	}
 
-	public void write(PacketByteBuf packet) throws IOException {
+	public void toPacketByteBuf(PacketByteBuf packetByteBuf) throws IOException {
 		this.lock.readLock().lock();
 
-		for (DataTracker.DataEntry<?> dataEntry : this.field_13833.values()) {
-			method_12747(packet, dataEntry);
+		for (DataTracker.Entry<?> entry : this.entries.values()) {
+			writeEntryToPacket(packetByteBuf, entry);
 		}
 
 		this.lock.readLock().unlock();
-		packet.writeByte(255);
+		packetByteBuf.writeByte(255);
 	}
 
 	@Nullable
-	public List<DataTracker.DataEntry<?>> getEntries() {
-		List<DataTracker.DataEntry<?>> list = null;
+	public List<DataTracker.Entry<?>> getAllEntries() {
+		List<DataTracker.Entry<?>> list = null;
 		this.lock.readLock().lock();
 
-		for (DataTracker.DataEntry<?> dataEntry : this.field_13833.values()) {
+		for (DataTracker.Entry<?> entry : this.entries.values()) {
 			if (list == null) {
 				list = Lists.newArrayList();
 			}
 
-			list.add(dataEntry.method_14902());
+			list.add(entry.copy());
 		}
 
 		this.lock.readLock().unlock();
 		return list;
 	}
 
-	private static <T> void method_12747(PacketByteBuf packetByteBuf, DataTracker.DataEntry<T> dataEntry) throws IOException {
-		TrackedData<T> trackedData = dataEntry.method_12758();
-		int i = TrackedDataHandlerRegistry.method_12720(trackedData.method_12714());
+	private static <T> void writeEntryToPacket(PacketByteBuf packetByteBuf, DataTracker.Entry<T> entry) throws IOException {
+		TrackedData<T> trackedData = entry.getData();
+		int i = TrackedDataHandlerRegistry.getId(trackedData.getType());
 		if (i < 0) {
-			throw new EncoderException("Unknown serializer type " + trackedData.method_12714());
+			throw new EncoderException("Unknown serializer type " + trackedData.getType());
 		} else {
-			packetByteBuf.writeByte(trackedData.method_12713());
+			packetByteBuf.writeByte(trackedData.getId());
 			packetByteBuf.writeVarInt(i);
-			trackedData.method_12714().write(packetByteBuf, dataEntry.getValue());
+			trackedData.getType().write(packetByteBuf, entry.get());
 		}
 	}
 
 	@Nullable
-	public static List<DataTracker.DataEntry<?>> method_12753(PacketByteBuf packetByteBuf) throws IOException {
-		List<DataTracker.DataEntry<?>> list = null;
+	public static List<DataTracker.Entry<?>> deserializePacket(PacketByteBuf packetByteBuf) throws IOException {
+		List<DataTracker.Entry<?>> list = null;
 
 		int i;
 		while ((i = packetByteBuf.readUnsignedByte()) != 255) {
@@ -212,29 +214,29 @@ public class DataTracker {
 			}
 
 			int j = packetByteBuf.readVarInt();
-			TrackedDataHandler<?> trackedDataHandler = TrackedDataHandlerRegistry.method_12718(j);
+			TrackedDataHandler<?> trackedDataHandler = TrackedDataHandlerRegistry.get(j);
 			if (trackedDataHandler == null) {
 				throw new DecoderException("Unknown serializer type " + j);
 			}
 
-			list.add(method_20428(packetByteBuf, i, trackedDataHandler));
+			list.add(entryFromPacket(packetByteBuf, i, trackedDataHandler));
 		}
 
 		return list;
 	}
 
-	private static <T> DataTracker.DataEntry<T> method_20428(PacketByteBuf packetByteBuf, int i, TrackedDataHandler<T> trackedDataHandler) {
-		return new DataTracker.DataEntry<>(trackedDataHandler.create(i), trackedDataHandler.read(packetByteBuf));
+	private static <T> DataTracker.Entry<T> entryFromPacket(PacketByteBuf packetByteBuf, int i, TrackedDataHandler<T> trackedDataHandler) {
+		return new DataTracker.Entry<>(trackedDataHandler.create(i), trackedDataHandler.read(packetByteBuf));
 	}
 
-	public void writeUpdatedEntries(List<DataTracker.DataEntry<?>> list) {
+	public void writeUpdatedEntries(List<DataTracker.Entry<?>> list) {
 		this.lock.writeLock().lock();
 
-		for (DataTracker.DataEntry<?> dataEntry : list) {
-			DataTracker.DataEntry<?> dataEntry2 = (DataTracker.DataEntry<?>)this.field_13833.get(dataEntry.method_12758().method_12713());
-			if (dataEntry2 != null) {
-				this.method_12752(dataEntry2, dataEntry);
-				this.entity.onTrackedDataSet(dataEntry.method_12758());
+		for (DataTracker.Entry<?> entry : list) {
+			DataTracker.Entry<?> entry2 = (DataTracker.Entry<?>)this.entries.get(entry.getData().getId());
+			if (entry2 != null) {
+				this.copyToFrom(entry2, entry);
+				this.trackedEntity.onTrackedDataSet(entry.getData());
 			}
 		}
 
@@ -242,8 +244,22 @@ public class DataTracker {
 		this.dirty = true;
 	}
 
-	protected <T> void method_12752(DataTracker.DataEntry<T> dataEntry, DataTracker.DataEntry<?> dataEntry2) {
-		dataEntry.setValue((T)dataEntry2.getValue());
+	private <T> void copyToFrom(DataTracker.Entry<T> entry, DataTracker.Entry<?> entry2) {
+		if (!Objects.equals(entry2.data.getType(), entry.data.getType())) {
+			throw new IllegalStateException(
+				String.format(
+					"Invalid entity data item type for field %d on entity %s: old=%s(%s), new=%s(%s)",
+					entry.data.getId(),
+					this.trackedEntity,
+					entry.value,
+					entry.value.getClass(),
+					entry2.value,
+					entry2.value.getClass()
+				)
+			);
+		} else {
+			entry.set((T)entry2.get());
+		}
 	}
 
 	public boolean isEmpty() {
@@ -254,46 +270,46 @@ public class DataTracker {
 		this.dirty = false;
 		this.lock.readLock().lock();
 
-		for (DataTracker.DataEntry<?> dataEntry : this.field_13833.values()) {
-			dataEntry.setModified(false);
+		for (DataTracker.Entry<?> entry : this.entries.values()) {
+			entry.setDirty(false);
 		}
 
 		this.lock.readLock().unlock();
 	}
 
-	public static class DataEntry<T> {
-		private final TrackedData<T> field_13834;
+	public static class Entry<T> {
+		private final TrackedData<T> data;
 		private T value;
-		private boolean modified;
+		private boolean dirty;
 
-		public DataEntry(TrackedData<T> trackedData, T object) {
-			this.field_13834 = trackedData;
+		public Entry(TrackedData<T> trackedData, T object) {
+			this.data = trackedData;
 			this.value = object;
-			this.modified = true;
+			this.dirty = true;
 		}
 
-		public TrackedData<T> method_12758() {
-			return this.field_13834;
+		public TrackedData<T> getData() {
+			return this.data;
 		}
 
-		public void setValue(T value) {
-			this.value = value;
+		public void set(T object) {
+			this.value = object;
 		}
 
-		public T getValue() {
+		public T get() {
 			return this.value;
 		}
 
-		public boolean isModified() {
-			return this.modified;
+		public boolean isDirty() {
+			return this.dirty;
 		}
 
-		public void setModified(boolean modified) {
-			this.modified = modified;
+		public void setDirty(boolean bl) {
+			this.dirty = bl;
 		}
 
-		public DataTracker.DataEntry<T> method_14902() {
-			return new DataTracker.DataEntry<>(this.field_13834, this.field_13834.method_12714().copy(this.value));
+		public DataTracker.Entry<T> copy() {
+			return new DataTracker.Entry<>(this.data, this.data.getType().copy(this.value));
 		}
 	}
 }

@@ -1,178 +1,99 @@
 package net.minecraft.inventory;
 
-import javax.annotation.Nullable;
-import net.minecraft.block.entity.LockableScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ChestScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.Text;
 
-public class DoubleInventory implements LockableScreenHandlerFactory {
-	private final Text field_16684;
-	private final LockableScreenHandlerFactory mainInventory;
-	private final LockableScreenHandlerFactory secondaryInventory;
+public class DoubleInventory implements Inventory {
+	private final Inventory first;
+	private final Inventory second;
 
-	public DoubleInventory(Text text, LockableScreenHandlerFactory lockableScreenHandlerFactory, LockableScreenHandlerFactory lockableScreenHandlerFactory2) {
-		this.field_16684 = text;
-		if (lockableScreenHandlerFactory == null) {
-			lockableScreenHandlerFactory = lockableScreenHandlerFactory2;
+	public DoubleInventory(Inventory inventory, Inventory inventory2) {
+		if (inventory == null) {
+			inventory = inventory2;
 		}
 
-		if (lockableScreenHandlerFactory2 == null) {
-			lockableScreenHandlerFactory2 = lockableScreenHandlerFactory;
+		if (inventory2 == null) {
+			inventory2 = inventory;
 		}
 
-		this.mainInventory = lockableScreenHandlerFactory;
-		this.secondaryInventory = lockableScreenHandlerFactory2;
-		if (lockableScreenHandlerFactory.hasLock()) {
-			lockableScreenHandlerFactory2.setLock(lockableScreenHandlerFactory.getLock());
-		} else if (lockableScreenHandlerFactory2.hasLock()) {
-			lockableScreenHandlerFactory.setLock(lockableScreenHandlerFactory2.getLock());
-		}
+		this.first = inventory;
+		this.second = inventory2;
 	}
 
 	@Override
 	public int getInvSize() {
-		return this.mainInventory.getInvSize() + this.secondaryInventory.getInvSize();
+		return this.first.getInvSize() + this.second.getInvSize();
 	}
 
 	@Override
-	public boolean isEmpty() {
-		return this.mainInventory.isEmpty() && this.secondaryInventory.isEmpty();
+	public boolean isInvEmpty() {
+		return this.first.isInvEmpty() && this.second.isInvEmpty();
 	}
 
 	public boolean isPart(Inventory inventory) {
-		return this.mainInventory == inventory || this.secondaryInventory == inventory;
+		return this.first == inventory || this.second == inventory;
 	}
 
 	@Override
-	public Text method_15540() {
-		if (this.mainInventory.hasCustomName()) {
-			return this.mainInventory.method_15540();
+	public ItemStack getInvStack(int i) {
+		return i >= this.first.getInvSize() ? this.second.getInvStack(i - this.first.getInvSize()) : this.first.getInvStack(i);
+	}
+
+	@Override
+	public ItemStack takeInvStack(int i, int j) {
+		return i >= this.first.getInvSize() ? this.second.takeInvStack(i - this.first.getInvSize(), j) : this.first.takeInvStack(i, j);
+	}
+
+	@Override
+	public ItemStack removeInvStack(int i) {
+		return i >= this.first.getInvSize() ? this.second.removeInvStack(i - this.first.getInvSize()) : this.first.removeInvStack(i);
+	}
+
+	@Override
+	public void setInvStack(int i, ItemStack itemStack) {
+		if (i >= this.first.getInvSize()) {
+			this.second.setInvStack(i - this.first.getInvSize(), itemStack);
 		} else {
-			return this.secondaryInventory.hasCustomName() ? this.secondaryInventory.method_15540() : this.field_16684;
-		}
-	}
-
-	@Override
-	public boolean hasCustomName() {
-		return this.mainInventory.hasCustomName() || this.secondaryInventory.hasCustomName();
-	}
-
-	@Nullable
-	@Override
-	public Text method_15541() {
-		return this.mainInventory.hasCustomName() ? this.mainInventory.method_15541() : this.secondaryInventory.method_15541();
-	}
-
-	@Override
-	public ItemStack getInvStack(int slot) {
-		return slot >= this.mainInventory.getInvSize()
-			? this.secondaryInventory.getInvStack(slot - this.mainInventory.getInvSize())
-			: this.mainInventory.getInvStack(slot);
-	}
-
-	@Override
-	public ItemStack takeInvStack(int slot, int amount) {
-		return slot >= this.mainInventory.getInvSize()
-			? this.secondaryInventory.takeInvStack(slot - this.mainInventory.getInvSize(), amount)
-			: this.mainInventory.takeInvStack(slot, amount);
-	}
-
-	@Override
-	public ItemStack removeInvStack(int slot) {
-		return slot >= this.mainInventory.getInvSize()
-			? this.secondaryInventory.removeInvStack(slot - this.mainInventory.getInvSize())
-			: this.mainInventory.removeInvStack(slot);
-	}
-
-	@Override
-	public void setInvStack(int slot, ItemStack stack) {
-		if (slot >= this.mainInventory.getInvSize()) {
-			this.secondaryInventory.setInvStack(slot - this.mainInventory.getInvSize(), stack);
-		} else {
-			this.mainInventory.setInvStack(slot, stack);
+			this.first.setInvStack(i, itemStack);
 		}
 	}
 
 	@Override
 	public int getInvMaxStackAmount() {
-		return this.mainInventory.getInvMaxStackAmount();
+		return this.first.getInvMaxStackAmount();
 	}
 
 	@Override
 	public void markDirty() {
-		this.mainInventory.markDirty();
-		this.secondaryInventory.markDirty();
+		this.first.markDirty();
+		this.second.markDirty();
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity player) {
-		return this.mainInventory.canPlayerUseInv(player) && this.secondaryInventory.canPlayerUseInv(player);
+	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
+		return this.first.canPlayerUseInv(playerEntity) && this.second.canPlayerUseInv(playerEntity);
 	}
 
 	@Override
-	public void onInvOpen(PlayerEntity player) {
-		this.mainInventory.onInvOpen(player);
-		this.secondaryInventory.onInvOpen(player);
+	public void onInvOpen(PlayerEntity playerEntity) {
+		this.first.onInvOpen(playerEntity);
+		this.second.onInvOpen(playerEntity);
 	}
 
 	@Override
-	public void onInvClose(PlayerEntity player) {
-		this.mainInventory.onInvClose(player);
-		this.secondaryInventory.onInvClose(player);
+	public void onInvClose(PlayerEntity playerEntity) {
+		this.first.onInvClose(playerEntity);
+		this.second.onInvClose(playerEntity);
 	}
 
 	@Override
-	public boolean isValidInvStack(int slot, ItemStack stack) {
-		return true;
-	}
-
-	@Override
-	public int getProperty(int key) {
-		return 0;
-	}
-
-	@Override
-	public void setProperty(int id, int value) {
-	}
-
-	@Override
-	public int getProperties() {
-		return 0;
-	}
-
-	@Override
-	public boolean hasLock() {
-		return this.mainInventory.hasLock() || this.secondaryInventory.hasLock();
-	}
-
-	@Override
-	public void setLock(ScreenHandlerLock lock) {
-		this.mainInventory.setLock(lock);
-		this.secondaryInventory.setLock(lock);
-	}
-
-	@Override
-	public ScreenHandlerLock getLock() {
-		return this.mainInventory.getLock();
-	}
-
-	@Override
-	public String getId() {
-		return this.mainInventory.getId();
-	}
-
-	@Override
-	public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
-		return new ChestScreenHandler(inventory, this, player);
+	public boolean isValidInvStack(int i, ItemStack itemStack) {
+		return i >= this.first.getInvSize() ? this.second.isValidInvStack(i - this.first.getInvSize(), itemStack) : this.first.isValidInvStack(i, itemStack);
 	}
 
 	@Override
 	public void clear() {
-		this.mainInventory.clear();
-		this.secondaryInventory.clear();
+		this.first.clear();
+		this.second.clear();
 	}
 }

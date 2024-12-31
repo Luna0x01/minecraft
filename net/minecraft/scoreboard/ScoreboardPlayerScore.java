@@ -4,7 +4,7 @@ import java.util.Comparator;
 import javax.annotation.Nullable;
 
 public class ScoreboardPlayerScore {
-	public static final Comparator<ScoreboardPlayerScore> field_5683 = (scoreboardPlayerScore, scoreboardPlayerScore2) -> {
+	public static final Comparator<ScoreboardPlayerScore> COMPARATOR = (scoreboardPlayerScore, scoreboardPlayerScore2) -> {
 		if (scoreboardPlayerScore.getScore() > scoreboardPlayerScore2.getScore()) {
 			return 1;
 		} else {
@@ -13,31 +13,31 @@ public class ScoreboardPlayerScore {
 				: scoreboardPlayerScore2.getPlayerName().compareToIgnoreCase(scoreboardPlayerScore.getPlayerName());
 		}
 	};
-	private final Scoreboard field_5684;
+	private final Scoreboard scoreboard;
 	@Nullable
-	private final ScoreboardObjective field_5685;
+	private final ScoreboardObjective objective;
 	private final String playerName;
 	private int score;
 	private boolean locked;
 	private boolean forceUpdate;
 
 	public ScoreboardPlayerScore(Scoreboard scoreboard, ScoreboardObjective scoreboardObjective, String string) {
-		this.field_5684 = scoreboard;
-		this.field_5685 = scoreboardObjective;
+		this.scoreboard = scoreboard;
+		this.objective = scoreboardObjective;
 		this.playerName = string;
 		this.locked = true;
 		this.forceUpdate = true;
 	}
 
 	public void incrementScore(int i) {
-		if (this.field_5685.method_4848().method_4919()) {
+		if (this.objective.getCriterion().isReadOnly()) {
 			throw new IllegalStateException("Cannot modify read-only score");
 		} else {
 			this.setScore(this.getScore() + i);
 		}
 	}
 
-	public void method_4865() {
+	public void incrementScore() {
 		this.incrementScore(1);
 	}
 
@@ -45,14 +45,14 @@ public class ScoreboardPlayerScore {
 		return this.score;
 	}
 
-	public void method_18107() {
+	public void clearScore() {
 		this.setScore(0);
 	}
 
-	public void setScore(int score) {
-		int i = this.score;
-		this.score = score;
-		if (i != score || this.forceUpdate) {
+	public void setScore(int i) {
+		int j = this.score;
+		this.score = i;
+		if (j != i || this.forceUpdate) {
 			this.forceUpdate = false;
 			this.getScoreboard().updateScore(this);
 		}
@@ -60,7 +60,7 @@ public class ScoreboardPlayerScore {
 
 	@Nullable
 	public ScoreboardObjective getObjective() {
-		return this.field_5685;
+		return this.objective;
 	}
 
 	public String getPlayerName() {
@@ -68,14 +68,14 @@ public class ScoreboardPlayerScore {
 	}
 
 	public Scoreboard getScoreboard() {
-		return this.field_5684;
+		return this.scoreboard;
 	}
 
 	public boolean isLocked() {
 		return this.locked;
 	}
 
-	public void setLocked(boolean locked) {
-		this.locked = locked;
+	public void setLocked(boolean bl) {
+		this.locked = bl;
 	}
 }

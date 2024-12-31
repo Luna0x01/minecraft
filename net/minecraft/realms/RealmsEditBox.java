@@ -1,14 +1,14 @@
 package net.minecraft.realms;
 
-import net.minecraft.class_4122;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
 public class RealmsEditBox extends RealmsGuiEventListener {
 	private final TextFieldWidget editBox;
 
-	public RealmsEditBox(int i, int j, int k, int l, int m) {
-		this.editBox = new TextFieldWidget(i, MinecraftClient.getInstance().textRenderer, j, k, l, m);
+	public RealmsEditBox(int i, int j, int k, int l, int m, String string) {
+		this.editBox = new TextFieldWidget(MinecraftClient.getInstance().textRenderer, j, k, l, m, null, string);
 	}
 
 	public String getValue() {
@@ -19,8 +19,8 @@ public class RealmsEditBox extends RealmsGuiEventListener {
 		this.editBox.tick();
 	}
 
-	public void setValue(String text) {
-		this.editBox.setText(text);
+	public void setValue(String string) {
+		this.editBox.setText(string);
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class RealmsEditBox extends RealmsGuiEventListener {
 	}
 
 	@Override
-	public class_4122 getProxy() {
+	public Element getProxy() {
 		return this.editBox;
 	}
 
@@ -58,19 +58,19 @@ public class RealmsEditBox extends RealmsGuiEventListener {
 	}
 
 	@Override
-	public boolean mouseScrolled(double d) {
-		return this.editBox.mouseScrolled(d);
+	public boolean mouseScrolled(double d, double e, double f) {
+		return this.editBox.mouseScrolled(d, e, f);
 	}
 
 	public void render(int i, int j, float f) {
-		this.editBox.method_18385(i, j, f);
+		this.editBox.render(i, j, f);
 	}
 
-	public void setMaxLength(int maximumLength) {
-		this.editBox.setMaxLength(maximumLength);
+	public void setMaxLength(int i) {
+		this.editBox.setMaxLength(i);
 	}
 
-	public void setIsEditable(boolean editable) {
-		this.editBox.setEditable(editable);
+	public void setIsEditable(boolean bl) {
+		this.editBox.setIsEditable(bl);
 	}
 }

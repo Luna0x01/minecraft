@@ -1,43 +1,38 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.container.ShulkerBoxContainer;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class ShulkerBoxScreen extends HandledScreen {
+public class ShulkerBoxScreen extends AbstractContainerScreen<ShulkerBoxContainer> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/shulker_box.png");
-	private final Inventory top;
-	private final PlayerInventory bottom;
 
-	public ShulkerBoxScreen(PlayerInventory playerInventory, Inventory inventory) {
-		super(new ShulkerBoxScreenHandler(playerInventory, inventory, MinecraftClient.getInstance().player));
-		this.bottom = playerInventory;
-		this.top = inventory;
-		this.backgroundHeight++;
+	public ShulkerBoxScreen(ShulkerBoxContainer shulkerBoxContainer, PlayerInventory playerInventory, Text text) {
+		super(shulkerBoxContainer, playerInventory, text);
+		this.containerHeight++;
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		super.render(mouseX, mouseY, tickDelta);
-		this.renderTooltip(mouseX, mouseY);
+		super.render(i, j, f);
+		this.drawMouseoverTooltip(i, j);
 	}
 
 	@Override
-	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.method_18355(this.top.getName().asFormattedString(), 8.0F, 6.0F, 4210752);
-		this.textRenderer.method_18355(this.bottom.getName().asFormattedString(), 8.0F, (float)(this.backgroundHeight - 96 + 2), 4210752);
+	protected void drawForeground(int i, int j) {
+		this.font.draw(this.title.asFormattedString(), 8.0F, 6.0F, 4210752);
+		this.font.draw(this.playerInventory.getDisplayName().asFormattedString(), 8.0F, (float)(this.containerHeight - 96 + 2), 4210752);
 	}
 
 	@Override
-	protected void drawBackground(float delta, int mouseX, int mouseY) {
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
-		int i = (this.width - this.backgroundWidth) / 2;
-		int j = (this.height - this.backgroundHeight) / 2;
-		this.drawTexture(i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
+	protected void drawBackground(float f, int i, int j) {
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		this.minecraft.getTextureManager().bindTexture(TEXTURE);
+		int k = (this.width - this.containerWidth) / 2;
+		int l = (this.height - this.containerHeight) / 2;
+		this.blit(k, l, 0, 0, this.containerWidth, this.containerHeight);
 	}
 }

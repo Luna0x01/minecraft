@@ -1,7 +1,7 @@
 package net.minecraft.util.math;
 
 public enum AxisCycleDirection {
-	NONE {
+	field_10962 {
 		@Override
 		public int choose(int i, int j, int k, Direction.Axis axis) {
 			return axis.choose(i, j, k);
@@ -17,7 +17,7 @@ public enum AxisCycleDirection {
 			return this;
 		}
 	},
-	FORWARD {
+	field_10963 {
 		@Override
 		public int choose(int i, int j, int k, Direction.Axis axis) {
 			return axis.choose(k, i, j);
@@ -30,10 +30,10 @@ public enum AxisCycleDirection {
 
 		@Override
 		public AxisCycleDirection opposite() {
-			return BACKWARD;
+			return field_10965;
 		}
 	},
-	BACKWARD {
+	field_10965 {
 		@Override
 		public int choose(int i, int j, int k, Direction.Axis axis) {
 			return axis.choose(j, k, i);
@@ -46,7 +46,7 @@ public enum AxisCycleDirection {
 
 		@Override
 		public AxisCycleDirection opposite() {
-			return FORWARD;
+			return field_10963;
 		}
 	};
 

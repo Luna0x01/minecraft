@@ -2,27 +2,27 @@ package net.minecraft.server.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.class_3915;
-import net.minecraft.class_4009;
-import net.minecraft.class_4062;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.ChatSerializer;
+import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.arguments.TextArgumentType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Texts;
 
 public class TellRawCommand {
-	public static void method_21119(CommandDispatcher<class_3915> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.method_17529("tellraw").requires(arg -> arg.method_17575(2)))
+			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("tellraw")
+					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
-					CommandManager.method_17530("targets", class_4062.method_17904())
+					CommandManager.argument("targets", EntityArgumentType.players())
 						.then(
-							CommandManager.method_17530("message", class_4009.method_17711())
+							CommandManager.argument("message", TextArgumentType.text())
 								.executes(
 									commandContext -> {
 										int i = 0;
 
-										for (ServerPlayerEntity serverPlayerEntity : class_4062.method_17907(commandContext, "targets")) {
-											serverPlayerEntity.method_5505(
-												ChatSerializer.method_20185((class_3915)commandContext.getSource(), class_4009.method_17713(commandContext, "message"), serverPlayerEntity)
+										for (ServerPlayerEntity serverPlayerEntity : EntityArgumentType.getPlayers(commandContext, "targets")) {
+											serverPlayerEntity.sendMessage(
+												Texts.parse((ServerCommandSource)commandContext.getSource(), TextArgumentType.getTextArgument(commandContext, "message"), serverPlayerEntity, 0)
 											);
 											i++;
 										}

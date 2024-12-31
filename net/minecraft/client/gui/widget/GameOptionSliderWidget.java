@@ -1,0 +1,25 @@
+package net.minecraft.client.gui.widget;
+
+import net.minecraft.client.options.DoubleOption;
+import net.minecraft.client.options.GameOptions;
+
+public class GameOptionSliderWidget extends SliderWidget {
+	private final DoubleOption option;
+
+	public GameOptionSliderWidget(GameOptions gameOptions, int i, int j, int k, int l, DoubleOption doubleOption) {
+		super(gameOptions, i, j, k, l, (double)((float)doubleOption.method_18611(doubleOption.get(gameOptions))));
+		this.option = doubleOption;
+		this.updateMessage();
+	}
+
+	@Override
+	protected void applyValue() {
+		this.option.set(this.options, this.option.method_18616(this.value));
+		this.options.write();
+	}
+
+	@Override
+	protected void updateMessage() {
+		this.setMessage(this.option.getDisplayString(this.options));
+	}
+}

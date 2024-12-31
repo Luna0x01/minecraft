@@ -5,118 +5,118 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
 
 public class RealmsBufferBuilder {
-	private BufferBuilder bufferBuilder;
+	private BufferBuilder b;
 
 	public RealmsBufferBuilder(BufferBuilder bufferBuilder) {
-		this.bufferBuilder = bufferBuilder;
+		this.b = bufferBuilder;
 	}
 
 	public RealmsBufferBuilder from(BufferBuilder bufferBuilder) {
-		this.bufferBuilder = bufferBuilder;
+		this.b = bufferBuilder;
 		return this;
 	}
 
 	public void sortQuads(float f, float g, float h) {
-		this.bufferBuilder.sortQuads(f, g, h);
+		this.b.sortQuads(f, g, h);
 	}
 
 	public void fixupQuadColor(int i) {
-		this.bufferBuilder.putQuadColor(i);
+		this.b.setQuadColor(i);
 	}
 
 	public ByteBuffer getBuffer() {
-		return this.bufferBuilder.getByteBuffer();
+		return this.b.getByteBuffer();
 	}
 
 	public void postNormal(float f, float g, float h) {
-		this.bufferBuilder.putNormal(f, g, h);
+		this.b.postNormal(f, g, h);
 	}
 
 	public int getDrawMode() {
-		return this.bufferBuilder.getDrawMode();
+		return this.b.getDrawMode();
 	}
 
 	public void offset(double d, double e, double f) {
-		this.bufferBuilder.offset(d, e, f);
+		this.b.setOffset(d, e, f);
 	}
 
-	public void restoreState(BufferBuilder.DrawArrayParameters drawArrayParameters) {
-		this.bufferBuilder.restoreState(drawArrayParameters);
+	public void restoreState(BufferBuilder.State state) {
+		this.b.restoreState(state);
 	}
 
 	public void endVertex() {
-		this.bufferBuilder.next();
+		this.b.next();
 	}
 
 	public RealmsBufferBuilder normal(float f, float g, float h) {
-		return this.from(this.bufferBuilder.normal(f, g, h));
+		return this.from(this.b.normal(f, g, h));
 	}
 
 	public void end() {
-		this.bufferBuilder.end();
+		this.b.end();
 	}
 
 	public void begin(int i, VertexFormat vertexFormat) {
-		this.bufferBuilder.begin(i, vertexFormat);
+		this.b.begin(i, vertexFormat);
 	}
 
 	public RealmsBufferBuilder color(int i, int j, int k, int l) {
-		return this.from(this.bufferBuilder.color(i, j, k, l));
+		return this.from(this.b.color(i, j, k, l));
 	}
 
 	public void faceTex2(int i, int j, int k, int l) {
-		this.bufferBuilder.faceTexture2(i, j, k, l);
+		this.b.brightness(i, j, k, l);
 	}
 
 	public void postProcessFacePosition(double d, double e, double f) {
-		this.bufferBuilder.postProcessFacePosition(d, e, f);
+		this.b.postPosition(d, e, f);
 	}
 
 	public void fixupVertexColor(float f, float g, float h, int i) {
-		this.bufferBuilder.putColor(f, g, h, i);
+		this.b.setColor(f, g, h, i);
 	}
 
 	public RealmsBufferBuilder color(float f, float g, float h, float i) {
-		return this.from(this.bufferBuilder.color(f, g, h, i));
+		return this.from(this.b.color(f, g, h, i));
 	}
 
 	public RealmsVertexFormat getVertexFormat() {
-		return new RealmsVertexFormat(this.bufferBuilder.getFormat());
+		return new RealmsVertexFormat(this.b.getVertexFormat());
 	}
 
 	public void faceTint(float f, float g, float h, int i) {
-		this.bufferBuilder.faceTint(f, g, h, i);
+		this.b.multiplyColor(f, g, h, i);
 	}
 
 	public RealmsBufferBuilder tex2(int i, int j) {
-		return this.from(this.bufferBuilder.texture2(i, j));
+		return this.from(this.b.texture(i, j));
 	}
 
 	public void putBulkData(int[] is) {
-		this.bufferBuilder.putArray(is);
+		this.b.putVertexData(is);
 	}
 
 	public RealmsBufferBuilder tex(double d, double e) {
-		return this.from(this.bufferBuilder.texture(d, e));
+		return this.from(this.b.texture(d, e));
 	}
 
 	public int getVertexCount() {
-		return this.bufferBuilder.getVertexCount();
+		return this.b.getVertexCount();
 	}
 
 	public void clear() {
-		this.bufferBuilder.reset();
+		this.b.clear();
 	}
 
 	public RealmsBufferBuilder vertex(double d, double e, double f) {
-		return this.from(this.bufferBuilder.vertex(d, e, f));
+		return this.from(this.b.vertex(d, e, f));
 	}
 
 	public void fixupQuadColor(float f, float g, float h) {
-		this.bufferBuilder.putQuadColor(f, g, h);
+		this.b.setQuadColor(f, g, h);
 	}
 
 	public void noColor() {
-		this.bufferBuilder.enableTexture();
+		this.b.disableColor();
 	}
 }

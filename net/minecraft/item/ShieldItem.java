@@ -3,7 +3,7 @@ package net.minecraft.item;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.DispenserBlock;
-import net.minecraft.client.TooltipContext;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.Text;
@@ -18,48 +18,46 @@ import net.minecraft.world.World;
 public class ShieldItem extends Item {
 	public ShieldItem(Item.Settings settings) {
 		super(settings);
-		this.addProperty(
+		this.addPropertyGetter(
 			new Identifier("blocking"),
-			(itemStack, world, livingEntity) -> livingEntity != null && livingEntity.method_13061() && livingEntity.method_13064() == itemStack ? 1.0F : 0.0F
+			(itemStack, world, livingEntity) -> livingEntity != null && livingEntity.isUsingItem() && livingEntity.getActiveItem() == itemStack ? 1.0F : 0.0F
 		);
-		DispenserBlock.method_16665(this, ArmorItem.ARMOR_DISPENSER_BEHAVIOR);
+		DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
 	}
 
 	@Override
-	public String getTranslationKey(ItemStack stack) {
-		return stack.getNbtCompound("BlockEntityTag") != null
-			? this.getTranslationKey() + '.' + method_16122(stack).getTranslationKey()
-			: super.getTranslationKey(stack);
+	public String getTranslationKey(ItemStack itemStack) {
+		return itemStack.getSubTag("BlockEntityTag") != null ? this.getTranslationKey() + '.' + getColor(itemStack).getName() : super.getTranslationKey(itemStack);
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
-		BannerItem.method_11359(stack, tooltip);
+	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
+		BannerItem.appendBannerTooltip(itemStack, list);
 	}
 
 	@Override
-	public UseAction getUseAction(ItemStack stack) {
-		return UseAction.BLOCK;
+	public UseAction getUseAction(ItemStack itemStack) {
+		return UseAction.field_8949;
 	}
 
 	@Override
-	public int getMaxUseTime(ItemStack stack) {
+	public int getMaxUseTime(ItemStack itemStack) {
 		return 72000;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		player.method_13050(hand);
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		playerEntity.setCurrentHand(hand);
+		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 	}
 
 	@Override
-	public boolean canRepair(ItemStack stack, ItemStack ingredient) {
-		return ItemTags.PLANKS.contains(ingredient.getItem()) || super.canRepair(stack, ingredient);
+	public boolean canRepair(ItemStack itemStack, ItemStack itemStack2) {
+		return ItemTags.field_15537.contains(itemStack2.getItem()) || super.canRepair(itemStack, itemStack2);
 	}
 
-	public static DyeColor method_16122(ItemStack itemStack) {
-		return DyeColor.byId(itemStack.getOrCreateNbtCompound("BlockEntityTag").getInt("Base"));
+	public static DyeColor getColor(ItemStack itemStack) {
+		return DyeColor.byId(itemStack.getOrCreateSubTag("BlockEntityTag").getInt("Base"));
 	}
 }

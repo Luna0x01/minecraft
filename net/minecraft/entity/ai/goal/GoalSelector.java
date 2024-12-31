@@ -1,160 +1,104 @@
 package net.minecraft.entity.ai.goal;
 
 import com.google.common.collect.Sets;
-import java.util.Iterator;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
+import java.util.stream.Stream;
 import net.minecraft.util.profiler.Profiler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class GoalSelector {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final Set<GoalSelector.Entry> field_14577 = Sets.newLinkedHashSet();
-	private final Set<GoalSelector.Entry> field_14578 = Sets.newLinkedHashSet();
+	private static final WeightedGoal activeGoal = new WeightedGoal(Integer.MAX_VALUE, new Goal() {
+		@Override
+		public boolean canStart() {
+			return false;
+		}
+	}) {
+		@Override
+		public boolean isRunning() {
+			return false;
+		}
+	};
+	private final Map<Goal.Control, WeightedGoal> goalsByControl = new EnumMap(Goal.Control.class);
+	private final Set<WeightedGoal> goals = Sets.newLinkedHashSet();
 	private final Profiler profiler;
-	private int field_3509;
+	private final EnumSet<Goal.Control> disabledControls = EnumSet.noneOf(Goal.Control.class);
 	private int timeInterval = 3;
-	private int field_14579;
 
 	public GoalSelector(Profiler profiler) {
 		this.profiler = profiler;
 	}
 
-	public void add(int priority, Goal goal) {
-		this.field_14577.add(new GoalSelector.Entry(priority, goal));
+	public void add(int i, Goal goal) {
+		this.goals.add(new WeightedGoal(i, goal));
 	}
 
-	public void method_4497(Goal goal) {
-		Iterator<GoalSelector.Entry> iterator = this.field_14577.iterator();
-
-		while (iterator.hasNext()) {
-			GoalSelector.Entry entry = (GoalSelector.Entry)iterator.next();
-			Goal goal2 = entry.goal;
-			if (goal2 == goal) {
-				if (entry.field_14580) {
-					entry.field_14580 = false;
-					entry.goal.stop();
-					this.field_14578.remove(entry);
-				}
-
-				iterator.remove();
-				return;
-			}
-		}
+	public void remove(Goal goal) {
+		this.goals.stream().filter(weightedGoal -> weightedGoal.getGoal() == goal).filter(WeightedGoal::isRunning).forEach(WeightedGoal::stop);
+		this.goals.removeIf(weightedGoal -> weightedGoal.getGoal() == goal);
 	}
 
 	public void tick() {
-		this.profiler.push("goalSetup");
-		if (this.field_3509++ % this.timeInterval == 0) {
-			for (GoalSelector.Entry entry : this.field_14577) {
-				if (entry.field_14580) {
-					if (!this.method_11010(entry) || !this.shouldContinue(entry)) {
-						entry.field_14580 = false;
-						entry.goal.stop();
-						this.field_14578.remove(entry);
-					}
-				} else if (this.method_11010(entry) && entry.goal.canStart()) {
-					entry.field_14580 = true;
-					entry.goal.start();
-					this.field_14578.add(entry);
-				}
+		this.profiler.push("goalCleanup");
+		this.getRunningGoals()
+			.filter(
+				weightedGoal -> !weightedGoal.isRunning()
+						|| weightedGoal.getControls().stream().anyMatch(this.disabledControls::contains)
+						|| !weightedGoal.shouldContinue()
+			)
+			.forEach(Goal::stop);
+		this.goalsByControl.forEach((control, weightedGoal) -> {
+			if (!weightedGoal.isRunning()) {
+				this.goalsByControl.remove(control);
 			}
-		} else {
-			Iterator<GoalSelector.Entry> iterator = this.field_14578.iterator();
-
-			while (iterator.hasNext()) {
-				GoalSelector.Entry entry2 = (GoalSelector.Entry)iterator.next();
-				if (!this.shouldContinue(entry2)) {
-					entry2.field_14580 = false;
-					entry2.goal.stop();
-					iterator.remove();
-				}
-			}
-		}
-
+		});
 		this.profiler.pop();
-		if (!this.field_14578.isEmpty()) {
-			this.profiler.push("goalTick");
-
-			for (GoalSelector.Entry entry3 : this.field_14578) {
-				entry3.goal.tick();
-			}
-
-			this.profiler.pop();
-		}
+		this.profiler.push("goalUpdate");
+		this.goals
+			.stream()
+			.filter(weightedGoal -> !weightedGoal.isRunning())
+			.filter(weightedGoal -> weightedGoal.getControls().stream().noneMatch(this.disabledControls::contains))
+			.filter(
+				weightedGoal -> weightedGoal.getControls()
+						.stream()
+						.allMatch(control -> ((WeightedGoal)this.goalsByControl.getOrDefault(control, activeGoal)).canBeReplacedBy(weightedGoal))
+			)
+			.filter(WeightedGoal::canStart)
+			.forEach(weightedGoal -> {
+				weightedGoal.getControls().forEach(control -> {
+					WeightedGoal weightedGoal2 = (WeightedGoal)this.goalsByControl.getOrDefault(control, activeGoal);
+					weightedGoal2.stop();
+					this.goalsByControl.put(control, weightedGoal);
+				});
+				weightedGoal.start();
+			});
+		this.profiler.pop();
+		this.profiler.push("goalTick");
+		this.getRunningGoals().forEach(WeightedGoal::tick);
+		this.profiler.pop();
 	}
 
-	private boolean shouldContinue(GoalSelector.Entry goal) {
-		return goal.goal.shouldContinue();
+	public Stream<WeightedGoal> getRunningGoals() {
+		return this.goals.stream().filter(WeightedGoal::isRunning);
 	}
 
-	private boolean method_11010(GoalSelector.Entry entry) {
-		if (this.field_14578.isEmpty()) {
-			return true;
-		} else if (this.method_13097(entry.goal.getCategoryBits())) {
-			return false;
-		} else {
-			for (GoalSelector.Entry entry2 : this.field_14578) {
-				if (entry2 != entry) {
-					if (entry.priority >= entry2.priority) {
-						if (!this.method_2753(entry, entry2)) {
-							return false;
-						}
-					} else if (!entry2.goal.canStop()) {
-						return false;
-					}
-				}
-			}
-
-			return true;
-		}
+	public void disableControl(Goal.Control control) {
+		this.disabledControls.add(control);
 	}
 
-	private boolean method_2753(GoalSelector.Entry entry1, GoalSelector.Entry entry2) {
-		return (entry1.goal.getCategoryBits() & entry2.goal.getCategoryBits()) == 0;
+	public void enableControl(Goal.Control control) {
+		this.disabledControls.remove(control);
 	}
 
-	public boolean method_13097(int i) {
-		return (this.field_14579 & i) > 0;
-	}
-
-	public void method_13098(int i) {
-		this.field_14579 |= i;
-	}
-
-	public void method_13099(int i) {
-		this.field_14579 &= ~i;
-	}
-
-	public void method_13096(int i, boolean bl) {
+	public void setControlEnabled(Goal.Control control, boolean bl) {
 		if (bl) {
-			this.method_13099(i);
+			this.enableControl(control);
 		} else {
-			this.method_13098(i);
-		}
-	}
-
-	class Entry {
-		public final Goal goal;
-		public final int priority;
-		public boolean field_14580;
-
-		public Entry(int i, Goal goal) {
-			this.priority = i;
-			this.goal = goal;
-		}
-
-		public boolean equals(@Nullable Object object) {
-			if (this == object) {
-				return true;
-			} else {
-				return object != null && this.getClass() == object.getClass() ? this.goal.equals(((GoalSelector.Entry)object).goal) : false;
-			}
-		}
-
-		public int hashCode() {
-			return this.goal.hashCode();
+			this.disableControl(control);
 		}
 	}
 }

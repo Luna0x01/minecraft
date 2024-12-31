@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 
 public class ShaderParseException extends IOException {
@@ -21,12 +22,12 @@ public class ShaderParseException extends IOException {
 		this.message = string;
 	}
 
-	public void addFaultyElement(String jsonKey) {
-		((ShaderParseException.JsonStackTrace)this.traces.get(0)).add(jsonKey);
+	public void addFaultyElement(String string) {
+		((ShaderParseException.JsonStackTrace)this.traces.get(0)).add(string);
 	}
 
-	public void addFaultyFile(String path) {
-		((ShaderParseException.JsonStackTrace)this.traces.get(0)).fileName = path;
+	public void addFaultyFile(String string) {
+		((ShaderParseException.JsonStackTrace)this.traces.get(0)).fileName = string;
 		this.traces.add(0, new ShaderParseException.JsonStackTrace());
 	}
 
@@ -34,28 +35,29 @@ public class ShaderParseException extends IOException {
 		return "Invalid " + this.traces.get(this.traces.size() - 1) + ": " + this.message;
 	}
 
-	public static ShaderParseException wrap(Exception cause) {
-		if (cause instanceof ShaderParseException) {
-			return (ShaderParseException)cause;
+	public static ShaderParseException wrap(Exception exception) {
+		if (exception instanceof ShaderParseException) {
+			return (ShaderParseException)exception;
 		} else {
-			String string = cause.getMessage();
-			if (cause instanceof FileNotFoundException) {
+			String string = exception.getMessage();
+			if (exception instanceof FileNotFoundException) {
 				string = "File not found";
 			}
 
-			return new ShaderParseException(string, cause);
+			return new ShaderParseException(string, exception);
 		}
 	}
 
 	public static class JsonStackTrace {
+		@Nullable
 		private String fileName;
 		private final List<String> faultyElements = Lists.newArrayList();
 
 		private JsonStackTrace() {
 		}
 
-		private void add(String element) {
-			this.faultyElements.add(0, element);
+		private void add(String string) {
+			this.faultyElements.add(0, string);
 		}
 
 		public String joinStackTrace() {

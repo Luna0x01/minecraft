@@ -2,42 +2,42 @@ package net.minecraft.server.integrated;
 
 import com.mojang.authlib.GameProfile;
 import java.net.SocketAddress;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class IntegratedPlayerManager extends PlayerManager {
-	private NbtCompound userData;
+	private CompoundTag userData;
 
 	public IntegratedPlayerManager(IntegratedServer integratedServer) {
-		super(integratedServer);
+		super(integratedServer, 8);
 		this.setViewDistance(10);
 	}
 
 	@Override
-	protected void savePlayerData(ServerPlayerEntity player) {
-		if (player.method_15540().getString().equals(this.getServer().getUserName())) {
-			this.userData = player.toNbt(new NbtCompound());
+	protected void savePlayerData(ServerPlayerEntity serverPlayerEntity) {
+		if (serverPlayerEntity.getName().getString().equals(this.method_4811().getUserName())) {
+			this.userData = serverPlayerEntity.toTag(new CompoundTag());
 		}
 
-		super.savePlayerData(player);
+		super.savePlayerData(serverPlayerEntity);
 	}
 
 	@Override
-	public Text method_21386(SocketAddress socketAddress, GameProfile gameProfile) {
-		return (Text)(gameProfile.getName().equalsIgnoreCase(this.getServer().getUserName()) && this.getPlayer(gameProfile.getName()) != null
+	public Text checkCanJoin(SocketAddress socketAddress, GameProfile gameProfile) {
+		return (Text)(gameProfile.getName().equalsIgnoreCase(this.method_4811().getUserName()) && this.getPlayer(gameProfile.getName()) != null
 			? new TranslatableText("multiplayer.disconnect.name_taken")
-			: super.method_21386(socketAddress, gameProfile));
+			: super.checkCanJoin(socketAddress, gameProfile));
 	}
 
-	public IntegratedServer getServer() {
+	public IntegratedServer method_4811() {
 		return (IntegratedServer)super.getServer();
 	}
 
 	@Override
-	public NbtCompound getUserData() {
+	public CompoundTag getUserData() {
 		return this.userData;
 	}
 }

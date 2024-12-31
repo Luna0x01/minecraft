@@ -6,14 +6,14 @@ import net.minecraft.entity.mob.EvokerFangsEntity;
 import net.minecraft.util.Identifier;
 
 public class EvokerFangsEntityRenderer extends EntityRenderer<EvokerFangsEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/evoker_fangs.png");
-	private final EvokerFangsEntityModel model = new EvokerFangsEntityModel();
+	private static final Identifier SKIN = new Identifier("textures/entity/illager/evoker_fangs.png");
+	private final EvokerFangsEntityModel<EvokerFangsEntity> model = new EvokerFangsEntityModel<>();
 
 	public EvokerFangsEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void render(EvokerFangsEntity evokerFangsEntity, double d, double e, double f, float g, float h) {
+	public void method_3962(EvokerFangsEntity evokerFangsEntity, double d, double e, double f, float g, float h) {
 		float i = evokerFangsEntity.getAnimationProgress(h);
 		if (i != 0.0F) {
 			float j = 2.0F;
@@ -24,12 +24,12 @@ public class EvokerFangsEntityRenderer extends EntityRenderer<EvokerFangsEntity>
 			GlStateManager.pushMatrix();
 			GlStateManager.disableCull();
 			GlStateManager.enableAlphaTest();
-			this.bindTexture(evokerFangsEntity);
-			GlStateManager.translate((float)d, (float)e, (float)f);
-			GlStateManager.rotate(90.0F - evokerFangsEntity.yaw, 0.0F, 1.0F, 0.0F);
-			GlStateManager.scale(-j, -j, j);
+			this.bindEntityTexture(evokerFangsEntity);
+			GlStateManager.translatef((float)d, (float)e, (float)f);
+			GlStateManager.rotatef(90.0F - evokerFangsEntity.yaw, 0.0F, 1.0F, 0.0F);
+			GlStateManager.scalef(-j, -j, j);
 			float k = 0.03125F;
-			GlStateManager.translate(0.0F, -0.626F, 0.0F);
+			GlStateManager.translatef(0.0F, -0.626F, 0.0F);
 			this.model.render(evokerFangsEntity, i, 0.0F, 0.0F, evokerFangsEntity.yaw, evokerFangsEntity.pitch, 0.03125F);
 			GlStateManager.popMatrix();
 			GlStateManager.enableCull();
@@ -37,7 +37,7 @@ public class EvokerFangsEntityRenderer extends EntityRenderer<EvokerFangsEntity>
 		}
 	}
 
-	protected Identifier getTexture(EvokerFangsEntity evokerFangsEntity) {
-		return TEXTURE;
+	protected Identifier method_3963(EvokerFangsEntity evokerFangsEntity) {
+		return SKIN;
 	}
 }

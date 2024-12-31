@@ -16,15 +16,15 @@ public class FollowParentGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		if (this.animal.age() >= 0) {
+		if (this.animal.getBreedingAge() >= 0) {
 			return false;
 		} else {
-			List<AnimalEntity> list = this.animal.world.getEntitiesInBox(this.animal.getClass(), this.animal.getBoundingBox().expand(8.0, 4.0, 8.0));
+			List<AnimalEntity> list = this.animal.world.getEntities(this.animal.getClass(), this.animal.getBoundingBox().expand(8.0, 4.0, 8.0));
 			AnimalEntity animalEntity = null;
 			double d = Double.MAX_VALUE;
 
 			for (AnimalEntity animalEntity2 : list) {
-				if (animalEntity2.age() >= 0) {
+				if (animalEntity2.getBreedingAge() >= 0) {
 					double e = this.animal.squaredDistanceTo(animalEntity2);
 					if (!(e > d)) {
 						d = e;
@@ -46,7 +46,7 @@ public class FollowParentGoal extends Goal {
 
 	@Override
 	public boolean shouldContinue() {
-		if (this.animal.age() >= 0) {
+		if (this.animal.getBreedingAge() >= 0) {
 			return false;
 		} else if (!this.parent.isAlive()) {
 			return false;

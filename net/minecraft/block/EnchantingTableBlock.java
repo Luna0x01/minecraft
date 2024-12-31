@@ -1,39 +1,47 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.class_4342;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
+import net.minecraft.client.network.ClientDummyContainerProvider;
+import net.minecraft.container.BlockContext;
+import net.minecraft.container.EnchantingTableContainer;
+import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Nameable;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EnchantingTableBlock extends BlockWithEntity {
-	protected static final VoxelShape field_18304 = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
+	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.0, 16.0);
 
-	protected EnchantingTableBlock(Block.Builder builder) {
-		super(builder);
+	protected EnchantingTableBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18304;
+	public boolean hasSidedTransparency(BlockState blockState) {
+		return true;
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return SHAPE;
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		super.randomDisplayTick(state, world, pos, random);
+	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		super.randomDisplayTick(blockState, world, blockPos, random);
 
 		for (int i = -2; i <= 2; i++) {
 			for (int j = -2; j <= 2; j++) {
@@ -43,17 +51,17 @@ public class EnchantingTableBlock extends BlockWithEntity {
 
 				if (random.nextInt(16) == 0) {
 					for (int k = 0; k <= 1; k++) {
-						BlockPos blockPos = pos.add(i, k, j);
-						if (world.getBlockState(blockPos).getBlock() == Blocks.BOOKSHELF) {
-							if (!world.method_8579(pos.add(i / 2, 0, j / 2))) {
+						BlockPos blockPos2 = blockPos.add(i, k, j);
+						if (world.getBlockState(blockPos2).getBlock() == Blocks.field_10504) {
+							if (!world.isAir(blockPos.add(i / 2, 0, j / 2))) {
 								break;
 							}
 
-							world.method_16343(
-								class_4342.field_21391,
-								(double)pos.getX() + 0.5,
-								(double)pos.getY() + 2.0,
-								(double)pos.getZ() + 0.5,
+							world.addParticle(
+								ParticleTypes.field_11215,
+								(double)blockPos.getX() + 0.5,
+								(double)blockPos.getY() + 2.0,
+								(double)blockPos.getZ() + 0.5,
 								(double)((float)i + random.nextFloat()) - 0.5,
 								(double)((float)k - random.nextFloat() - 1.0F),
 								(double)((float)j + random.nextFloat()) - 0.5
@@ -66,48 +74,51 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState state) {
-		return BlockRenderType.MODEL;
+	public BlockRenderType getRenderType(BlockState blockState) {
+		return BlockRenderType.field_11458;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
+	public BlockEntity createBlockEntity(BlockView blockView) {
 		return new EnchantingTableBlockEntity();
 	}
 
 	@Override
-	public boolean onUse(
-		BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, Direction direction, float distanceX, float distanceY, float distanceZ
-	) {
+	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			if (blockEntity instanceof EnchantingTableBlockEntity) {
-				player.openHandledScreen((EnchantingTableBlockEntity)blockEntity);
-			}
-
+			playerEntity.openContainer(blockState.createContainerProvider(world, blockPos));
 			return true;
 		}
 	}
 
+	@Nullable
 	@Override
-	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+	public NameableContainerProvider createContainerProvider(BlockState blockState, World world, BlockPos blockPos) {
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+		if (blockEntity instanceof EnchantingTableBlockEntity) {
+			Text text = ((Nameable)blockEntity).getDisplayName();
+			return new ClientDummyContainerProvider(
+				(i, playerInventory, playerEntity) -> new EnchantingTableContainer(i, playerInventory, BlockContext.create(world, blockPos)), text
+			);
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity, ItemStack itemStack) {
 		if (itemStack.hasCustomName()) {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof EnchantingTableBlockEntity) {
-				((EnchantingTableBlockEntity)blockEntity).method_16811(itemStack.getName());
+				((EnchantingTableBlockEntity)blockEntity).setCustomName(itemStack.getName());
 			}
 		}
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return direction == Direction.DOWN ? BlockRenderLayer.SOLID : BlockRenderLayer.UNDEFINED;
-	}
-
-	@Override
-	public boolean canPlaceAtSide(BlockState state, BlockView world, BlockPos pos, BlockPlacementEnvironment environment) {
+	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
 		return false;
 	}
 }

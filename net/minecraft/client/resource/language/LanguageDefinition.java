@@ -1,6 +1,8 @@
 package net.minecraft.client.resource.language;
 
-public class LanguageDefinition implements Comparable<LanguageDefinition> {
+import com.mojang.bridge.game.Language;
+
+public class LanguageDefinition implements Language, Comparable<LanguageDefinition> {
 	private final String code;
 	private final String name;
 	private final String region;
@@ -15,6 +17,14 @@ public class LanguageDefinition implements Comparable<LanguageDefinition> {
 
 	public String getCode() {
 		return this.code;
+	}
+
+	public String getName() {
+		return this.region;
+	}
+
+	public String getRegion() {
+		return this.name;
 	}
 
 	public boolean isRightToLeft() {
@@ -37,7 +47,7 @@ public class LanguageDefinition implements Comparable<LanguageDefinition> {
 		return this.code.hashCode();
 	}
 
-	public int compareTo(LanguageDefinition languageDefinition) {
+	public int method_4673(LanguageDefinition languageDefinition) {
 		return this.code.compareTo(languageDefinition.code);
 	}
 }

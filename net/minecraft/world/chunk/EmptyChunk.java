@@ -8,111 +8,92 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.Util;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.server.world.ChunkHolder;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.world.LightType;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.chunk.light.LightingProvider;
 
-public class EmptyChunk extends Chunk {
-	private static final Biome[] field_18876 = Util.make(new Biome[256], biomes -> Arrays.fill(biomes, Biomes.PLAINS));
+public class EmptyChunk extends WorldChunk {
+	private static final Biome[] BIOMES = SystemUtil.consume(new Biome[256], biomes -> Arrays.fill(biomes, Biomes.field_9451));
 
-	public EmptyChunk(World world, int i, int j) {
-		super(world, i, j, field_18876);
+	public EmptyChunk(World world, ChunkPos chunkPos) {
+		super(world, chunkPos, BIOMES);
 	}
 
 	@Override
-	public boolean isChunkEqual(int chunkX, int chunkZ) {
-		return chunkX == this.chunkX && chunkZ == this.chunkZ;
-	}
-
-	@Override
-	public void generateHeightmap() {
-	}
-
-	@Override
-	public void calculateSkyLight() {
-	}
-
-	@Override
-	public BlockState getBlockState(BlockPos pos) {
-		return Blocks.VOID_AIR.getDefaultState();
-	}
-
-	@Override
-	public int method_9132(LightType lightType, BlockPos blockPos, boolean bl) {
-		return lightType.defaultValue;
-	}
-
-	@Override
-	public void method_3891(LightType lightType, boolean bl, BlockPos blockPos, int i) {
-	}
-
-	@Override
-	public int method_16993(BlockPos blockPos, int i, boolean bl) {
-		return 0;
-	}
-
-	@Override
-	public void method_3887(Entity entity) {
-	}
-
-	@Override
-	public void removeEntity(Entity entity) {
-	}
-
-	@Override
-	public void removeEntity(Entity entity, int index) {
-	}
-
-	@Override
-	public boolean method_9148(BlockPos blockPos) {
-		return false;
+	public BlockState getBlockState(BlockPos blockPos) {
+		return Blocks.field_10243.getDefaultState();
 	}
 
 	@Nullable
 	@Override
-	public BlockEntity getBlockEntity(BlockPos pos, Chunk.Status status) {
+	public BlockState setBlockState(BlockPos blockPos, BlockState blockState, boolean bl) {
 		return null;
 	}
 
 	@Override
-	public void addBlockEntity(BlockEntity be) {
+	public FluidState getFluidState(BlockPos blockPos) {
+		return Fluids.field_15906.getDefaultState();
+	}
+
+	@Nullable
+	@Override
+	public LightingProvider getLightingProvider() {
+		return null;
 	}
 
 	@Override
-	public void method_9136(BlockPos blockPos, BlockEntity blockEntity) {
+	public int getLuminance(BlockPos blockPos) {
+		return 0;
 	}
 
 	@Override
-	public void method_9150(BlockPos blockPos) {
+	public void addEntity(Entity entity) {
 	}
 
 	@Override
-	public void loadToWorld() {
+	public void remove(Entity entity) {
 	}
 
 	@Override
-	public void unloadFromWorld() {
+	public void remove(Entity entity, int i) {
+	}
+
+	@Nullable
+	@Override
+	public BlockEntity getBlockEntity(BlockPos blockPos, WorldChunk.CreationType creationType) {
+		return null;
 	}
 
 	@Override
-	public void setModified() {
+	public void addBlockEntity(BlockEntity blockEntity) {
 	}
 
 	@Override
-	public void method_17070(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> predicate) {
+	public void setBlockEntity(BlockPos blockPos, BlockEntity blockEntity) {
 	}
 
 	@Override
-	public <T extends Entity> void method_17075(Class<? extends T> class_, Box box, List<T> list, Predicate<? super T> predicate) {
+	public void removeBlockEntity(BlockPos blockPos) {
 	}
 
 	@Override
-	public boolean shouldSave(boolean bl) {
-		return false;
+	public void markDirty() {
+	}
+
+	@Override
+	public void appendEntities(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> predicate) {
+	}
+
+	@Override
+	public <T extends Entity> void appendEntities(Class<? extends T> class_, Box box, List<T> list, Predicate<? super T> predicate) {
 	}
 
 	@Override
@@ -121,7 +102,12 @@ public class EmptyChunk extends Chunk {
 	}
 
 	@Override
-	public boolean areSectionsEmptyBetween(int startY, int endY) {
+	public boolean method_12228(int i, int j) {
 		return true;
+	}
+
+	@Override
+	public ChunkHolder.LevelType getLevelType() {
+		return ChunkHolder.LevelType.field_13876;
 	}
 }

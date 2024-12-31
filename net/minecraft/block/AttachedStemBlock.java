@@ -3,90 +3,86 @@ package net.minecraft.block;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Itemable;
 import net.minecraft.item.Items;
-import net.minecraft.state.StateManager;
+import net.minecraft.state.StateFactory;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
 
 public class AttachedStemBlock extends PlantBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	private final GourdBlock gourdBlock;
 	private static final Map<Direction, VoxelShape> FACING_TO_SHAPE = Maps.newEnumMap(
 		ImmutableMap.of(
-			Direction.SOUTH,
+			Direction.field_11035,
 			Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 10.0, 16.0),
-			Direction.WEST,
+			Direction.field_11039,
 			Block.createCuboidShape(0.0, 0.0, 6.0, 10.0, 10.0, 10.0),
-			Direction.NORTH,
+			Direction.field_11043,
 			Block.createCuboidShape(6.0, 0.0, 0.0, 10.0, 10.0, 10.0),
-			Direction.EAST,
+			Direction.field_11034,
 			Block.createCuboidShape(6.0, 0.0, 6.0, 16.0, 10.0, 10.0)
 		)
 	);
 
-	protected AttachedStemBlock(GourdBlock gourdBlock, Block.Builder builder) {
-		super(builder);
-		this.setDefaultState(this.stateManager.method_16923().withProperty(FACING, Direction.NORTH));
+	protected AttachedStemBlock(GourdBlock gourdBlock, Block.Settings settings) {
+		super(settings);
+		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043));
 		this.gourdBlock = gourdBlock;
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return (VoxelShape)FACING_TO_SHAPE.get(state.getProperty(FACING));
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return (VoxelShape)FACING_TO_SHAPE.get(blockState.get(FACING));
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		return neighborState.getBlock() != this.gourdBlock && direction == state.getProperty(FACING)
-			? this.gourdBlock.getStem().getDefaultState().withProperty(StemBlock.AGE, Integer.valueOf(7))
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		return blockState2.getBlock() != this.gourdBlock && direction == blockState.get(FACING)
+			? this.gourdBlock.getStem().getDefaultState().with(StemBlock.AGE, Integer.valueOf(7))
+			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	protected boolean canPlantOnTop(BlockState state, BlockView world, BlockPos pos) {
-		return state.getBlock() == Blocks.FARMLAND;
+	protected boolean canPlantOnTop(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return blockState.getBlock() == Blocks.field_10362;
 	}
 
-	protected Item getPickBlockItem() {
-		if (this.gourdBlock == Blocks.PUMPKIN) {
-			return Items.PUMPKIN_SEEDS;
+	protected Item getSeeds() {
+		if (this.gourdBlock == Blocks.field_10261) {
+			return Items.field_8706;
 		} else {
-			return this.gourdBlock == Blocks.MELON_BLOCK ? Items.MELON_SEEDS : Items.AIR;
+			return this.gourdBlock == Blocks.field_10545 ? Items.field_8188 : Items.AIR;
 		}
 	}
 
 	@Override
-	public Itemable getDroppedItem(BlockState state, World world, BlockPos pos, int fortuneLevel) {
-		return Items.AIR;
+	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this.getSeeds());
 	}
 
 	@Override
-	public ItemStack getPickBlock(BlockView world, BlockPos pos, BlockState state) {
-		return new ItemStack(this.getPickBlockItem());
+	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
+		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
 	}
 
 	@Override
-	public BlockState withRotation(BlockState state, BlockRotation rotation) {
-		return state.withProperty(FACING, rotation.rotate(state.getProperty(FACING)));
+	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
+		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
 	}
 
 	@Override
-	public BlockState withMirror(BlockState state, BlockMirror mirror) {
-		return state.rotate(mirror.getRotation(state.getProperty(FACING)));
-	}
-
-	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.method_16928(FACING);
+	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+		builder.add(FACING);
 	}
 }

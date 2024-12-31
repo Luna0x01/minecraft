@@ -1,68 +1,82 @@
 package net.minecraft.world;
 
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import net.minecraft.class_3601;
-import net.minecraft.class_3602;
-import net.minecraft.class_3604;
-import net.minecraft.class_3781;
 import net.minecraft.block.Block;
-import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.sound.Sound;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.ChunkProvider;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.level.LevelProperties;
 
-public interface IWorld extends RenderBlockView, class_3601, class_3602 {
-	long method_3581();
+public interface IWorld extends EntityView, ViewableWorld, ModifiableTestableWorld {
+	long getSeed();
 
-	default float method_16344() {
-		return Dimension.field_18952[this.method_16393().getMoonPhase(this.method_3588().getTimeOfDay())];
+	default float getMoonSize() {
+		return Dimension.MOON_PHASE_TO_SIZE[this.getDimension().getMoonPhase(this.getLevelProperties().getTimeOfDay())];
 	}
 
-	default float method_16349(float f) {
-		return this.method_16393().getSkyAngle(this.method_3588().getTimeOfDay(), f);
+	default float getSkyAngle(float f) {
+		return this.getDimension().getSkyAngle(this.getLevelProperties().getTimeOfDay(), f);
 	}
 
-	default int method_16345() {
-		return this.method_16393().getMoonPhase(this.method_3588().getTimeOfDay());
+	default int getMoonPhase() {
+		return this.getDimension().getMoonPhase(this.getLevelProperties().getTimeOfDay());
 	}
 
-	class_3604<Block> getBlockTickScheduler();
+	TickScheduler<Block> getBlockTickScheduler();
 
-	class_3604<Fluid> method_16340();
+	TickScheduler<Fluid> getFluidTickScheduler();
 
-	default class_3781 method_16351(BlockPos blockPos) {
-		return this.method_16347(blockPos.getX() >> 4, blockPos.getZ() >> 4);
+	World getWorld();
+
+	LevelProperties getLevelProperties();
+
+	LocalDifficulty getLocalDifficulty(BlockPos blockPos);
+
+	default Difficulty getDifficulty() {
+		return this.getLevelProperties().getDifficulty();
 	}
 
-	class_3781 method_16347(int i, int j);
+	ChunkManager getChunkManager();
 
-	World method_16348();
-
-	LevelProperties method_3588();
-
-	LocalDifficulty method_8482(BlockPos blockPos);
-
-	default Difficulty method_16346() {
-		return this.method_3588().getDifficulty();
+	@Override
+	default boolean isChunkLoaded(int i, int j) {
+		return this.getChunkManager().isChunkLoaded(i, j);
 	}
-
-	ChunkProvider method_3586();
-
-	SaveHandler method_3587();
 
 	Random getRandom();
 
-	void method_16342(BlockPos blockPos, Block block);
+	void updateNeighbors(BlockPos blockPos, Block block);
 
-	BlockPos method_3585();
+	BlockPos getSpawnPos();
 
-	void playSound(@Nullable PlayerEntity playerEntity, BlockPos blockPos, Sound sound, SoundCategory soundCategory, float f, float g);
+	void playSound(@Nullable PlayerEntity playerEntity, BlockPos blockPos, SoundEvent soundEvent, SoundCategory soundCategory, float f, float g);
 
-	void method_16343(ParticleEffect particleEffect, double d, double e, double f, double g, double h, double i);
+	void addParticle(ParticleEffect particleEffect, double d, double e, double f, double g, double h, double i);
+
+	void playLevelEvent(@Nullable PlayerEntity playerEntity, int i, BlockPos blockPos, int j);
+
+	default void playLevelEvent(int i, BlockPos blockPos, int j) {
+		this.playLevelEvent(null, i, blockPos, j);
+	}
+
+	@Override
+	default Stream<VoxelShape> method_20743(@Nullable Entity entity, Box box, Set<Entity> set) {
+		return EntityView.super.method_20743(entity, box, set);
+	}
+
+	@Override
+	default boolean intersectsEntities(@Nullable Entity entity, VoxelShape voxelShape) {
+		return EntityView.super.intersectsEntities(entity, voxelShape);
+	}
 }

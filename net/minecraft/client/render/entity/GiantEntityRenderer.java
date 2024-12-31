@@ -1,34 +1,29 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.entity.feature.ArmorRenderer;
-import net.minecraft.client.render.entity.feature.HeldItemRenderer;
-import net.minecraft.client.render.entity.model.AbstractZombieModel;
+import net.minecraft.client.render.entity.feature.ArmorBipedFeatureRenderer;
+import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
+import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.entity.model.GiantEntityModel;
 import net.minecraft.entity.mob.GiantEntity;
 import net.minecraft.util.Identifier;
 
-public class GiantEntityRenderer extends MobEntityRenderer<GiantEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/zombie/zombie.png");
+public class GiantEntityRenderer extends MobEntityRenderer<GiantEntity, BipedEntityModel<GiantEntity>> {
+	private static final Identifier SKIN = new Identifier("textures/entity/zombie/zombie.png");
 	private final float scale;
 
 	public GiantEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, float f) {
-		super(entityRenderDispatcher, new AbstractZombieModel(), 0.5F * f);
+		super(entityRenderDispatcher, new GiantEntityModel(), 0.5F * f);
 		this.scale = f;
-		this.addFeature(new HeldItemRenderer(this));
-		this.addFeature(new ArmorRenderer(this) {
-			@Override
-			protected void init() {
-				this.secondLayer = new AbstractZombieModel(0.5F, true);
-				this.firstLayer = new AbstractZombieModel(1.0F, true);
-			}
-		});
+		this.addFeature(new HeldItemFeatureRenderer<>(this));
+		this.addFeature(new ArmorBipedFeatureRenderer<>(this, new GiantEntityModel(0.5F, true), new GiantEntityModel(1.0F, true)));
 	}
 
-	protected void scale(GiantEntity giantEntity, float f) {
-		GlStateManager.scale(this.scale, this.scale, this.scale);
+	protected void method_3980(GiantEntity giantEntity, float f) {
+		GlStateManager.scalef(this.scale, this.scale, this.scale);
 	}
 
-	protected Identifier getTexture(GiantEntity giantEntity) {
-		return TEXTURE;
+	protected Identifier method_3981(GiantEntity giantEntity) {
+		return SKIN;
 	}
 }

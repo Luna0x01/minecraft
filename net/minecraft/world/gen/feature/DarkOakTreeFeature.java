@@ -1,44 +1,45 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.class_3871;
-import net.minecraft.block.Block;
+import java.util.function.Function;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.util.math.MutableIntBoundingBox;
+import net.minecraft.world.ModifiableTestableWorld;
+import net.minecraft.world.TestableWorld;
 
-public class DarkOakTreeFeature extends FoliageFeature<class_3871> {
-	private static final BlockState LOG = Blocks.DARK_OAK_LOG.getDefaultState();
-	private static final BlockState LEAVES = Blocks.DARK_OAK_LEAVES.getDefaultState();
+public class DarkOakTreeFeature extends AbstractTreeFeature<DefaultFeatureConfig> {
+	private static final BlockState LOG = Blocks.field_10010.getDefaultState();
+	private static final BlockState LEAVES = Blocks.field_10035.getDefaultState();
 
-	public DarkOakTreeFeature(boolean bl) {
-		super(bl);
+	public DarkOakTreeFeature(Function<Dynamic<?>, ? extends DefaultFeatureConfig> function, boolean bl) {
+		super(function, bl);
 	}
 
 	@Override
-	public boolean method_17294(Set<BlockPos> set, IWorld iWorld, Random random, BlockPos blockPos) {
+	public boolean generate(
+		Set<BlockPos> set, ModifiableTestableWorld modifiableTestableWorld, Random random, BlockPos blockPos, MutableIntBoundingBox mutableIntBoundingBox
+	) {
 		int i = random.nextInt(3) + random.nextInt(2) + 6;
 		int j = blockPos.getX();
 		int k = blockPos.getY();
 		int l = blockPos.getZ();
 		if (k >= 1 && k + i + 1 < 256) {
 			BlockPos blockPos2 = blockPos.down();
-			Block block = iWorld.getBlockState(blockPos2).getBlock();
-			if (block != Blocks.GRASS_BLOCK && !Block.method_16588(block)) {
+			if (!isNaturalDirtOrGrass(modifiableTestableWorld, blockPos2)) {
 				return false;
-			} else if (!this.method_9219(iWorld, blockPos, i)) {
+			} else if (!this.doesTreeFit(modifiableTestableWorld, blockPos, i)) {
 				return false;
 			} else {
-				this.method_17292(iWorld, blockPos2);
-				this.method_17292(iWorld, blockPos2.east());
-				this.method_17292(iWorld, blockPos2.south());
-				this.method_17292(iWorld, blockPos2.south().east());
-				Direction direction = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
+				this.setToDirt(modifiableTestableWorld, blockPos2);
+				this.setToDirt(modifiableTestableWorld, blockPos2.east());
+				this.setToDirt(modifiableTestableWorld, blockPos2.south());
+				this.setToDirt(modifiableTestableWorld, blockPos2.south().east());
+				Direction direction = Direction.Type.field_11062.random(random);
 				int m = i - random.nextInt(4);
 				int n = 2 - random.nextInt(3);
 				int o = j;
@@ -54,43 +55,42 @@ public class DarkOakTreeFeature extends FoliageFeature<class_3871> {
 
 					int s = k + r;
 					BlockPos blockPos3 = new BlockPos(o, s, p);
-					BlockState blockState = iWorld.getBlockState(blockPos3);
-					if (blockState.isAir() || blockState.isIn(BlockTags.LEAVES)) {
-						this.method_17407(set, iWorld, blockPos3);
-						this.method_17407(set, iWorld, blockPos3.east());
-						this.method_17407(set, iWorld, blockPos3.south());
-						this.method_17407(set, iWorld, blockPos3.east().south());
+					if (isAirOrLeaves(modifiableTestableWorld, blockPos3)) {
+						this.addLog(set, modifiableTestableWorld, blockPos3, mutableIntBoundingBox);
+						this.addLog(set, modifiableTestableWorld, blockPos3.east(), mutableIntBoundingBox);
+						this.addLog(set, modifiableTestableWorld, blockPos3.south(), mutableIntBoundingBox);
+						this.addLog(set, modifiableTestableWorld, blockPos3.east().south(), mutableIntBoundingBox);
 					}
 				}
 
 				for (int t = -2; t <= 0; t++) {
 					for (int u = -2; u <= 0; u++) {
 						int v = -1;
-						this.method_17406(iWorld, o + t, q + v, p + u);
-						this.method_17406(iWorld, 1 + o - t, q + v, p + u);
-						this.method_17406(iWorld, o + t, q + v, 1 + p - u);
-						this.method_17406(iWorld, 1 + o - t, q + v, 1 + p - u);
+						this.addLeaves(modifiableTestableWorld, o + t, q + v, p + u, mutableIntBoundingBox, set);
+						this.addLeaves(modifiableTestableWorld, 1 + o - t, q + v, p + u, mutableIntBoundingBox, set);
+						this.addLeaves(modifiableTestableWorld, o + t, q + v, 1 + p - u, mutableIntBoundingBox, set);
+						this.addLeaves(modifiableTestableWorld, 1 + o - t, q + v, 1 + p - u, mutableIntBoundingBox, set);
 						if ((t > -2 || u > -1) && (t != -1 || u != -2)) {
 							int var29 = 1;
-							this.method_17406(iWorld, o + t, q + var29, p + u);
-							this.method_17406(iWorld, 1 + o - t, q + var29, p + u);
-							this.method_17406(iWorld, o + t, q + var29, 1 + p - u);
-							this.method_17406(iWorld, 1 + o - t, q + var29, 1 + p - u);
+							this.addLeaves(modifiableTestableWorld, o + t, q + var29, p + u, mutableIntBoundingBox, set);
+							this.addLeaves(modifiableTestableWorld, 1 + o - t, q + var29, p + u, mutableIntBoundingBox, set);
+							this.addLeaves(modifiableTestableWorld, o + t, q + var29, 1 + p - u, mutableIntBoundingBox, set);
+							this.addLeaves(modifiableTestableWorld, 1 + o - t, q + var29, 1 + p - u, mutableIntBoundingBox, set);
 						}
 					}
 				}
 
 				if (random.nextBoolean()) {
-					this.method_17406(iWorld, o, q + 2, p);
-					this.method_17406(iWorld, o + 1, q + 2, p);
-					this.method_17406(iWorld, o + 1, q + 2, p + 1);
-					this.method_17406(iWorld, o, q + 2, p + 1);
+					this.addLeaves(modifiableTestableWorld, o, q + 2, p, mutableIntBoundingBox, set);
+					this.addLeaves(modifiableTestableWorld, o + 1, q + 2, p, mutableIntBoundingBox, set);
+					this.addLeaves(modifiableTestableWorld, o + 1, q + 2, p + 1, mutableIntBoundingBox, set);
+					this.addLeaves(modifiableTestableWorld, o, q + 2, p + 1, mutableIntBoundingBox, set);
 				}
 
 				for (int w = -3; w <= 4; w++) {
 					for (int x = -3; x <= 4; x++) {
 						if ((w != -3 || x != -3) && (w != -3 || x != 4) && (w != 4 || x != -3) && (w != 4 || x != 4) && (Math.abs(w) < 3 || Math.abs(x) < 3)) {
-							this.method_17406(iWorld, o + w, q, p + x);
+							this.addLeaves(modifiableTestableWorld, o + w, q, p + x, mutableIntBoundingBox, set);
 						}
 					}
 				}
@@ -101,19 +101,19 @@ public class DarkOakTreeFeature extends FoliageFeature<class_3871> {
 							int aa = random.nextInt(3) + 2;
 
 							for (int ab = 0; ab < aa; ab++) {
-								this.method_17407(set, iWorld, new BlockPos(j + y, q - ab - 1, l + z));
+								this.addLog(set, modifiableTestableWorld, new BlockPos(j + y, q - ab - 1, l + z), mutableIntBoundingBox);
 							}
 
 							for (int ac = -1; ac <= 1; ac++) {
 								for (int ad = -1; ad <= 1; ad++) {
-									this.method_17406(iWorld, o + y + ac, q, p + z + ad);
+									this.addLeaves(modifiableTestableWorld, o + y + ac, q, p + z + ad, mutableIntBoundingBox, set);
 								}
 							}
 
 							for (int ae = -2; ae <= 2; ae++) {
 								for (int af = -2; af <= 2; af++) {
 									if (Math.abs(ae) != 2 || Math.abs(af) != 2) {
-										this.method_17406(iWorld, o + y + ae, q - 1, p + z + af);
+										this.addLeaves(modifiableTestableWorld, o + y + ae, q - 1, p + z + af, mutableIntBoundingBox, set);
 									}
 								}
 							}
@@ -128,7 +128,7 @@ public class DarkOakTreeFeature extends FoliageFeature<class_3871> {
 		}
 	}
 
-	private boolean method_9219(BlockView blockView, BlockPos blockPos, int i) {
+	private boolean doesTreeFit(TestableWorld testableWorld, BlockPos blockPos, int i) {
 		int j = blockPos.getX();
 		int k = blockPos.getY();
 		int l = blockPos.getZ();
@@ -146,7 +146,7 @@ public class DarkOakTreeFeature extends FoliageFeature<class_3871> {
 
 			for (int o = -n; o <= n; o++) {
 				for (int p = -n; p <= n; p++) {
-					if (!this.isBlockReplaceable(blockView.getBlockState(mutable.setPosition(j + o, k + m, l + p)).getBlock())) {
+					if (!canTreeReplace(testableWorld, mutable.set(j + o, k + m, l + p))) {
 						return false;
 					}
 				}
@@ -156,16 +156,16 @@ public class DarkOakTreeFeature extends FoliageFeature<class_3871> {
 		return true;
 	}
 
-	private void method_17407(Set<BlockPos> set, IWorld iWorld, BlockPos blockPos) {
-		if (this.isBlockReplaceable(iWorld.getBlockState(blockPos).getBlock())) {
-			this.method_17293(set, iWorld, blockPos, LOG);
+	private void addLog(Set<BlockPos> set, ModifiableTestableWorld modifiableTestableWorld, BlockPos blockPos, MutableIntBoundingBox mutableIntBoundingBox) {
+		if (canTreeReplace(modifiableTestableWorld, blockPos)) {
+			this.setBlockState(set, modifiableTestableWorld, blockPos, LOG, mutableIntBoundingBox);
 		}
 	}
 
-	private void method_17406(IWorld iWorld, int i, int j, int k) {
+	private void addLeaves(ModifiableTestableWorld modifiableTestableWorld, int i, int j, int k, MutableIntBoundingBox mutableIntBoundingBox, Set<BlockPos> set) {
 		BlockPos blockPos = new BlockPos(i, j, k);
-		if (iWorld.getBlockState(blockPos).isAir()) {
-			this.method_17344(iWorld, blockPos, LEAVES);
+		if (isAir(modifiableTestableWorld, blockPos)) {
+			this.setBlockState(set, modifiableTestableWorld, blockPos, LEAVES, mutableIntBoundingBox);
 		}
 	}
 }

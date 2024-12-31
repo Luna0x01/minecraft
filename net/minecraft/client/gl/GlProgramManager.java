@@ -7,42 +7,46 @@ import org.apache.logging.log4j.Logger;
 
 public class GlProgramManager {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static GlProgramManager instance;
+	private static GlProgramManager INSTANCE;
 
-	public static void newInstance() {
-		instance = new GlProgramManager();
+	public static void init() {
+		INSTANCE = new GlProgramManager();
 	}
 
 	public static GlProgramManager getInstance() {
-		return instance;
+		return INSTANCE;
 	}
 
 	private GlProgramManager() {
 	}
 
-	public void destroyProgram(JsonGlProgram program) {
-		program.getFsh().method_19444();
-		program.getVsh().method_19444();
-		GLX.gl20DeleteProgram(program.getProgramRef());
+	public void deleteProgram(GlProgram glProgram) {
+		glProgram.getFragmentShader().release();
+		glProgram.getVertexShader().release();
+		GLX.glDeleteProgram(glProgram.getProgramRef());
 	}
 
-	public int createProgram() throws ShaderParseException {
-		int i = GLX.gl20CreateProgram();
+	public int createProgram() throws IOException {
+		int i = GLX.glCreateProgram();
 		if (i <= 0) {
-			throw new ShaderParseException("Could not create shader program (returned program ID " + i + ")");
+			throw new IOException("Could not create shader program (returned program ID " + i + ")");
 		} else {
 			return i;
 		}
 	}
 
-	public void attachProgram(JsonGlProgram program) throws IOException {
-		program.getFsh().attachShader(program);
-		program.getVsh().attachShader(program);
-		GLX.gl20LinkProgram(program.getProgramRef());
-		int i = GLX.gl20GetProgrami(program.getProgramRef(), GLX.linkStatus);
+	public void linkProgram(GlProgram glProgram) throws IOException {
+		glProgram.getFragmentShader().attachTo(glProgram);
+		glProgram.getVertexShader().attachTo(glProgram);
+		GLX.glLinkProgram(glProgram.getProgramRef());
+		int i = GLX.glGetProgrami(glProgram.getProgramRef(), GLX.GL_LINK_STATUS);
 		if (i == 0) {
-			LOGGER.warn("Error encountered when linking program containing VS {} and FS {}. Log output:", program.getVsh().getName(), program.getFsh().getName());
-			LOGGER.warn(GLX.gl20GetProgramInfoLog(program.getProgramRef(), 32768));
+			LOGGER.warn(
+				"Error encountered when linking program containing VS {} and FS {}. Log output:",
+				glProgram.getVertexShader().getName(),
+				glProgram.getFragmentShader().getName()
+			);
+			LOGGER.warn(GLX.glGetProgramInfoLog(glProgram.getProgramRef(), 32768));
 		}
 	}
 }

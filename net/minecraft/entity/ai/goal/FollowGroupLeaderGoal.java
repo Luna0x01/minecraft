@@ -2,66 +2,61 @@ package net.minecraft.entity.ai.goal;
 
 import java.util.List;
 import java.util.function.Predicate;
-import net.minecraft.entity.passive.SchoolableFishEntity;
+import net.minecraft.entity.passive.SchoolingFishEntity;
 
 public class FollowGroupLeaderGoal extends Goal {
-	private final SchoolableFishEntity field_16852;
-	private int field_16853;
-	private int field_16854;
+	private final SchoolingFishEntity fish;
+	private int moveDelay;
+	private int checkSurroundingDelay;
 
-	public FollowGroupLeaderGoal(SchoolableFishEntity schoolableFishEntity) {
-		this.field_16852 = schoolableFishEntity;
-		this.field_16854 = this.method_15681(schoolableFishEntity);
+	public FollowGroupLeaderGoal(SchoolingFishEntity schoolingFishEntity) {
+		this.fish = schoolingFishEntity;
+		this.checkSurroundingDelay = this.getSurroundingSearchDelay(schoolingFishEntity);
 	}
 
-	protected int method_15681(SchoolableFishEntity schoolableFishEntity) {
-		return 200 + schoolableFishEntity.getRandom().nextInt(200) % 20;
+	protected int getSurroundingSearchDelay(SchoolingFishEntity schoolingFishEntity) {
+		return 200 + schoolingFishEntity.getRand().nextInt(200) % 20;
 	}
 
 	@Override
 	public boolean canStart() {
-		if (this.field_16852.hasOtherFishInGroup()) {
+		if (this.fish.hasOtherFishInGroup()) {
 			return false;
-		} else if (this.field_16852.hasLeader()) {
+		} else if (this.fish.hasLeader()) {
 			return true;
-		} else if (this.field_16854 > 0) {
-			this.field_16854--;
+		} else if (this.checkSurroundingDelay > 0) {
+			this.checkSurroundingDelay--;
 			return false;
 		} else {
-			this.field_16854 = this.method_15681(this.field_16852);
-			Predicate<SchoolableFishEntity> predicate = schoolableFishEntityx -> schoolableFishEntityx.canFitMoreFishInGroup() || !schoolableFishEntityx.hasLeader();
-			List<SchoolableFishEntity> list = this.field_16852
-				.world
-				.method_16325(this.field_16852.getClass(), this.field_16852.getBoundingBox().expand(8.0, 8.0, 8.0), predicate);
-			SchoolableFishEntity schoolableFishEntity = (SchoolableFishEntity)list.stream()
-				.filter(SchoolableFishEntity::canFitMoreFishInGroup)
-				.findAny()
-				.orElse(this.field_16852);
-			schoolableFishEntity.bringFishTogether(list.stream().filter(schoolableFishEntityx -> !schoolableFishEntityx.hasLeader()));
-			return this.field_16852.hasLeader();
+			this.checkSurroundingDelay = this.getSurroundingSearchDelay(this.fish);
+			Predicate<SchoolingFishEntity> predicate = schoolingFishEntityx -> schoolingFishEntityx.canHaveMoreFishInGroup() || !schoolingFishEntityx.hasLeader();
+			List<SchoolingFishEntity> list = this.fish.world.getEntities(this.fish.getClass(), this.fish.getBoundingBox().expand(8.0, 8.0, 8.0), predicate);
+			SchoolingFishEntity schoolingFishEntity = (SchoolingFishEntity)list.stream().filter(SchoolingFishEntity::canHaveMoreFishInGroup).findAny().orElse(this.fish);
+			schoolingFishEntity.pullInOtherFish(list.stream().filter(schoolingFishEntityx -> !schoolingFishEntityx.hasLeader()));
+			return this.fish.hasLeader();
 		}
 	}
 
 	@Override
 	public boolean shouldContinue() {
-		return this.field_16852.hasLeader() && this.field_16852.isCloseEnoughToLeader();
+		return this.fish.hasLeader() && this.fish.isCloseEnoughToLeader();
 	}
 
 	@Override
 	public void start() {
-		this.field_16853 = 0;
+		this.moveDelay = 0;
 	}
 
 	@Override
 	public void stop() {
-		this.field_16852.leaveGroup();
+		this.fish.leaveGroup();
 	}
 
 	@Override
 	public void tick() {
-		if (--this.field_16853 <= 0) {
-			this.field_16853 = 10;
-			this.field_16852.moveToLeader();
+		if (--this.moveDelay <= 0) {
+			this.moveDelay = 10;
+			this.fish.moveTowardLeader();
 		}
 	}
 }

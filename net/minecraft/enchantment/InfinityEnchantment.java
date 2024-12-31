@@ -3,17 +3,17 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class InfinityEnchantment extends Enchantment {
-	public InfinityEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
-		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
+	public InfinityEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
+		super(weight, EnchantmentTarget.field_9070, equipmentSlots);
 	}
 
 	@Override
-	public int getMinimumPower(int level) {
+	public int getMinimumPower(int i) {
 		return 20;
 	}
 
 	@Override
-	public int getMaximumPower(int level) {
+	public int getMaximumPower(int i) {
 		return 50;
 	}
 
@@ -23,7 +23,7 @@ public class InfinityEnchantment extends Enchantment {
 	}
 
 	@Override
-	public boolean differs(Enchantment other) {
-		return other instanceof MendingEnchantment ? false : super.differs(other);
+	public boolean differs(Enchantment enchantment) {
+		return enchantment instanceof MendingEnchantment ? false : super.differs(enchantment);
 	}
 }

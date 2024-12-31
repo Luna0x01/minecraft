@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.CreeperEntity;
 
@@ -9,7 +10,7 @@ public class CreeperIgniteGoal extends Goal {
 
 	public CreeperIgniteGoal(CreeperEntity creeperEntity) {
 		this.creeper = creeperEntity;
-		this.setCategoryBits(1);
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
 	}
 
 	@Override

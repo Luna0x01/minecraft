@@ -6,25 +6,24 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.lang.reflect.Type;
-import net.minecraft.class_4305;
 import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.util.math.Quaternion;
 
 public class ModelTransformation {
 	public static final ModelTransformation NONE = new ModelTransformation();
-	public static float field_20813;
-	public static float field_20814;
-	public static float field_20815;
-	public static float field_20816;
-	public static float field_20817;
-	public static float field_20818;
-	public static float field_20819;
-	public static float field_20820;
-	public static float field_20821;
-	public final Transformation thirdPerson;
-	public final Transformation firstPerson;
-	public final Transformation field_13566;
-	public final Transformation field_13567;
+	public static float globalTranslationX;
+	public static float globalTranslationY;
+	public static float globalTranslationZ;
+	public static float globalRotationX;
+	public static float globalRotationY;
+	public static float globalRotationZ;
+	public static float globalScaleOffsetX;
+	public static float globalScaleOffsetY;
+	public static float globalScaleOffsetZ;
+	public final Transformation thirdPersonLeftHand;
+	public final Transformation thirdPersonRightHand;
+	public final Transformation firstPersonLeftHand;
+	public final Transformation firstPersonRightHand;
 	public final Transformation head;
 	public final Transformation gui;
 	public final Transformation ground;
@@ -32,22 +31,22 @@ public class ModelTransformation {
 
 	private ModelTransformation() {
 		this(
-			Transformation.DEFAULT,
-			Transformation.DEFAULT,
-			Transformation.DEFAULT,
-			Transformation.DEFAULT,
-			Transformation.DEFAULT,
-			Transformation.DEFAULT,
-			Transformation.DEFAULT,
-			Transformation.DEFAULT
+			Transformation.NONE,
+			Transformation.NONE,
+			Transformation.NONE,
+			Transformation.NONE,
+			Transformation.NONE,
+			Transformation.NONE,
+			Transformation.NONE,
+			Transformation.NONE
 		);
 	}
 
 	public ModelTransformation(ModelTransformation modelTransformation) {
-		this.thirdPerson = modelTransformation.thirdPerson;
-		this.firstPerson = modelTransformation.firstPerson;
-		this.field_13566 = modelTransformation.field_13566;
-		this.field_13567 = modelTransformation.field_13567;
+		this.thirdPersonLeftHand = modelTransformation.thirdPersonLeftHand;
+		this.thirdPersonRightHand = modelTransformation.thirdPersonRightHand;
+		this.firstPersonLeftHand = modelTransformation.firstPersonLeftHand;
+		this.firstPersonRightHand = modelTransformation.firstPersonRightHand;
 		this.head = modelTransformation.head;
 		this.gui = modelTransformation.gui;
 		this.ground = modelTransformation.ground;
@@ -64,84 +63,85 @@ public class ModelTransformation {
 		Transformation transformation7,
 		Transformation transformation8
 	) {
-		this.thirdPerson = transformation;
-		this.firstPerson = transformation2;
-		this.field_13566 = transformation3;
-		this.field_13567 = transformation4;
+		this.thirdPersonLeftHand = transformation;
+		this.thirdPersonRightHand = transformation2;
+		this.firstPersonLeftHand = transformation3;
+		this.firstPersonRightHand = transformation4;
 		this.head = transformation5;
 		this.gui = transformation6;
 		this.ground = transformation7;
 		this.fixed = transformation8;
 	}
 
-	public void apply(ModelTransformation.Mode mode) {
-		method_19257(this.getTransformation(mode), false);
+	public void applyGl(ModelTransformation.Type type) {
+		applyGl(this.getTransformation(type), false);
 	}
 
-	public static void method_19257(Transformation transformation, boolean bl) {
-		if (transformation != Transformation.DEFAULT) {
+	public static void applyGl(Transformation transformation, boolean bl) {
+		if (transformation != Transformation.NONE) {
 			int i = bl ? -1 : 1;
-			GlStateManager.translate(
-				(float)i * (field_20813 + transformation.field_20808.method_19662()),
-				field_20814 + transformation.field_20808.method_19667(),
-				field_20815 + transformation.field_20808.method_19670()
+			GlStateManager.translatef(
+				(float)i * (globalTranslationX + transformation.translation.getX()),
+				globalTranslationY + transformation.translation.getY(),
+				globalTranslationZ + transformation.translation.getZ()
 			);
-			float f = field_20816 + transformation.field_20807.method_19662();
-			float g = field_20817 + transformation.field_20807.method_19667();
-			float h = field_20818 + transformation.field_20807.method_19670();
+			float f = globalRotationX + transformation.rotation.getX();
+			float g = globalRotationY + transformation.rotation.getY();
+			float h = globalRotationZ + transformation.rotation.getZ();
 			if (bl) {
 				g = -g;
 				h = -h;
 			}
 
-			GlStateManager.method_19121(new Matrix4f(new class_4305(f, g, h, true)));
-			GlStateManager.scale(
-				field_20819 + transformation.field_20809.method_19662(),
-				field_20820 + transformation.field_20809.method_19667(),
-				field_20821 + transformation.field_20809.method_19670()
+			GlStateManager.multMatrix(new Matrix4f(new Quaternion(f, g, h, true)));
+			GlStateManager.scalef(
+				globalScaleOffsetX + transformation.scale.getX(), globalScaleOffsetY + transformation.scale.getY(), globalScaleOffsetZ + transformation.scale.getZ()
 			);
 		}
 	}
 
-	public Transformation getTransformation(ModelTransformation.Mode renderMode) {
-		switch (renderMode) {
-			case THIRD_PERSON_LEFT_HAND:
-				return this.thirdPerson;
-			case THIRD_PERSON_RIGHT_HAND:
-				return this.firstPerson;
-			case FIRST_PERSON_LEFT_HAND:
-				return this.field_13566;
-			case FIRST_PERSON_RIGHT_HAND:
-				return this.field_13567;
-			case HEAD:
+	public Transformation getTransformation(ModelTransformation.Type type) {
+		switch (type) {
+			case field_4323:
+				return this.thirdPersonLeftHand;
+			case field_4320:
+				return this.thirdPersonRightHand;
+			case field_4321:
+				return this.firstPersonLeftHand;
+			case field_4322:
+				return this.firstPersonRightHand;
+			case field_4316:
 				return this.head;
-			case GUI:
+			case field_4317:
 				return this.gui;
-			case GROUND:
+			case field_4318:
 				return this.ground;
-			case FIXED:
+			case field_4319:
 				return this.fixed;
 			default:
-				return Transformation.DEFAULT;
+				return Transformation.NONE;
 		}
 	}
 
-	public boolean isTransformationDefined(ModelTransformation.Mode renderMode) {
-		return this.getTransformation(renderMode) != Transformation.DEFAULT;
+	public boolean isTransformationDefined(ModelTransformation.Type type) {
+		return this.getTransformation(type) != Transformation.NONE;
 	}
 
-	static class Deserializer implements JsonDeserializer<ModelTransformation> {
-		public ModelTransformation deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+	public static class Deserializer implements JsonDeserializer<ModelTransformation> {
+		protected Deserializer() {
+		}
+
+		public ModelTransformation method_3505(JsonElement jsonElement, java.lang.reflect.Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Transformation transformation = this.parseModelTransformation(jsonDeserializationContext, jsonObject, "thirdperson_righthand");
 			Transformation transformation2 = this.parseModelTransformation(jsonDeserializationContext, jsonObject, "thirdperson_lefthand");
-			if (transformation2 == Transformation.DEFAULT) {
+			if (transformation2 == Transformation.NONE) {
 				transformation2 = transformation;
 			}
 
 			Transformation transformation3 = this.parseModelTransformation(jsonDeserializationContext, jsonObject, "firstperson_righthand");
 			Transformation transformation4 = this.parseModelTransformation(jsonDeserializationContext, jsonObject, "firstperson_lefthand");
-			if (transformation4 == Transformation.DEFAULT) {
+			if (transformation4 == Transformation.NONE) {
 				transformation4 = transformation3;
 			}
 
@@ -154,20 +154,20 @@ public class ModelTransformation {
 			);
 		}
 
-		private Transformation parseModelTransformation(JsonDeserializationContext ctx, JsonObject json, String key) {
-			return json.has(key) ? (Transformation)ctx.deserialize(json.get(key), Transformation.class) : Transformation.DEFAULT;
+		private Transformation parseModelTransformation(JsonDeserializationContext jsonDeserializationContext, JsonObject jsonObject, String string) {
+			return jsonObject.has(string) ? (Transformation)jsonDeserializationContext.deserialize(jsonObject.get(string), Transformation.class) : Transformation.NONE;
 		}
 	}
 
-	public static enum Mode {
-		NONE,
-		THIRD_PERSON_LEFT_HAND,
-		THIRD_PERSON_RIGHT_HAND,
-		FIRST_PERSON_LEFT_HAND,
-		FIRST_PERSON_RIGHT_HAND,
-		HEAD,
-		GUI,
-		GROUND,
-		FIXED;
+	public static enum Type {
+		field_4315,
+		field_4323,
+		field_4320,
+		field_4321,
+		field_4322,
+		field_4316,
+		field_4317,
+		field_4318,
+		field_4319;
 	}
 }

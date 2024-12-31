@@ -1,18 +1,22 @@
 package net.minecraft.entity.boss.dragon;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.MultipartEntityProvider;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Packet;
 
 public class EnderDragonPart extends Entity {
-	public final MultipartEntityProvider owner;
+	public final EnderDragonEntity owner;
 	public final String name;
+	private final EntityDimensions partDimensions;
 
-	public EnderDragonPart(MultipartEntityProvider multipartEntityProvider, String string, float f, float g) {
-		super(multipartEntityProvider.method_15557(), multipartEntityProvider.getServerWorld());
-		this.setBounds(f, g);
-		this.owner = multipartEntityProvider;
+	public EnderDragonPart(EnderDragonEntity enderDragonEntity, String string, float f, float g) {
+		super(enderDragonEntity.getType(), enderDragonEntity.world);
+		this.partDimensions = EntityDimensions.changing(f, g);
+		this.calculateDimensions();
+		this.owner = enderDragonEntity;
 		this.name = string;
 	}
 
@@ -21,11 +25,11 @@ public class EnderDragonPart extends Entity {
 	}
 
 	@Override
-	protected void readCustomDataFromNbt(NbtCompound nbt) {
+	protected void readCustomDataFromTag(CompoundTag compoundTag) {
 	}
 
 	@Override
-	protected void writeCustomDataToNbt(NbtCompound nbt) {
+	protected void writeCustomDataToTag(CompoundTag compoundTag) {
 	}
 
 	@Override
@@ -34,12 +38,22 @@ public class EnderDragonPart extends Entity {
 	}
 
 	@Override
-	public boolean damage(DamageSource source, float amount) {
-		return this.isInvulnerableTo(source) ? false : this.owner.setAngry(this, source, amount);
+	public boolean damage(DamageSource damageSource, float f) {
+		return this.isInvulnerableTo(damageSource) ? false : this.owner.damagePart(this, damageSource, f);
 	}
 
 	@Override
 	public boolean isPartOf(Entity entity) {
 		return this == entity || this.owner == entity;
+	}
+
+	@Override
+	public Packet<?> createSpawnPacket() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public EntityDimensions getDimensions(EntityPose entityPose) {
+		return this.partDimensions;
 	}
 }

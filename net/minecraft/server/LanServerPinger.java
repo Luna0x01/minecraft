@@ -6,7 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.class_4325;
+import net.minecraft.util.UncaughtExceptionLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +23,7 @@ public class LanServerPinger extends Thread {
 		this.motd = string;
 		this.addressPort = string2;
 		this.setDaemon(true);
-		this.setUncaughtExceptionHandler(new class_4325(LOGGER));
+		this.setUncaughtExceptionHandler(new UncaughtExceptionLogger(LOGGER));
 		this.socket = new DatagramSocket();
 	}
 
@@ -53,35 +53,35 @@ public class LanServerPinger extends Thread {
 		this.isRunning = false;
 	}
 
-	public static String createAnnouncement(String motd, String addressPort) {
-		return "[MOTD]" + motd + "[/MOTD][AD]" + addressPort + "[/AD]";
+	public static String createAnnouncement(String string, String string2) {
+		return "[MOTD]" + string + "[/MOTD][AD]" + string2 + "[/AD]";
 	}
 
-	public static String parseAnnouncementMotd(String announcement) {
-		int i = announcement.indexOf("[MOTD]");
+	public static String parseAnnouncementMotd(String string) {
+		int i = string.indexOf("[MOTD]");
 		if (i < 0) {
 			return "missing no";
 		} else {
-			int j = announcement.indexOf("[/MOTD]", i + "[MOTD]".length());
-			return j < i ? "missing no" : announcement.substring(i + "[MOTD]".length(), j);
+			int j = string.indexOf("[/MOTD]", i + "[MOTD]".length());
+			return j < i ? "missing no" : string.substring(i + "[MOTD]".length(), j);
 		}
 	}
 
-	public static String parseAnnouncementAddressPort(String announcement) {
-		int i = announcement.indexOf("[/MOTD]");
+	public static String parseAnnouncementAddressPort(String string) {
+		int i = string.indexOf("[/MOTD]");
 		if (i < 0) {
 			return null;
 		} else {
-			int j = announcement.indexOf("[/MOTD]", i + "[/MOTD]".length());
+			int j = string.indexOf("[/MOTD]", i + "[/MOTD]".length());
 			if (j >= 0) {
 				return null;
 			} else {
-				int k = announcement.indexOf("[AD]", i + "[/MOTD]".length());
+				int k = string.indexOf("[AD]", i + "[/MOTD]".length());
 				if (k < 0) {
 					return null;
 				} else {
-					int l = announcement.indexOf("[/AD]", k + "[AD]".length());
-					return l < k ? null : announcement.substring(k + "[AD]".length(), l);
+					int l = string.indexOf("[/AD]", k + "[AD]".length());
+					return l < k ? null : string.substring(k + "[AD]".length(), l);
 				}
 			}
 		}

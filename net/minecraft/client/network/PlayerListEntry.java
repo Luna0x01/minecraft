@@ -7,8 +7,8 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.packet.PlayerListS2CPacket;
 import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -16,17 +16,17 @@ import net.minecraft.world.GameMode;
 
 public class PlayerListEntry {
 	private final GameProfile profile;
-	private final Map<Type, Identifier> field_13409 = Maps.newEnumMap(Type.class);
+	private final Map<Type, Identifier> textures = Maps.newEnumMap(Type.class);
 	private GameMode gameMode;
 	private int latency;
 	private boolean texturesLoaded;
 	private String model;
 	private Text displayName;
-	private int field_10602;
-	private int field_10603;
-	private long field_10604;
-	private long field_10605;
-	private long field_10606;
+	private int field_3738;
+	private int field_3736;
+	private long field_3737;
+	private long field_3747;
+	private long field_3746;
 
 	public PlayerListEntry(GameProfile gameProfile) {
 		this.profile = gameProfile;
@@ -55,8 +55,8 @@ public class PlayerListEntry {
 		return this.latency;
 	}
 
-	protected void setLatency(int latency) {
-		this.latency = latency;
+	protected void setLatency(int i) {
+		this.latency = i;
 	}
 
 	public boolean hasSkinTexture() {
@@ -69,19 +69,19 @@ public class PlayerListEntry {
 
 	public Identifier getSkinTexture() {
 		this.loadTextures();
-		return (Identifier)MoreObjects.firstNonNull(this.field_13409.get(Type.SKIN), DefaultSkinHelper.getTexture(this.profile.getId()));
+		return (Identifier)MoreObjects.firstNonNull(this.textures.get(Type.SKIN), DefaultSkinHelper.getTexture(this.profile.getId()));
+	}
+
+	@Nullable
+	public Identifier getCapeTexture() {
+		this.loadTextures();
+		return (Identifier)this.textures.get(Type.CAPE);
 	}
 
 	@Nullable
 	public Identifier getElytraTexture() {
 		this.loadTextures();
-		return (Identifier)this.field_13409.get(Type.CAPE);
-	}
-
-	@Nullable
-	public Identifier method_12240() {
-		this.loadTextures();
-		return (Identifier)this.field_13409.get(Type.ELYTRA);
+		return (Identifier)this.textures.get(Type.ELYTRA);
 	}
 
 	@Nullable
@@ -93,28 +93,28 @@ public class PlayerListEntry {
 		synchronized (this) {
 			if (!this.texturesLoaded) {
 				this.texturesLoaded = true;
-				MinecraftClient.getInstance().getSkinProvider().loadProfileSkin(this.profile, (type, identifier, minecraftProfileTexture) -> {
+				MinecraftClient.getInstance().getSkinProvider().loadSkin(this.profile, (type, identifier, minecraftProfileTexture) -> {
 					switch (type) {
 						case SKIN:
-							this.field_13409.put(Type.SKIN, identifier);
+							this.textures.put(Type.SKIN, identifier);
 							this.model = minecraftProfileTexture.getMetadata("model");
 							if (this.model == null) {
 								this.model = "default";
 							}
 							break;
 						case CAPE:
-							this.field_13409.put(Type.CAPE, identifier);
+							this.textures.put(Type.CAPE, identifier);
 							break;
 						case ELYTRA:
-							this.field_13409.put(Type.ELYTRA, identifier);
+							this.textures.put(Type.ELYTRA, identifier);
 					}
 				}, true);
 			}
 		}
 	}
 
-	public void setDisplayName(@Nullable Text displayName) {
-		this.displayName = displayName;
+	public void setDisplayName(@Nullable Text text) {
+		this.displayName = text;
 	}
 
 	@Nullable
@@ -122,43 +122,43 @@ public class PlayerListEntry {
 		return this.displayName;
 	}
 
-	public int getLastHealth() {
-		return this.field_10602;
+	public int method_2973() {
+		return this.field_3738;
 	}
 
-	public void setLastHealth(int i) {
-		this.field_10602 = i;
+	public void method_2972(int i) {
+		this.field_3738 = i;
 	}
 
-	public int getHealth() {
-		return this.field_10603;
+	public int method_2960() {
+		return this.field_3736;
 	}
 
-	public void setHealth(int i) {
-		this.field_10603 = i;
+	public void method_2965(int i) {
+		this.field_3736 = i;
 	}
 
-	public long getLastHealthTime() {
-		return this.field_10604;
+	public long method_2974() {
+		return this.field_3737;
 	}
 
-	public void setLastHealthTime(long l) {
-		this.field_10604 = l;
+	public void method_2978(long l) {
+		this.field_3737 = l;
 	}
 
-	public long getBlinkingHeartTime() {
-		return this.field_10605;
+	public long method_2961() {
+		return this.field_3747;
 	}
 
-	public void setBlinkingHeartTime(long l) {
-		this.field_10605 = l;
+	public void method_2975(long l) {
+		this.field_3747 = l;
 	}
 
-	public long getShowTime() {
-		return this.field_10606;
+	public long method_2976() {
+		return this.field_3746;
 	}
 
-	public void setShowTime(long l) {
-		this.field_10606 = l;
+	public void method_2964(long l) {
+		this.field_3746 = l;
 	}
 }

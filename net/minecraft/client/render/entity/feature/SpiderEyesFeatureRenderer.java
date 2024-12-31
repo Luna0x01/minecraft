@@ -3,24 +3,25 @@ package net.minecraft.client.render.entity.feature;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.entity.SpiderEntityRenderer;
-import net.minecraft.entity.mob.SpiderEntity;
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.entity.model.SpiderEntityModel;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 
-public class SpiderEyesFeatureRenderer<T extends SpiderEntity> implements FeatureRenderer<T> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/spider_eyes.png");
-	private final SpiderEntityRenderer<T> spiderRenderer;
+public class SpiderEyesFeatureRenderer<T extends Entity, M extends SpiderEntityModel<T>> extends FeatureRenderer<T, M> {
+	private static final Identifier SKIN = new Identifier("textures/entity/spider_eyes.png");
 
-	public SpiderEyesFeatureRenderer(SpiderEntityRenderer<T> spiderEntityRenderer) {
-		this.spiderRenderer = spiderEntityRenderer;
+	public SpiderEyesFeatureRenderer(FeatureRendererContext<T, M> featureRendererContext) {
+		super(featureRendererContext);
 	}
 
-	public void render(T spiderEntity, float f, float g, float h, float i, float j, float k, float l) {
-		this.spiderRenderer.bindTexture(TEXTURE);
+	@Override
+	public void render(T entity, float f, float g, float h, float i, float j, float k, float l) {
+		this.bindTexture(SKIN);
 		GlStateManager.enableBlend();
 		GlStateManager.disableAlphaTest();
-		GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
-		if (spiderEntity.isInvisible()) {
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
+		if (entity.isInvisible()) {
 			GlStateManager.depthMask(false);
 		} else {
 			GlStateManager.depthMask(true);
@@ -29,23 +30,24 @@ public class SpiderEyesFeatureRenderer<T extends SpiderEntity> implements Featur
 		int m = 61680;
 		int n = m % 65536;
 		int o = m / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		MinecraftClient.getInstance().field_3818.method_19079(true);
-		this.spiderRenderer.getModel().render(spiderEntity, f, g, i, j, k, l);
-		MinecraftClient.getInstance().field_3818.method_19079(false);
-		m = spiderEntity.getLightmapCoordinates();
+		GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)n, (float)o);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		GameRenderer gameRenderer = MinecraftClient.getInstance().gameRenderer;
+		gameRenderer.setFogBlack(true);
+		this.getModel().render(entity, f, g, i, j, k, l);
+		gameRenderer.setFogBlack(false);
+		m = entity.getLightmapCoordinates();
 		n = m % 65536;
 		o = m / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
-		this.spiderRenderer.method_14692(spiderEntity);
+		GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)n, (float)o);
+		this.applyLightmapCoordinates(entity);
 		GlStateManager.depthMask(true);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();
 	}
 
 	@Override
-	public boolean combineTextures() {
+	public boolean hasHurtOverlay() {
 		return false;
 	}
 }

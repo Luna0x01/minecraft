@@ -1,14 +1,15 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.AchievementsAndCriterions;
+import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FireBlock;
-import net.minecraft.block.NetherPortalBlock;
-import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.block.PortalBlock;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.sound.Sounds;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -23,37 +24,50 @@ public class FlintAndSteelItem extends Item {
 	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
 		PlayerEntity playerEntity = itemUsageContext.getPlayer();
 		IWorld iWorld = itemUsageContext.getWorld();
-		BlockPos blockPos = itemUsageContext.getBlockPos().offset(itemUsageContext.method_16151());
-		if (method_16064(iWorld, blockPos)) {
-			iWorld.playSound(playerEntity, blockPos, Sounds.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1.0F, RANDOM.nextFloat() * 0.4F + 0.8F);
-			BlockState blockState = ((FireBlock)Blocks.FIRE).method_16678(iWorld, blockPos);
-			iWorld.setBlockState(blockPos, blockState, 11);
-			ItemStack itemStack = itemUsageContext.getItemStack();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		BlockPos blockPos2 = blockPos.offset(itemUsageContext.getSide());
+		if (canIgnite(iWorld.getBlockState(blockPos2), iWorld, blockPos2)) {
+			iWorld.playSound(playerEntity, blockPos2, SoundEvents.field_15145, SoundCategory.field_15245, 1.0F, RANDOM.nextFloat() * 0.4F + 0.8F);
+			BlockState blockState = ((FireBlock)Blocks.field_10036).getStateForPosition(iWorld, blockPos2);
+			iWorld.setBlockState(blockPos2, blockState, 11);
+			ItemStack itemStack = itemUsageContext.getStack();
 			if (playerEntity instanceof ServerPlayerEntity) {
-				AchievementsAndCriterions.field_16352.method_14369((ServerPlayerEntity)playerEntity, blockPos, itemStack);
+				Criterions.PLACED_BLOCK.handle((ServerPlayerEntity)playerEntity, blockPos2, itemStack);
+				itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(itemUsageContext.getHand()));
 			}
 
-			if (playerEntity != null) {
-				itemStack.damage(1, playerEntity);
-			}
-
-			return ActionResult.SUCCESS;
+			return ActionResult.field_5812;
 		} else {
-			return ActionResult.FAIL;
+			BlockState blockState2 = iWorld.getBlockState(blockPos);
+			if (isIgnitable(blockState2)) {
+				iWorld.playSound(playerEntity, blockPos, SoundEvents.field_15145, SoundCategory.field_15245, 1.0F, RANDOM.nextFloat() * 0.4F + 0.8F);
+				iWorld.setBlockState(blockPos, blockState2.with(Properties.LIT, Boolean.valueOf(true)), 11);
+				if (playerEntity != null) {
+					itemUsageContext.getStack().damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(itemUsageContext.getHand()));
+				}
+
+				return ActionResult.field_5812;
+			} else {
+				return ActionResult.field_5814;
+			}
 		}
 	}
 
-	public static boolean method_16064(IWorld iWorld, BlockPos blockPos) {
-		BlockState blockState = ((FireBlock)Blocks.FIRE).method_16678(iWorld, blockPos);
+	public static boolean isIgnitable(BlockState blockState) {
+		return blockState.getBlock() == Blocks.field_17350 && !(Boolean)blockState.get(Properties.WATERLOGGED) && !(Boolean)blockState.get(Properties.LIT);
+	}
+
+	public static boolean canIgnite(BlockState blockState, IWorld iWorld, BlockPos blockPos) {
+		BlockState blockState2 = ((FireBlock)Blocks.field_10036).getStateForPosition(iWorld, blockPos);
 		boolean bl = false;
 
-		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			if (iWorld.getBlockState(blockPos.offset(direction)).getBlock() == Blocks.OBSIDIAN
-				&& ((NetherPortalBlock)Blocks.NETHER_PORTAL).method_16705(iWorld, blockPos) != null) {
+		for (Direction direction : Direction.Type.field_11062) {
+			if (iWorld.getBlockState(blockPos.offset(direction)).getBlock() == Blocks.field_10540
+				&& ((PortalBlock)Blocks.field_10316).createAreaHelper(iWorld, blockPos) != null) {
 				bl = true;
 			}
 		}
 
-		return iWorld.method_8579(blockPos) && (blockState.canPlaceAt(iWorld, blockPos) || bl);
+		return blockState.isAir() && (blockState2.canPlaceAt(iWorld, blockPos) || bl);
 	}
 }

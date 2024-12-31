@@ -1,26 +1,27 @@
 package net.minecraft.client.sound;
 
 import net.minecraft.entity.mob.GuardianEntity;
-import net.minecraft.sound.Sounds;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 
 public class GuardianAttackSoundInstance extends MovingSoundInstance {
-	private final GuardianEntity field_11342;
+	private final GuardianEntity guardian;
 
 	public GuardianAttackSoundInstance(GuardianEntity guardianEntity) {
-		super(Sounds.ENTITY_GUARDIAN_ATTACK, SoundCategory.HOSTILE);
-		this.field_11342 = guardianEntity;
-		this.attenuationType = SoundInstance.AttenuationType.NONE;
+		super(SoundEvents.field_14880, SoundCategory.field_15251);
+		this.guardian = guardianEntity;
+		this.attenuationType = SoundInstance.AttenuationType.field_5478;
 		this.repeat = true;
 		this.repeatDelay = 0;
 	}
 
 	@Override
 	public void tick() {
-		if (!this.field_11342.removed && this.field_11342.hasBeamTarget()) {
-			this.x = (float)this.field_11342.x;
-			this.y = (float)this.field_11342.y;
-			this.z = (float)this.field_11342.z;
-			float f = this.field_11342.getBeamProgress(0.0F);
+		if (!this.guardian.removed && this.guardian.getTarget() == null) {
+			this.x = (float)this.guardian.x;
+			this.y = (float)this.guardian.y;
+			this.z = (float)this.guardian.z;
+			float f = this.guardian.getBeamProgress(0.0F);
 			this.volume = 0.0F + 1.0F * f * f;
 			this.pitch = 0.7F + 0.5F * f;
 		} else {

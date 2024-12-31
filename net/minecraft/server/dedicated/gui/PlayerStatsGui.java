@@ -9,31 +9,33 @@ import java.util.Locale;
 import javax.swing.JComponent;
 import javax.swing.Timer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Util;
+import net.minecraft.util.SystemUtil;
 
 public class PlayerStatsGui extends JComponent {
-	private static final DecimalFormat AVG_TICK_FORMAT = Util.make(
+	private static final DecimalFormat AVG_TICK_FORMAT = SystemUtil.consume(
 		new DecimalFormat("########0.000"), decimalFormat -> decimalFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.ROOT))
 	);
 	private final int[] memoryUsePercentage = new int[256];
-	private int field_2763;
+	private int memoryusePctPos;
 	private final String[] lines = new String[11];
 	private final MinecraftServer server;
+	private final Timer timer;
 
 	public PlayerStatsGui(MinecraftServer minecraftServer) {
 		this.server = minecraftServer;
 		this.setPreferredSize(new Dimension(456, 246));
 		this.setMinimumSize(new Dimension(456, 246));
 		this.setMaximumSize(new Dimension(456, 246));
-		new Timer(500, actionEvent -> this.method_2086()).start();
+		this.timer = new Timer(500, actionEvent -> this.update());
+		this.timer.start();
 		this.setBackground(Color.BLACK);
 	}
 
-	private void method_2086() {
+	private void update() {
 		long l = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 		this.lines[0] = "Memory use: " + l / 1024L / 1024L + " mb (" + Runtime.getRuntime().freeMemory() * 100L / Runtime.getRuntime().maxMemory() + "% free)";
 		this.lines[1] = "Avg tick: " + AVG_TICK_FORMAT.format(this.average(this.server.lastTickLengths) * 1.0E-6) + " ms";
-		this.memoryUsePercentage[this.field_2763++ & 0xFF] = (int)(l * 100L / Runtime.getRuntime().maxMemory());
+		this.memoryUsePercentage[this.memoryusePctPos++ & 0xFF] = (int)(l * 100L / Runtime.getRuntime().maxMemory());
 		this.repaint();
 	}
 
@@ -52,7 +54,7 @@ public class PlayerStatsGui extends JComponent {
 		graphics.fillRect(0, 0, 456, 246);
 
 		for (int i = 0; i < 256; i++) {
-			int j = this.memoryUsePercentage[i + this.field_2763 & 0xFF];
+			int j = this.memoryUsePercentage[i + this.memoryusePctPos & 0xFF];
 			graphics.setColor(new Color(j + 28 << 16));
 			graphics.fillRect(i, 100 - j, 1, j);
 		}
@@ -65,5 +67,9 @@ public class PlayerStatsGui extends JComponent {
 				graphics.drawString(string, 32, 116 + k * 16);
 			}
 		}
+	}
+
+	public void stop() {
+		this.timer.stop();
 	}
 }

@@ -4,17 +4,18 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.SkullEntityModel;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 
 public class WitherSkullEntityRenderer extends EntityRenderer<WitherSkullEntity> {
-	private static final Identifier field_6535 = new Identifier("textures/entity/wither/wither_invulnerable.png");
-	private static final Identifier field_6536 = new Identifier("textures/entity/wither/wither.png");
-	private final SkullEntityModel field_5214 = new SkullEntityModel();
+	private static final Identifier INVINCIBLE_SKIN = new Identifier("textures/entity/wither/wither_invulnerable.png");
+	private static final Identifier SKIN = new Identifier("textures/entity/wither/wither.png");
+	private final SkullEntityModel model = new SkullEntityModel();
 
 	public WitherSkullEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	private float method_4353(float f, float g, float h) {
+	private float method_4158(float f, float g, float h) {
 		float i = g - f;
 
 		while (i < -180.0F) {
@@ -28,25 +29,25 @@ public class WitherSkullEntityRenderer extends EntityRenderer<WitherSkullEntity>
 		return f + h * i;
 	}
 
-	public void render(WitherSkullEntity witherSkullEntity, double d, double e, double f, float g, float h) {
+	public void method_4159(WitherSkullEntity witherSkullEntity, double d, double e, double f, float g, float h) {
 		GlStateManager.pushMatrix();
 		GlStateManager.disableCull();
-		float i = this.method_4353(witherSkullEntity.prevYaw, witherSkullEntity.yaw, h);
-		float j = witherSkullEntity.prevPitch + (witherSkullEntity.pitch - witherSkullEntity.prevPitch) * h;
-		GlStateManager.translate((float)d, (float)e, (float)f);
+		float i = this.method_4158(witherSkullEntity.prevYaw, witherSkullEntity.yaw, h);
+		float j = MathHelper.lerp(h, witherSkullEntity.prevPitch, witherSkullEntity.pitch);
+		GlStateManager.translatef((float)d, (float)e, (float)f);
 		float k = 0.0625F;
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.scale(-1.0F, -1.0F, 1.0F);
+		GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
 		GlStateManager.enableAlphaTest();
-		this.bindTexture(witherSkullEntity);
-		if (this.field_13631) {
+		this.bindEntityTexture(witherSkullEntity);
+		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
-			GlStateManager.method_12309(this.method_12454(witherSkullEntity));
+			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(witherSkullEntity));
 		}
 
-		this.field_5214.render(witherSkullEntity, 0.0F, 0.0F, 0.0F, i, j, 0.0625F);
-		if (this.field_13631) {
-			GlStateManager.method_12315();
+		this.model.render(0.0F, 0.0F, 0.0F, i, j, 0.0625F);
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
@@ -54,7 +55,7 @@ public class WitherSkullEntityRenderer extends EntityRenderer<WitherSkullEntity>
 		super.render(witherSkullEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(WitherSkullEntity witherSkullEntity) {
-		return witherSkullEntity.isCharged() ? field_6535 : field_6536;
+	protected Identifier method_4160(WitherSkullEntity witherSkullEntity) {
+		return witherSkullEntity.isCharged() ? INVINCIBLE_SKIN : SKIN;
 	}
 }

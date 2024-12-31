@@ -1,62 +1,49 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.CameraView;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.VisibleRegion;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.AbstractDecorationEntity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.util.math.MathHelper;
 
-public abstract class MobEntityRenderer<T extends MobEntity> extends LivingEntityRenderer<T> {
-	public MobEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
+public abstract class MobEntityRenderer<T extends MobEntity, M extends EntityModel<T>> extends LivingEntityRenderer<T, M> {
+	public MobEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, M entityModel, float f) {
 		super(entityRenderDispatcher, entityModel, f);
 	}
 
-	protected boolean hasLabel(T mobEntity) {
-		return super.hasLabel(mobEntity) && (mobEntity.shouldRenderName() || mobEntity.hasCustomName() && mobEntity == this.dispatcher.field_7998);
+	protected boolean method_4071(T mobEntity) {
+		return super.method_4055(mobEntity) && (mobEntity.shouldRenderName() || mobEntity.hasCustomName() && mobEntity == this.renderManager.targetedEntity);
 	}
 
-	public boolean shouldRender(T mobEntity, CameraView cameraView, double d, double e, double f) {
-		if (super.shouldRender(mobEntity, cameraView, d, e, f)) {
+	public boolean method_4068(T mobEntity, VisibleRegion visibleRegion, double d, double e, double f) {
+		if (super.isVisible(mobEntity, visibleRegion, d, e, f)) {
 			return true;
-		} else if (mobEntity.isLeashed() && mobEntity.getLeashOwner() != null) {
-			Entity entity = mobEntity.getLeashOwner();
-			return cameraView.isBoxInFrustum(entity.getVisibilityBoundingBox());
 		} else {
-			return false;
+			Entity entity = mobEntity.getHoldingEntity();
+			return entity != null ? visibleRegion.intersects(entity.getVisibilityBoundingBox()) : false;
 		}
 	}
 
-	public void render(T mobEntity, double d, double e, double f, float g, float h) {
-		super.render(mobEntity, d, e, f, g, h);
-		if (!this.field_13631) {
-			this.method_5792(mobEntity, d, e, f, g, h);
+	public void method_4072(T mobEntity, double d, double e, double f, float g, float h) {
+		super.method_4054(mobEntity, d, e, f, g, h);
+		if (!this.renderOutlines) {
+			this.method_4073(mobEntity, d, e, f, g, h);
 		}
 	}
 
-	public void method_14692(T mobEntity) {
-		int i = mobEntity.getLightmapCoordinates();
-		int j = i % 65536;
-		int k = i / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j, (float)k);
-	}
-
-	private double method_5790(double d, double e, double f) {
-		return d + (e - d) * f;
-	}
-
-	protected void method_5792(T mobEntity, double d, double e, double f, float g, float h) {
-		Entity entity = mobEntity.getLeashOwner();
+	protected void method_4073(T mobEntity, double d, double e, double f, float g, float h) {
+		Entity entity = mobEntity.getHoldingEntity();
 		if (entity != null) {
-			e -= (1.6 - (double)mobEntity.height) * 0.5;
+			e -= (1.6 - (double)mobEntity.getHeight()) * 0.5;
 			Tessellator tessellator = Tessellator.getInstance();
-			BufferBuilder bufferBuilder = tessellator.getBuffer();
-			double i = this.method_5790((double)entity.prevYaw, (double)entity.yaw, (double)(h * 0.5F)) * (float) (Math.PI / 180.0);
-			double j = this.method_5790((double)entity.prevPitch, (double)entity.pitch, (double)(h * 0.5F)) * (float) (Math.PI / 180.0);
+			BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+			double i = (double)(MathHelper.lerp(h * 0.5F, entity.yaw, entity.prevYaw) * (float) (Math.PI / 180.0));
+			double j = (double)(MathHelper.lerp(h * 0.5F, entity.pitch, entity.prevPitch) * (float) (Math.PI / 180.0));
 			double k = Math.cos(i);
 			double l = Math.sin(i);
 			double m = Math.sin(j);
@@ -67,15 +54,17 @@ public abstract class MobEntityRenderer<T extends MobEntity> extends LivingEntit
 			}
 
 			double n = Math.cos(j);
-			double o = this.method_5790(entity.prevX, entity.x, (double)h) - k * 0.7 - l * 0.5 * n;
-			double p = this.method_5790(entity.prevY + (double)entity.getEyeHeight() * 0.7, entity.y + (double)entity.getEyeHeight() * 0.7, (double)h) - m * 0.5 - 0.25;
-			double q = this.method_5790(entity.prevZ, entity.z, (double)h) - l * 0.7 + k * 0.5 * n;
-			double r = this.method_5790((double)mobEntity.prevBodyYaw, (double)mobEntity.bodyYaw, (double)h) * (float) (Math.PI / 180.0) + (Math.PI / 2);
-			k = Math.cos(r) * (double)mobEntity.width * 0.4;
-			l = Math.sin(r) * (double)mobEntity.width * 0.4;
-			double s = this.method_5790(mobEntity.prevX, mobEntity.x, (double)h) + k;
-			double t = this.method_5790(mobEntity.prevY, mobEntity.y, (double)h);
-			double u = this.method_5790(mobEntity.prevZ, mobEntity.z, (double)h) + l;
+			double o = MathHelper.lerp((double)h, entity.prevX, entity.x) - k * 0.7 - l * 0.5 * n;
+			double p = MathHelper.lerp((double)h, entity.prevY + (double)entity.getStandingEyeHeight() * 0.7, entity.y + (double)entity.getStandingEyeHeight() * 0.7)
+				- m * 0.5
+				- 0.25;
+			double q = MathHelper.lerp((double)h, entity.prevZ, entity.z) - l * 0.7 + k * 0.5 * n;
+			double r = (double)(MathHelper.lerp(h, mobEntity.field_6283, mobEntity.field_6220) * (float) (Math.PI / 180.0)) + (Math.PI / 2);
+			k = Math.cos(r) * (double)mobEntity.getWidth() * 0.4;
+			l = Math.sin(r) * (double)mobEntity.getWidth() * 0.4;
+			double s = MathHelper.lerp((double)h, mobEntity.prevX, mobEntity.x) + k;
+			double t = MathHelper.lerp((double)h, mobEntity.prevY, mobEntity.y);
+			double u = MathHelper.lerp((double)h, mobEntity.prevZ, mobEntity.z) + l;
 			d += k;
 			f += l;
 			double v = (double)((float)(o - s));

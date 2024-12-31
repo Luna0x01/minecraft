@@ -1,51 +1,49 @@
 package net.minecraft.world.level.storage;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.biome.Biomes;
-import net.minecraft.world.biome.SingletonBiomeSource;
+import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 
 public class AlphaChunkIo {
-	public static AlphaChunkIo.AlphaChunk readAlphaChunk(NbtCompound nbt) {
-		int i = nbt.getInt("xPos");
-		int j = nbt.getInt("zPos");
+	public static AlphaChunkIo.AlphaChunk readAlphaChunk(CompoundTag compoundTag) {
+		int i = compoundTag.getInt("xPos");
+		int j = compoundTag.getInt("zPos");
 		AlphaChunkIo.AlphaChunk alphaChunk = new AlphaChunkIo.AlphaChunk(i, j);
-		alphaChunk.blocks = nbt.getByteArray("Blocks");
-		alphaChunk.data = new AlphaChunkDataArray(nbt.getByteArray("Data"), 7);
-		alphaChunk.skyLight = new AlphaChunkDataArray(nbt.getByteArray("SkyLight"), 7);
-		alphaChunk.blockLight = new AlphaChunkDataArray(nbt.getByteArray("BlockLight"), 7);
-		alphaChunk.heightMap = nbt.getByteArray("HeightMap");
-		alphaChunk.terrainPopulated = nbt.getBoolean("TerrainPopulated");
-		alphaChunk.entities = nbt.getList("Entities", 10);
-		alphaChunk.blockEntities = nbt.getList("TileEntities", 10);
-		alphaChunk.blockTicks = nbt.getList("TileTicks", 10);
+		alphaChunk.blocks = compoundTag.getByteArray("Blocks");
+		alphaChunk.data = new AlphaChunkDataArray(compoundTag.getByteArray("Data"), 7);
+		alphaChunk.skyLight = new AlphaChunkDataArray(compoundTag.getByteArray("SkyLight"), 7);
+		alphaChunk.blockLight = new AlphaChunkDataArray(compoundTag.getByteArray("BlockLight"), 7);
+		alphaChunk.heightMap = compoundTag.getByteArray("HeightMap");
+		alphaChunk.terrainPopulated = compoundTag.getBoolean("TerrainPopulated");
+		alphaChunk.entities = compoundTag.getList("Entities", 10);
+		alphaChunk.blockEntities = compoundTag.getList("TileEntities", 10);
+		alphaChunk.blockTicks = compoundTag.getList("TileTicks", 10);
 
 		try {
-			alphaChunk.lastUpdate = nbt.getLong("LastUpdate");
+			alphaChunk.lastUpdate = compoundTag.getLong("LastUpdate");
 		} catch (ClassCastException var5) {
-			alphaChunk.lastUpdate = (long)nbt.getInt("LastUpdate");
+			alphaChunk.lastUpdate = (long)compoundTag.getInt("LastUpdate");
 		}
 
 		return alphaChunk;
 	}
 
-	public static void method_3956(AlphaChunkIo.AlphaChunk alphaChunk, NbtCompound nbtCompound, SingletonBiomeSource singletonBiomeSource) {
-		nbtCompound.putInt("xPos", alphaChunk.x);
-		nbtCompound.putInt("zPos", alphaChunk.z);
-		nbtCompound.putLong("LastUpdate", alphaChunk.lastUpdate);
+	public static void convertAlphaChunk(AlphaChunkIo.AlphaChunk alphaChunk, CompoundTag compoundTag, BiomeSource biomeSource) {
+		compoundTag.putInt("xPos", alphaChunk.x);
+		compoundTag.putInt("zPos", alphaChunk.z);
+		compoundTag.putLong("LastUpdate", alphaChunk.lastUpdate);
 		int[] is = new int[alphaChunk.heightMap.length];
 
 		for (int i = 0; i < alphaChunk.heightMap.length; i++) {
 			is[i] = alphaChunk.heightMap[i];
 		}
 
-		nbtCompound.putIntArray("HeightMap", is);
-		nbtCompound.putBoolean("TerrainPopulated", alphaChunk.terrainPopulated);
-		NbtList nbtList = new NbtList();
+		compoundTag.putIntArray("HeightMap", is);
+		compoundTag.putBoolean("TerrainPopulated", alphaChunk.terrainPopulated);
+		ListTag listTag = new ListTag();
 
 		for (int j = 0; j < 8; j++) {
 			boolean bl = true;
@@ -82,35 +80,35 @@ public class AlphaChunkIo {
 					}
 				}
 
-				NbtCompound nbtCompound2 = new NbtCompound();
-				nbtCompound2.putByte("Y", (byte)(j & 0xFF));
-				nbtCompound2.putByteArray("Blocks", bs);
-				nbtCompound2.putByteArray("Data", chunkNibbleArray.getValue());
-				nbtCompound2.putByteArray("SkyLight", chunkNibbleArray2.getValue());
-				nbtCompound2.putByteArray("BlockLight", chunkNibbleArray3.getValue());
-				nbtList.add((NbtElement)nbtCompound2);
+				CompoundTag compoundTag2 = new CompoundTag();
+				compoundTag2.putByte("Y", (byte)(j & 0xFF));
+				compoundTag2.putByteArray("Blocks", bs);
+				compoundTag2.putByteArray("Data", chunkNibbleArray.asByteArray());
+				compoundTag2.putByteArray("SkyLight", chunkNibbleArray2.asByteArray());
+				compoundTag2.putByteArray("BlockLight", chunkNibbleArray3.asByteArray());
+				listTag.add(compoundTag2);
 			}
 		}
 
-		nbtCompound.put("Sections", nbtList);
+		compoundTag.put("Sections", listTag);
 		byte[] cs = new byte[256];
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int u = 0; u < 16; u++) {
 			for (int v = 0; v < 16; v++) {
-				mutable.setPosition(alphaChunk.x << 4 | u, 0, alphaChunk.z << 4 | v);
-				cs[v << 4 | u] = (byte)(Registry.BIOME.getRawId(singletonBiomeSource.method_16480(mutable, Biomes.DEFAULT)) & 0xFF);
+				mutable.set(alphaChunk.x << 4 | u, 0, alphaChunk.z << 4 | v);
+				cs[v << 4 | u] = (byte)(Registry.BIOME.getRawId(biomeSource.getBiome(mutable)) & 0xFF);
 			}
 		}
 
-		nbtCompound.putByteArray("Biomes", cs);
-		nbtCompound.put("Entities", alphaChunk.entities);
-		nbtCompound.put("TileEntities", alphaChunk.blockEntities);
+		compoundTag.putByteArray("Biomes", cs);
+		compoundTag.put("Entities", alphaChunk.entities);
+		compoundTag.put("TileEntities", alphaChunk.blockEntities);
 		if (alphaChunk.blockTicks != null) {
-			nbtCompound.put("TileTicks", alphaChunk.blockTicks);
+			compoundTag.put("TileTicks", alphaChunk.blockTicks);
 		}
 
-		nbtCompound.putBoolean("convertedFromAlphaFormat", true);
+		compoundTag.putBoolean("convertedFromAlphaFormat", true);
 	}
 
 	public static class AlphaChunk {
@@ -121,9 +119,9 @@ public class AlphaChunkIo {
 		public AlphaChunkDataArray skyLight;
 		public AlphaChunkDataArray data;
 		public byte[] blocks;
-		public NbtList entities;
-		public NbtList blockEntities;
-		public NbtList blockTicks;
+		public ListTag entities;
+		public ListTag blockEntities;
+		public ListTag blockTicks;
 		public final int x;
 		public final int z;
 

@@ -12,128 +12,170 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.class_2782;
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.function.Function;
-import net.minecraft.sound.Sounds;
+import net.minecraft.server.function.CommandFunction;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.loot.context.LootContext;
+import net.minecraft.world.loot.context.LootContextParameters;
+import net.minecraft.world.loot.context.LootContextTypes;
 
 public class AdvancementRewards {
-	public static final AdvancementRewards REWARDS = new AdvancementRewards(0, new Identifier[0], new Identifier[0], Function.FunctionIdentifier.EMPTY);
-	private final int field_16304;
-	private final Identifier[] field_16305;
-	private final Identifier[] field_16306;
-	private final Function.FunctionIdentifier field_16307;
+	public static final AdvancementRewards NONE = new AdvancementRewards(0, new Identifier[0], new Identifier[0], CommandFunction.LazyContainer.EMPTY);
+	private final int experience;
+	private final Identifier[] loot;
+	private final Identifier[] recipes;
+	private final CommandFunction.LazyContainer function;
 
-	public AdvancementRewards(int i, Identifier[] identifiers, Identifier[] identifiers2, Function.FunctionIdentifier functionIdentifier) {
-		this.field_16304 = i;
-		this.field_16305 = identifiers;
-		this.field_16306 = identifiers2;
-		this.field_16307 = functionIdentifier;
+	public AdvancementRewards(int i, Identifier[] identifiers, Identifier[] identifiers2, CommandFunction.LazyContainer lazyContainer) {
+		this.experience = i;
+		this.loot = identifiers;
+		this.recipes = identifiers2;
+		this.function = lazyContainer;
 	}
 
-	public void method_14859(ServerPlayerEntity player) {
-		player.method_15934(this.field_16304);
-		class_2782 lv = new class_2782.class_2783(player.getServerWorld()).method_11997(player).method_17981(new BlockPos(player)).method_11994();
+	public void apply(ServerPlayerEntity serverPlayerEntity) {
+		serverPlayerEntity.addExperience(this.experience);
+		LootContext lootContext = new LootContext.Builder(serverPlayerEntity.getServerWorld())
+			.put(LootContextParameters.field_1226, serverPlayerEntity)
+			.put(LootContextParameters.field_1232, new BlockPos(serverPlayerEntity))
+			.setRandom(serverPlayerEntity.getRand())
+			.build(LootContextTypes.field_1174);
 		boolean bl = false;
 
-		for (Identifier identifier : this.field_16305) {
-			for (ItemStack itemStack : player.server.method_20334().method_12006(identifier).method_11981(player.getRandom(), lv)) {
-				if (player.method_13617(itemStack)) {
-					player.world
+		for (Identifier identifier : this.loot) {
+			for (ItemStack itemStack : serverPlayerEntity.server.getLootManager().getSupplier(identifier).getDrops(lootContext)) {
+				if (serverPlayerEntity.giveItemStack(itemStack)) {
+					serverPlayerEntity.world
 						.playSound(
 							null,
-							player.x,
-							player.y,
-							player.z,
-							Sounds.ENTITY_ITEM_PICKUP,
+							serverPlayerEntity.x,
+							serverPlayerEntity.y,
+							serverPlayerEntity.z,
+							SoundEvents.field_15197,
 							SoundCategory.PLAYERS,
 							0.2F,
-							((player.getRandom().nextFloat() - player.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F
+							((serverPlayerEntity.getRand().nextFloat() - serverPlayerEntity.getRand().nextFloat()) * 0.7F + 1.0F) * 2.0F
 						);
 					bl = true;
 				} else {
-					ItemEntity itemEntity = player.dropItem(itemStack, false);
+					ItemEntity itemEntity = serverPlayerEntity.dropItem(itemStack, false);
 					if (itemEntity != null) {
 						itemEntity.resetPickupDelay();
-						itemEntity.method_15847(player.getUuid());
+						itemEntity.setOwner(serverPlayerEntity.getUuid());
 					}
 				}
 			}
 		}
 
 		if (bl) {
-			player.playerScreenHandler.sendContentUpdates();
+			serverPlayerEntity.playerContainer.sendContentUpdates();
 		}
 
-		if (this.field_16306.length > 0) {
-			player.method_14155(this.field_16306);
+		if (this.recipes.length > 0) {
+			serverPlayerEntity.unlockRecipes(this.recipes);
 		}
 
-		MinecraftServer minecraftServer = player.server;
-		Function function = this.field_16307.method_14540(minecraftServer.method_14911());
-		if (function != null) {
-			minecraftServer.method_14911().method_14944(function, player.method_15582().method_17448().method_17449(2));
-		}
+		MinecraftServer minecraftServer = serverPlayerEntity.server;
+		this.function
+			.get(minecraftServer.getCommandFunctionManager())
+			.ifPresent(
+				commandFunction -> minecraftServer.getCommandFunctionManager().execute(commandFunction, serverPlayerEntity.getCommandSource().withSilent().withLevel(2))
+			);
 	}
 
 	public String toString() {
 		return "AdvancementRewards{experience="
-			+ this.field_16304
+			+ this.experience
 			+ ", loot="
-			+ Arrays.toString(this.field_16305)
+			+ Arrays.toString(this.loot)
 			+ ", recipes="
-			+ Arrays.toString(this.field_16306)
+			+ Arrays.toString(this.recipes)
 			+ ", function="
-			+ this.field_16307
+			+ this.function
 			+ '}';
 	}
 
-	public JsonElement method_20386() {
-		if (this == REWARDS) {
+	public JsonElement toJson() {
+		if (this == NONE) {
 			return JsonNull.INSTANCE;
 		} else {
 			JsonObject jsonObject = new JsonObject();
-			if (this.field_16304 != 0) {
-				jsonObject.addProperty("experience", this.field_16304);
+			if (this.experience != 0) {
+				jsonObject.addProperty("experience", this.experience);
 			}
 
-			if (this.field_16305.length > 0) {
+			if (this.loot.length > 0) {
 				JsonArray jsonArray = new JsonArray();
 
-				for (Identifier identifier : this.field_16305) {
+				for (Identifier identifier : this.loot) {
 					jsonArray.add(identifier.toString());
 				}
 
 				jsonObject.add("loot", jsonArray);
 			}
 
-			if (this.field_16306.length > 0) {
+			if (this.recipes.length > 0) {
 				JsonArray jsonArray2 = new JsonArray();
 
-				for (Identifier identifier2 : this.field_16306) {
+				for (Identifier identifier2 : this.recipes) {
 					jsonArray2.add(identifier2.toString());
 				}
 
 				jsonObject.add("recipes", jsonArray2);
 			}
 
-			if (this.field_16307.method_17358() != null) {
-				jsonObject.addProperty("function", this.field_16307.method_17358().toString());
+			if (this.function.getId() != null) {
+				jsonObject.addProperty("function", this.function.getId().toString());
 			}
 
 			return jsonObject;
 		}
 	}
 
-	public static class class_3338 implements JsonDeserializer<AdvancementRewards> {
-		public AdvancementRewards deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+	public static class Builder {
+		private int experience;
+		private final List<Identifier> loot = Lists.newArrayList();
+		private final List<Identifier> recipes = Lists.newArrayList();
+		@Nullable
+		private Identifier function;
+
+		public static AdvancementRewards.Builder experience(int i) {
+			return new AdvancementRewards.Builder().setExperience(i);
+		}
+
+		public AdvancementRewards.Builder setExperience(int i) {
+			this.experience += i;
+			return this;
+		}
+
+		public static AdvancementRewards.Builder recipe(Identifier identifier) {
+			return new AdvancementRewards.Builder().addRecipe(identifier);
+		}
+
+		public AdvancementRewards.Builder addRecipe(Identifier identifier) {
+			this.recipes.add(identifier);
+			return this;
+		}
+
+		public AdvancementRewards build() {
+			return new AdvancementRewards(
+				this.experience,
+				(Identifier[])this.loot.toArray(new Identifier[0]),
+				(Identifier[])this.recipes.toArray(new Identifier[0]),
+				this.function == null ? CommandFunction.LazyContainer.EMPTY : new CommandFunction.LazyContainer(this.function)
+			);
+		}
+	}
+
+	public static class Deserializer implements JsonDeserializer<AdvancementRewards> {
+		public AdvancementRewards method_754(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = JsonHelper.asObject(jsonElement, "rewards");
 			int i = JsonHelper.getInt(jsonObject, "experience", 0);
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "loot", new JsonArray());
@@ -150,49 +192,14 @@ public class AdvancementRewards {
 				identifiers2[k] = new Identifier(JsonHelper.asString(jsonArray2.get(k), "recipes[" + k + "]"));
 			}
 
-			Function.FunctionIdentifier functionIdentifier;
+			CommandFunction.LazyContainer lazyContainer;
 			if (jsonObject.has("function")) {
-				functionIdentifier = new Function.FunctionIdentifier(new Identifier(JsonHelper.getString(jsonObject, "function")));
+				lazyContainer = new CommandFunction.LazyContainer(new Identifier(JsonHelper.getString(jsonObject, "function")));
 			} else {
-				functionIdentifier = Function.FunctionIdentifier.EMPTY;
+				lazyContainer = CommandFunction.LazyContainer.EMPTY;
 			}
 
-			return new AdvancementRewards(i, identifiers, identifiers2, functionIdentifier);
-		}
-	}
-
-	public static class class_4395 {
-		private int field_21644;
-		private final List<Identifier> field_21645 = Lists.newArrayList();
-		private final List<Identifier> field_21646 = Lists.newArrayList();
-		@Nullable
-		private Identifier field_21647;
-
-		public static AdvancementRewards.class_4395 method_20388(int i) {
-			return new AdvancementRewards.class_4395().method_20389(i);
-		}
-
-		public AdvancementRewards.class_4395 method_20389(int i) {
-			this.field_21644 += i;
-			return this;
-		}
-
-		public static AdvancementRewards.class_4395 method_20390(Identifier identifier) {
-			return new AdvancementRewards.class_4395().method_20391(identifier);
-		}
-
-		public AdvancementRewards.class_4395 method_20391(Identifier identifier) {
-			this.field_21646.add(identifier);
-			return this;
-		}
-
-		public AdvancementRewards method_20387() {
-			return new AdvancementRewards(
-				this.field_21644,
-				(Identifier[])this.field_21645.toArray(new Identifier[0]),
-				(Identifier[])this.field_21646.toArray(new Identifier[0]),
-				this.field_21647 == null ? Function.FunctionIdentifier.EMPTY : new Function.FunctionIdentifier(this.field_21647)
-			);
+			return new AdvancementRewards(i, identifiers, identifiers2, lazyContainer);
 		}
 	}
 }

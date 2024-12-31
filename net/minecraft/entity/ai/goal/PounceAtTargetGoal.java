@@ -1,31 +1,36 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class PounceAtTargetGoal extends Goal {
 	private final MobEntity mob;
-	private LivingEntity attacker;
-	private final float speed;
+	private LivingEntity target;
+	private final float velocity;
 
 	public PounceAtTargetGoal(MobEntity mobEntity, float f) {
 		this.mob = mobEntity;
-		this.speed = f;
-		this.setCategoryBits(5);
+		this.velocity = f;
+		this.setControls(EnumSet.of(Goal.Control.field_18407, Goal.Control.field_18405));
 	}
 
 	@Override
 	public boolean canStart() {
-		this.attacker = this.mob.getTarget();
-		if (this.attacker == null) {
+		if (this.mob.hasPassengers()) {
 			return false;
 		} else {
-			double d = this.mob.squaredDistanceTo(this.attacker);
-			if (d < 4.0 || d > 16.0) {
+			this.target = this.mob.getTarget();
+			if (this.target == null) {
 				return false;
 			} else {
-				return !this.mob.onGround ? false : this.mob.getRandom().nextInt(5) == 0;
+				double d = this.mob.squaredDistanceTo(this.target);
+				if (d < 4.0 || d > 16.0) {
+					return false;
+				} else {
+					return !this.mob.onGround ? false : this.mob.getRand().nextInt(5) == 0;
+				}
 			}
 		}
 	}
@@ -37,14 +42,12 @@ public class PounceAtTargetGoal extends Goal {
 
 	@Override
 	public void start() {
-		double d = this.attacker.x - this.mob.x;
-		double e = this.attacker.z - this.mob.z;
-		float f = MathHelper.sqrt(d * d + e * e);
-		if ((double)f >= 1.0E-4) {
-			this.mob.velocityX = this.mob.velocityX + d / (double)f * 0.5 * 0.8F + this.mob.velocityX * 0.2F;
-			this.mob.velocityZ = this.mob.velocityZ + e / (double)f * 0.5 * 0.8F + this.mob.velocityZ * 0.2F;
+		Vec3d vec3d = this.mob.getVelocity();
+		Vec3d vec3d2 = new Vec3d(this.target.x - this.mob.x, 0.0, this.target.z - this.mob.z);
+		if (vec3d2.lengthSquared() > 1.0E-7) {
+			vec3d2 = vec3d2.normalize().multiply(0.4).add(vec3d.multiply(0.2));
 		}
 
-		this.mob.velocityY = (double)this.speed;
+		this.mob.setVelocity(vec3d2.x, (double)this.velocity, vec3d2.z);
 	}
 }

@@ -10,28 +10,30 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
-	private final AbstractEntityAttributeContainer field_6822;
-	private final EntityAttribute field_6823;
-	private final Map<Integer, Set<AttributeModifier>> field_6824 = Maps.newHashMap();
-	private final Map<String, Set<AttributeModifier>> modifiersByName = Maps.newHashMap();
-	private final Map<UUID, AttributeModifier> modifiersByUuid = Maps.newHashMap();
+	private final AbstractEntityAttributeContainer container;
+	private final EntityAttribute attribute;
+	private final Map<EntityAttributeModifier.Operation, Set<EntityAttributeModifier>> modifiersByOperation = Maps.newEnumMap(
+		EntityAttributeModifier.Operation.class
+	);
+	private final Map<String, Set<EntityAttributeModifier>> modifiersByName = Maps.newHashMap();
+	private final Map<UUID, EntityAttributeModifier> modifiersByUuid = Maps.newHashMap();
 	private double baseValue;
 	private boolean needsRefresh = true;
 	private double cachedValue;
 
 	public EntityAttributeInstanceImpl(AbstractEntityAttributeContainer abstractEntityAttributeContainer, EntityAttribute entityAttribute) {
-		this.field_6822 = abstractEntityAttributeContainer;
-		this.field_6823 = entityAttribute;
+		this.container = abstractEntityAttributeContainer;
+		this.attribute = entityAttribute;
 		this.baseValue = entityAttribute.getDefaultValue();
 
-		for (int i = 0; i < 3; i++) {
-			this.field_6824.put(i, Sets.newHashSet());
+		for (EntityAttributeModifier.Operation operation : EntityAttributeModifier.Operation.values()) {
+			this.modifiersByOperation.put(operation, Sets.newHashSet());
 		}
 	}
 
 	@Override
 	public EntityAttribute getAttribute() {
-		return this.field_6823;
+		return this.attribute;
 	}
 
 	@Override
@@ -40,24 +42,24 @@ public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
 	}
 
 	@Override
-	public void setBaseValue(double baseValue) {
-		if (baseValue != this.getBaseValue()) {
-			this.baseValue = baseValue;
+	public void setBaseValue(double d) {
+		if (d != this.getBaseValue()) {
+			this.baseValue = d;
 			this.invalidateCache();
 		}
 	}
 
 	@Override
-	public Collection<AttributeModifier> getModifiers(int operation) {
-		return (Collection<AttributeModifier>)this.field_6824.get(operation);
+	public Collection<EntityAttributeModifier> getModifiers(EntityAttributeModifier.Operation operation) {
+		return (Collection<EntityAttributeModifier>)this.modifiersByOperation.get(operation);
 	}
 
 	@Override
-	public Collection<AttributeModifier> getModifiers() {
-		Set<AttributeModifier> set = Sets.newHashSet();
+	public Collection<EntityAttributeModifier> getModifiers() {
+		Set<EntityAttributeModifier> set = Sets.newHashSet();
 
-		for (int i = 0; i < 3; i++) {
-			set.addAll(this.getModifiers(i));
+		for (EntityAttributeModifier.Operation operation : EntityAttributeModifier.Operation.values()) {
+			set.addAll(this.getModifiers(operation));
 		}
 
 		return set;
@@ -65,71 +67,66 @@ public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
 
 	@Nullable
 	@Override
-	public AttributeModifier getByUuid(UUID id) {
-		return (AttributeModifier)this.modifiersByUuid.get(id);
+	public EntityAttributeModifier getModifier(UUID uUID) {
+		return (EntityAttributeModifier)this.modifiersByUuid.get(uUID);
 	}
 
 	@Override
-	public boolean hasModifier(AttributeModifier modifier) {
-		return this.modifiersByUuid.get(modifier.getId()) != null;
+	public boolean hasModifier(EntityAttributeModifier entityAttributeModifier) {
+		return this.modifiersByUuid.get(entityAttributeModifier.getId()) != null;
 	}
 
 	@Override
-	public void addModifier(AttributeModifier modifier) {
-		if (this.getByUuid(modifier.getId()) != null) {
+	public void addModifier(EntityAttributeModifier entityAttributeModifier) {
+		if (this.getModifier(entityAttributeModifier.getId()) != null) {
 			throw new IllegalArgumentException("Modifier is already applied on this attribute!");
 		} else {
-			Set<AttributeModifier> set = (Set<AttributeModifier>)this.modifiersByName.get(modifier.getName());
-			if (set == null) {
-				set = Sets.newHashSet();
-				this.modifiersByName.put(modifier.getName(), set);
-			}
-
-			((Set)this.field_6824.get(modifier.getOperation())).add(modifier);
-			set.add(modifier);
-			this.modifiersByUuid.put(modifier.getId(), modifier);
+			Set<EntityAttributeModifier> set = (Set<EntityAttributeModifier>)this.modifiersByName
+				.computeIfAbsent(entityAttributeModifier.getName(), string -> Sets.newHashSet());
+			((Set)this.modifiersByOperation.get(entityAttributeModifier.getOperation())).add(entityAttributeModifier);
+			set.add(entityAttributeModifier);
+			this.modifiersByUuid.put(entityAttributeModifier.getId(), entityAttributeModifier);
 			this.invalidateCache();
 		}
 	}
 
 	protected void invalidateCache() {
 		this.needsRefresh = true;
-		this.field_6822.add(this);
+		this.container.add(this);
 	}
 
 	@Override
-	public void method_6193(AttributeModifier modifier) {
-		for (int i = 0; i < 3; i++) {
-			Set<AttributeModifier> set = (Set<AttributeModifier>)this.field_6824.get(i);
-			set.remove(modifier);
+	public void removeModifier(EntityAttributeModifier entityAttributeModifier) {
+		for (EntityAttributeModifier.Operation operation : EntityAttributeModifier.Operation.values()) {
+			((Set)this.modifiersByOperation.get(operation)).remove(entityAttributeModifier);
 		}
 
-		Set<AttributeModifier> set2 = (Set<AttributeModifier>)this.modifiersByName.get(modifier.getName());
-		if (set2 != null) {
-			set2.remove(modifier);
-			if (set2.isEmpty()) {
-				this.modifiersByName.remove(modifier.getName());
+		Set<EntityAttributeModifier> set = (Set<EntityAttributeModifier>)this.modifiersByName.get(entityAttributeModifier.getName());
+		if (set != null) {
+			set.remove(entityAttributeModifier);
+			if (set.isEmpty()) {
+				this.modifiersByName.remove(entityAttributeModifier.getName());
 			}
 		}
 
-		this.modifiersByUuid.remove(modifier.getId());
+		this.modifiersByUuid.remove(entityAttributeModifier.getId());
 		this.invalidateCache();
 	}
 
 	@Override
-	public void method_13093(UUID uUID) {
-		AttributeModifier attributeModifier = this.getByUuid(uUID);
-		if (attributeModifier != null) {
-			this.method_6193(attributeModifier);
+	public void removeModifier(UUID uUID) {
+		EntityAttributeModifier entityAttributeModifier = this.getModifier(uUID);
+		if (entityAttributeModifier != null) {
+			this.removeModifier(entityAttributeModifier);
 		}
 	}
 
 	@Override
 	public void clearModifiers() {
-		Collection<AttributeModifier> collection = this.getModifiers();
+		Collection<EntityAttributeModifier> collection = this.getModifiers();
 		if (collection != null) {
-			for (AttributeModifier attributeModifier : Lists.newArrayList(collection)) {
-				this.method_6193(attributeModifier);
+			for (EntityAttributeModifier entityAttributeModifier : Lists.newArrayList(collection)) {
+				this.removeModifier(entityAttributeModifier);
 			}
 		}
 	}
@@ -147,30 +144,30 @@ public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
 	private double computeValue() {
 		double d = this.getBaseValue();
 
-		for (AttributeModifier attributeModifier : this.method_10998(0)) {
-			d += attributeModifier.getAmount();
+		for (EntityAttributeModifier entityAttributeModifier : this.getAllModifiers(EntityAttributeModifier.Operation.field_6328)) {
+			d += entityAttributeModifier.getAmount();
 		}
 
 		double e = d;
 
-		for (AttributeModifier attributeModifier2 : this.method_10998(1)) {
-			e += d * attributeModifier2.getAmount();
+		for (EntityAttributeModifier entityAttributeModifier2 : this.getAllModifiers(EntityAttributeModifier.Operation.field_6330)) {
+			e += d * entityAttributeModifier2.getAmount();
 		}
 
-		for (AttributeModifier attributeModifier3 : this.method_10998(2)) {
-			e *= 1.0 + attributeModifier3.getAmount();
+		for (EntityAttributeModifier entityAttributeModifier3 : this.getAllModifiers(EntityAttributeModifier.Operation.field_6331)) {
+			e *= 1.0 + entityAttributeModifier3.getAmount();
 		}
 
-		return this.field_6823.clamp(e);
+		return this.attribute.clamp(e);
 	}
 
-	private Collection<AttributeModifier> method_10998(int i) {
-		Set<AttributeModifier> set = Sets.newHashSet(this.getModifiers(i));
+	private Collection<EntityAttributeModifier> getAllModifiers(EntityAttributeModifier.Operation operation) {
+		Set<EntityAttributeModifier> set = Sets.newHashSet(this.getModifiers(operation));
 
-		for (EntityAttribute entityAttribute = this.field_6823.getParent(); entityAttribute != null; entityAttribute = entityAttribute.getParent()) {
-			EntityAttributeInstance entityAttributeInstance = this.field_6822.get(entityAttribute);
+		for (EntityAttribute entityAttribute = this.attribute.getParent(); entityAttribute != null; entityAttribute = entityAttribute.getParent()) {
+			EntityAttributeInstance entityAttributeInstance = this.container.get(entityAttribute);
 			if (entityAttributeInstance != null) {
-				set.addAll(entityAttributeInstance.getModifiers(i));
+				set.addAll(entityAttributeInstance.getModifiers(operation));
 			}
 		}
 

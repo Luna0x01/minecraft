@@ -1,35 +1,36 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
+import net.minecraft.client.model.Model;
 
-public class BannerBlockEntityModel extends EntityModel {
-	private final ModelPart banner;
-	private final ModelPart pillar;
-	private final ModelPart crossbar;
+public class BannerBlockEntityModel extends Model {
+	private final Cuboid field_3309;
+	private final Cuboid field_3311;
+	private final Cuboid field_3310;
 
 	public BannerBlockEntityModel() {
 		this.textureWidth = 64;
 		this.textureHeight = 64;
-		this.banner = new ModelPart(this, 0, 0);
-		this.banner.addCuboid(-10.0F, 0.0F, -2.0F, 20, 40, 1, 0.0F);
-		this.pillar = new ModelPart(this, 44, 0);
-		this.pillar.addCuboid(-1.0F, -30.0F, -1.0F, 2, 42, 2, 0.0F);
-		this.crossbar = new ModelPart(this, 0, 42);
-		this.crossbar.addCuboid(-10.0F, -32.0F, -1.0F, 20, 2, 2, 0.0F);
+		this.field_3309 = new Cuboid(this, 0, 0);
+		this.field_3309.addBox(-10.0F, 0.0F, -2.0F, 20, 40, 1, 0.0F);
+		this.field_3311 = new Cuboid(this, 44, 0);
+		this.field_3311.addBox(-1.0F, -30.0F, -1.0F, 2, 42, 2, 0.0F);
+		this.field_3310 = new Cuboid(this, 0, 42);
+		this.field_3310.addBox(-10.0F, -32.0F, -1.0F, 20, 2, 2, 0.0F);
 	}
 
-	public void render() {
-		this.banner.pivotY = -32.0F;
-		this.banner.render(0.0625F);
-		this.pillar.render(0.0625F);
-		this.crossbar.render(0.0625F);
+	public void method_2793() {
+		this.field_3309.rotationPointY = -32.0F;
+		this.field_3309.render(0.0625F);
+		this.field_3311.render(0.0625F);
+		this.field_3310.render(0.0625F);
 	}
 
-	public ModelPart method_18902() {
-		return this.pillar;
+	public Cuboid method_2791() {
+		return this.field_3311;
 	}
 
-	public ModelPart method_18903() {
-		return this.banner;
+	public Cuboid method_2792() {
+		return this.field_3309;
 	}
 }

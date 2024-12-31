@@ -1,50 +1,35 @@
 package net.minecraft.block;
 
 import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.EntityContext;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 
 public class StructureVoidBlock extends Block {
-	private static final VoxelShape field_18523 = Block.createCuboidShape(5.0, 5.0, 5.0, 11.0, 11.0, 11.0);
+	private static final VoxelShape SHAPE = Block.createCuboidShape(5.0, 5.0, 5.0, 11.0, 11.0, 11.0);
 
-	protected StructureVoidBlock(Block.Builder builder) {
-		super(builder);
+	protected StructureVoidBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState state) {
-		return BlockRenderType.INVISIBLE;
+	public BlockRenderType getRenderType(BlockState blockState) {
+		return BlockRenderType.field_11455;
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18523;
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return SHAPE;
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
-	}
-
-	@Override
-	public float getAmbientOcclusionLightLevel(BlockState state) {
+	public float getAmbientOcclusionLightLevel(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return 1.0F;
 	}
 
 	@Override
-	public void method_410(BlockState blockState, World world, BlockPos blockPos, float f, int i) {
-	}
-
-	@Override
-	public PistonBehavior getPistonBehavior(BlockState state) {
-		return PistonBehavior.DESTROY;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
+	public PistonBehavior getPistonBehavior(BlockState blockState) {
+		return PistonBehavior.field_15971;
 	}
 }

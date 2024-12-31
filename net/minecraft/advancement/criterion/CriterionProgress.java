@@ -10,14 +10,14 @@ import java.util.Date;
 import net.minecraft.util.PacketByteBuf;
 
 public class CriterionProgress {
-	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+	private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
 	private Date obtained;
 
-	public boolean hasBeenObtained() {
+	public boolean isObtained() {
 		return this.obtained != null;
 	}
 
-	public void setObtained() {
+	public void obtain() {
 		this.obtained = new Date();
 	}
 
@@ -25,7 +25,7 @@ public class CriterionProgress {
 		this.obtained = null;
 	}
 
-	public Date getObtainDate() {
+	public Date getObtainedDate() {
 		return this.obtained;
 	}
 
@@ -33,18 +33,18 @@ public class CriterionProgress {
 		return "CriterionProgress{obtained=" + (this.obtained == null ? "false" : this.obtained) + '}';
 	}
 
-	public void writeToByteBuf(PacketByteBuf buf) {
-		buf.writeBoolean(this.obtained != null);
+	public void toPacket(PacketByteBuf packetByteBuf) {
+		packetByteBuf.writeBoolean(this.obtained != null);
 		if (this.obtained != null) {
-			buf.writeDate(this.obtained);
+			packetByteBuf.writeDate(this.obtained);
 		}
 	}
 
 	public JsonElement toJson() {
-		return (JsonElement)(this.obtained != null ? new JsonPrimitive(DATE_FORMAT.format(this.obtained)) : JsonNull.INSTANCE);
+		return (JsonElement)(this.obtained != null ? new JsonPrimitive(FORMAT.format(this.obtained)) : JsonNull.INSTANCE);
 	}
 
-	public static CriterionProgress method_14955(PacketByteBuf packetByteBuf) {
+	public static CriterionProgress fromPacket(PacketByteBuf packetByteBuf) {
 		CriterionProgress criterionProgress = new CriterionProgress();
 		if (packetByteBuf.readBoolean()) {
 			criterionProgress.obtained = packetByteBuf.readDate();
@@ -53,11 +53,11 @@ public class CriterionProgress {
 		return criterionProgress;
 	}
 
-	public static CriterionProgress method_14956(String string) {
+	public static CriterionProgress obtainedAt(String string) {
 		CriterionProgress criterionProgress = new CriterionProgress();
 
 		try {
-			criterionProgress.obtained = DATE_FORMAT.parse(string);
+			criterionProgress.obtained = FORMAT.parse(string);
 			return criterionProgress;
 		} catch (ParseException var3) {
 			throw new JsonSyntaxException("Invalid datetime: " + string, var3);

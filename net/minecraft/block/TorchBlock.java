@@ -1,69 +1,53 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.class_4342;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.entity.EntityContext;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shapes.VoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.RenderBlockView;
+import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 
 public class TorchBlock extends Block {
-	protected static final VoxelShape field_18530 = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 10.0, 10.0);
+	protected static final VoxelShape BOUNDING_SHAPE = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 10.0, 10.0);
 
-	protected TorchBlock(Block.Builder builder) {
-		super(builder);
+	protected TorchBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos) {
-		return field_18530;
+	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+		return BOUNDING_SHAPE;
 	}
 
 	@Override
-	public boolean method_11562(BlockState state) {
-		return false;
+	public BlockState getStateForNeighborUpdate(
+		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
+	) {
+		return direction == Direction.field_11033 && !this.canPlaceAt(blockState, iWorld, blockPos)
+			? Blocks.field_10124.getDefaultState()
+			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, IWorld world, BlockPos pos, BlockPos neighborPos) {
-		return direction == Direction.DOWN && !this.canPlaceAt(state, world, pos)
-			? Blocks.AIR.getDefaultState()
-			: super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+		return isSolidSmallSquare(viewableWorld, blockPos.down(), Direction.field_11036);
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState state, RenderBlockView world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos.down());
-		Block block = blockState.getBlock();
-		boolean bl = block instanceof FenceBlock
-			|| block instanceof StainedGlassBlock
-			|| block == Blocks.GLASS
-			|| block == Blocks.COBBLESTONE_WALL
-			|| block == Blocks.MOSSY_COBBLESTONE_WALL
-			|| blockState.method_16913();
-		return bl && block != Blocks.END_GATEWAY;
+	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		double d = (double)blockPos.getX() + 0.5;
+		double e = (double)blockPos.getY() + 0.7;
+		double f = (double)blockPos.getZ() + 0.5;
+		world.addParticle(ParticleTypes.field_11251, d, e, f, 0.0, 0.0, 0.0);
+		world.addParticle(ParticleTypes.field_11240, d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		double d = (double)pos.getX() + 0.5;
-		double e = (double)pos.getY() + 0.7;
-		double f = (double)pos.getZ() + 0.5;
-		world.method_16343(class_4342.field_21363, d, e, f, 0.0, 0.0, 0.0);
-		world.method_16343(class_4342.field_21399, d, e, f, 0.0, 0.0, 0.0);
-	}
-
-	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.CUTOUT;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer(BlockView world, BlockState state, BlockPos pos, Direction direction) {
-		return BlockRenderLayer.UNDEFINED;
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9174;
 	}
 }

@@ -1,78 +1,66 @@
 package net.minecraft.client.gui.screen;
 
 import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import java.util.List;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
-import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.text.Text;
 
 public class ConfirmScreen extends Screen {
-	protected IdentifiableBooleanConsumer consumer;
-	protected String title;
-	private final String subtitle;
-	private final List<String> lines = Lists.newArrayList();
-	protected String yesText;
-	protected String noText;
-	protected int identifier;
+	private final Text message;
+	private final List<String> messageSplit = Lists.newArrayList();
+	protected String yesTranslated;
+	protected String noTranslated;
 	private int buttonEnableTimer;
+	protected final BooleanConsumer callback;
 
-	public ConfirmScreen(IdentifiableBooleanConsumer identifiableBooleanConsumer, String string, String string2, int i) {
-		this.consumer = identifiableBooleanConsumer;
-		this.title = string;
-		this.subtitle = string2;
-		this.identifier = i;
-		this.yesText = I18n.translate("gui.yes");
-		this.noText = I18n.translate("gui.no");
+	public ConfirmScreen(BooleanConsumer booleanConsumer, Text text, Text text2) {
+		this(booleanConsumer, text, text2, I18n.translate("gui.yes"), I18n.translate("gui.no"));
 	}
 
-	public ConfirmScreen(IdentifiableBooleanConsumer identifiableBooleanConsumer, String string, String string2, String string3, String string4, int i) {
-		this.consumer = identifiableBooleanConsumer;
-		this.title = string;
-		this.subtitle = string2;
-		this.yesText = string3;
-		this.noText = string4;
-		this.identifier = i;
+	public ConfirmScreen(BooleanConsumer booleanConsumer, Text text, Text text2, String string, String string2) {
+		super(text);
+		this.callback = booleanConsumer;
+		this.message = text2;
+		this.yesTranslated = string;
+		this.noTranslated = string2;
+	}
+
+	@Override
+	public String getNarrationMessage() {
+		return super.getNarrationMessage() + ". " + this.message.getString();
 	}
 
 	@Override
 	protected void init() {
 		super.init();
-		this.addButton(new OptionButtonWidget(0, this.width / 2 - 155, this.height / 6 + 96, this.yesText) {
-			@Override
-			public void method_18374(double d, double e) {
-				ConfirmScreen.this.consumer.confirmResult(true, ConfirmScreen.this.identifier);
-			}
-		});
-		this.addButton(new OptionButtonWidget(1, this.width / 2 - 155 + 160, this.height / 6 + 96, this.noText) {
-			@Override
-			public void method_18374(double d, double e) {
-				ConfirmScreen.this.consumer.confirmResult(false, ConfirmScreen.this.identifier);
-			}
-		});
-		this.lines.clear();
-		this.lines.addAll(this.textRenderer.wrapLines(this.subtitle, this.width - 50));
+		this.addButton(new ButtonWidget(this.width / 2 - 155, this.height / 6 + 96, 150, 20, this.yesTranslated, buttonWidget -> this.callback.accept(true)));
+		this.addButton(new ButtonWidget(this.width / 2 - 155 + 160, this.height / 6 + 96, 150, 20, this.noTranslated, buttonWidget -> this.callback.accept(false)));
+		this.messageSplit.clear();
+		this.messageSplit.addAll(this.font.wrapStringToWidthAsList(this.message.asFormattedString(), this.width - 50));
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		this.drawCenteredString(this.textRenderer, this.title, this.width / 2, 70, 16777215);
-		int i = 90;
+		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 70, 16777215);
+		int k = 90;
 
-		for (String string : this.lines) {
-			this.drawCenteredString(this.textRenderer, string, this.width / 2, i, 16777215);
-			i += this.textRenderer.fontHeight;
+		for (String string : this.messageSplit) {
+			this.drawCenteredString(this.font, string, this.width / 2, k, 16777215);
+			k += 9;
 		}
 
-		super.render(mouseX, mouseY, tickDelta);
+		super.render(i, j, f);
 	}
 
-	public void disableButtons(int duration) {
-		this.buttonEnableTimer = duration;
+	public void disableButtons(int i) {
+		this.buttonEnableTimer = i;
 
-		for (ButtonWidget buttonWidget : this.buttons) {
-			buttonWidget.active = false;
+		for (AbstractButtonWidget abstractButtonWidget : this.buttons) {
+			abstractButtonWidget.active = false;
 		}
 	}
 
@@ -80,21 +68,21 @@ public class ConfirmScreen extends Screen {
 	public void tick() {
 		super.tick();
 		if (--this.buttonEnableTimer == 0) {
-			for (ButtonWidget buttonWidget : this.buttons) {
-				buttonWidget.active = true;
+			for (AbstractButtonWidget abstractButtonWidget : this.buttons) {
+				abstractButtonWidget.active = true;
 			}
 		}
 	}
 
 	@Override
-	public boolean method_18607() {
+	public boolean shouldCloseOnEsc() {
 		return false;
 	}
 
 	@Override
 	public boolean keyPressed(int i, int j, int k) {
 		if (i == 256) {
-			this.consumer.confirmResult(false, this.identifier);
+			this.callback.accept(false);
 			return true;
 		} else {
 			return super.keyPressed(i, j, k);

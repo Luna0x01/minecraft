@@ -3,48 +3,48 @@ package net.minecraft.realms;
 import net.minecraft.client.render.Tessellator;
 
 public class Tezzelator {
-	public static Tessellator tessellator = Tessellator.getInstance();
+	public static final Tessellator t = Tessellator.getInstance();
 	public static final Tezzelator instance = new Tezzelator();
 
 	public void end() {
-		tessellator.draw();
+		t.draw();
 	}
 
-	public Tezzelator vertex(double x, double y, double z) {
-		tessellator.getBuffer().vertex(x, y, z);
+	public Tezzelator vertex(double d, double e, double f) {
+		t.getBufferBuilder().vertex(d, e, f);
 		return this;
 	}
 
-	public void color(float red, float green, float blue, float alpha) {
-		tessellator.getBuffer().color(red, green, blue, alpha);
+	public void color(float f, float g, float h, float i) {
+		t.getBufferBuilder().color(f, g, h, i);
 	}
 
-	public void tex2(short u, short v) {
-		tessellator.getBuffer().texture2(u, v);
+	public void tex2(short s, short t) {
+		Tezzelator.t.getBufferBuilder().texture(s, t);
 	}
 
-	public void normal(float x, float y, float z) {
-		tessellator.getBuffer().normal(x, y, z);
+	public void normal(float f, float g, float h) {
+		t.getBufferBuilder().normal(f, g, h);
 	}
 
-	public void begin(int drawMode, RealmsVertexFormat format) {
-		tessellator.getBuffer().begin(drawMode, format.getVertexFormat());
+	public void begin(int i, RealmsVertexFormat realmsVertexFormat) {
+		t.getBufferBuilder().begin(i, realmsVertexFormat.getVertexFormat());
 	}
 
 	public void endVertex() {
-		tessellator.getBuffer().next();
+		t.getBufferBuilder().next();
 	}
 
-	public void offset(double x, double y, double z) {
-		tessellator.getBuffer().offset(x, y, z);
+	public void offset(double d, double e, double f) {
+		t.getBufferBuilder().setOffset(d, e, f);
 	}
 
-	public RealmsBufferBuilder color(int red, int green, int blue, int alpha) {
-		return new RealmsBufferBuilder(tessellator.getBuffer().color(red, green, blue, alpha));
+	public RealmsBufferBuilder color(int i, int j, int k, int l) {
+		return new RealmsBufferBuilder(t.getBufferBuilder().color(i, j, k, l));
 	}
 
-	public Tezzelator tex(double u, double v) {
-		tessellator.getBuffer().texture(u, v);
+	public Tezzelator tex(double d, double e) {
+		t.getBufferBuilder().texture(d, e);
 		return this;
 	}
 }

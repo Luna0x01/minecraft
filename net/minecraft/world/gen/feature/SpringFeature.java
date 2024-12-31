@@ -1,64 +1,70 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.Random;
-import net.minecraft.class_3798;
-import net.minecraft.class_3844;
-import net.minecraft.class_3899;
+import java.util.function.Function;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
-public class SpringFeature extends class_3844<class_3899> {
-	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3899 arg) {
-		if (!Block.method_16585(iWorld.getBlockState(blockPos.up()).getBlock())) {
+public class SpringFeature extends Feature<SpringFeatureConfig> {
+	public SpringFeature(Function<Dynamic<?>, ? extends SpringFeatureConfig> function) {
+		super(function);
+	}
+
+	public boolean method_13979(
+		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, SpringFeatureConfig springFeatureConfig
+	) {
+		if (!Block.isNaturalStone(iWorld.getBlockState(blockPos.up()).getBlock())) {
 			return false;
-		} else if (!Block.method_16585(iWorld.getBlockState(blockPos.down()).getBlock())) {
+		} else if (!Block.isNaturalStone(iWorld.getBlockState(blockPos.down()).getBlock())) {
 			return false;
 		} else {
 			BlockState blockState = iWorld.getBlockState(blockPos);
-			if (!blockState.isAir() && !Block.method_16585(blockState.getBlock())) {
+			if (!blockState.isAir() && !Block.isNaturalStone(blockState.getBlock())) {
 				return false;
 			} else {
 				int i = 0;
 				int j = 0;
-				if (Block.method_16585(iWorld.getBlockState(blockPos.west()).getBlock())) {
+				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.west()).getBlock())) {
 					j++;
 				}
 
-				if (Block.method_16585(iWorld.getBlockState(blockPos.east()).getBlock())) {
+				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.east()).getBlock())) {
 					j++;
 				}
 
-				if (Block.method_16585(iWorld.getBlockState(blockPos.north()).getBlock())) {
+				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.north()).getBlock())) {
 					j++;
 				}
 
-				if (Block.method_16585(iWorld.getBlockState(blockPos.south()).getBlock())) {
+				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.south()).getBlock())) {
 					j++;
 				}
 
 				int k = 0;
-				if (iWorld.method_8579(blockPos.west())) {
+				if (iWorld.isAir(blockPos.west())) {
 					k++;
 				}
 
-				if (iWorld.method_8579(blockPos.east())) {
+				if (iWorld.isAir(blockPos.east())) {
 					k++;
 				}
 
-				if (iWorld.method_8579(blockPos.north())) {
+				if (iWorld.isAir(blockPos.north())) {
 					k++;
 				}
 
-				if (iWorld.method_8579(blockPos.south())) {
+				if (iWorld.isAir(blockPos.south())) {
 					k++;
 				}
 
 				if (j == 3 && k == 1) {
-					iWorld.setBlockState(blockPos, arg.field_19255.getDefaultState().method_17813(), 2);
-					iWorld.method_16340().schedule(blockPos, arg.field_19255, 0);
+					iWorld.setBlockState(blockPos, springFeatureConfig.state.getBlockState(), 2);
+					iWorld.getFluidTickScheduler().schedule(blockPos, springFeatureConfig.state.getFluid(), 0);
 					i++;
 				}
 

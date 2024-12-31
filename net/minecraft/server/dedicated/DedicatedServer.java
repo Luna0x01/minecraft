@@ -1,15 +1,7 @@
 package net.minecraft.server.dedicated;
 
 public interface DedicatedServer {
-	int getIntOrDefault(String name, int value);
-
-	String getOrDefault(String name, String value);
-
-	void setProperty(String property, Object value);
-
-	void saveAbstractPropertiesHandler();
-
-	String getPropertiesFilePath();
+	ServerPropertiesHandler getProperties();
 
 	String getHostname();
 
@@ -29,13 +21,13 @@ public interface DedicatedServer {
 
 	String getPlugins();
 
-	String executeRconCommand(String name);
+	String executeRconCommand(String string);
 
 	boolean isDebuggingEnabled();
 
-	void logInfo(String string);
+	void info(String string);
 
-	void logWarn(String string);
+	void warn(String string);
 
 	void logError(String string);
 

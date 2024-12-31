@@ -1,90 +1,71 @@
 package net.minecraft.item;
 
 import java.util.List;
-import net.minecraft.class_4079;
-import net.minecraft.block.Block;
+import java.util.function.Predicate;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RayTraceContext;
 import net.minecraft.world.World;
 
 public class BoatItem extends Item {
-	private final BoatEntity.Type field_12282;
+	private static final Predicate<Entity> RIDERS = EntityPredicates.EXCEPT_SPECTATOR.and(Entity::collides);
+	private final BoatEntity.Type type;
 
 	public BoatItem(BoatEntity.Type type, Item.Settings settings) {
 		super(settings);
-		this.field_12282 = type;
+		this.type = type;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		float f = 1.0F;
-		float g = player.prevPitch + (player.pitch - player.prevPitch) * 1.0F;
-		float h = player.prevYaw + (player.yaw - player.prevYaw) * 1.0F;
-		double d = player.prevX + (player.x - player.prevX) * 1.0;
-		double e = player.prevY + (player.y - player.prevY) * 1.0 + (double)player.getEyeHeight();
-		double i = player.prevZ + (player.z - player.prevZ) * 1.0;
-		Vec3d vec3d = new Vec3d(d, e, i);
-		float j = MathHelper.cos(-h * (float) (Math.PI / 180.0) - (float) Math.PI);
-		float k = MathHelper.sin(-h * (float) (Math.PI / 180.0) - (float) Math.PI);
-		float l = -MathHelper.cos(-g * (float) (Math.PI / 180.0));
-		float m = MathHelper.sin(-g * (float) (Math.PI / 180.0));
-		float n = k * l;
-		float p = j * l;
-		double q = 5.0;
-		Vec3d vec3d2 = vec3d.add((double)n * 5.0, (double)m * 5.0, (double)p * 5.0);
-		BlockHitResult blockHitResult = world.method_3614(vec3d, vec3d2, class_4079.ALWAYS);
-		if (blockHitResult == null) {
-			return new TypedActionResult<>(ActionResult.PASS, itemStack);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1347);
+		if (hitResult.getType() == HitResult.Type.field_1333) {
+			return new TypedActionResult<>(ActionResult.field_5811, itemStack);
 		} else {
-			Vec3d vec3d3 = player.getRotationVector(1.0F);
-			boolean bl = false;
-			List<Entity> list = world.getEntities(player, player.getBoundingBox().stretch(vec3d3.x * 5.0, vec3d3.y * 5.0, vec3d3.z * 5.0).expand(1.0));
+			Vec3d vec3d = playerEntity.getRotationVec(1.0F);
+			double d = 5.0;
+			List<Entity> list = world.getEntities(playerEntity, playerEntity.getBoundingBox().stretch(vec3d.multiply(5.0)).expand(1.0), RIDERS);
+			if (!list.isEmpty()) {
+				Vec3d vec3d2 = playerEntity.getCameraPosVec(1.0F);
 
-			for (int r = 0; r < list.size(); r++) {
-				Entity entity = (Entity)list.get(r);
-				if (entity.collides()) {
+				for (Entity entity : list) {
 					Box box = entity.getBoundingBox().expand((double)entity.getTargetingMargin());
-					if (box.contains(vec3d)) {
-						bl = true;
+					if (box.contains(vec3d2)) {
+						return new TypedActionResult<>(ActionResult.field_5811, itemStack);
 					}
 				}
 			}
 
-			if (bl) {
-				return new TypedActionResult<>(ActionResult.PASS, itemStack);
-			} else if (blockHitResult.type == BlockHitResult.Type.BLOCK) {
-				BlockPos blockPos = blockHitResult.getBlockPos();
-				Block block = world.getBlockState(blockPos).getBlock();
-				BoatEntity boatEntity = new BoatEntity(world, blockHitResult.pos.x, blockHitResult.pos.y, blockHitResult.pos.z);
-				boatEntity.setBoatType(this.field_12282);
-				boatEntity.yaw = player.yaw;
-				if (!world.method_16387(boatEntity, boatEntity.getBoundingBox().expand(-0.1))) {
-					return new TypedActionResult<>(ActionResult.FAIL, itemStack);
+			if (hitResult.getType() == HitResult.Type.field_1332) {
+				BoatEntity boatEntity = new BoatEntity(world, hitResult.getPos().x, hitResult.getPos().y, hitResult.getPos().z);
+				boatEntity.setBoatType(this.type);
+				boatEntity.yaw = playerEntity.yaw;
+				if (!world.doesNotCollide(boatEntity, boatEntity.getBoundingBox().expand(-0.1))) {
+					return new TypedActionResult<>(ActionResult.field_5814, itemStack);
 				} else {
 					if (!world.isClient) {
-						world.method_3686(boatEntity);
+						world.spawnEntity(boatEntity);
 					}
 
-					if (!player.abilities.creativeMode) {
+					if (!playerEntity.abilities.creativeMode) {
 						itemStack.decrement(1);
 					}
 
-					player.method_15932(Stats.USED.method_21429(this));
-					return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+					return new TypedActionResult<>(ActionResult.field_5812, itemStack);
 				}
 			} else {
-				return new TypedActionResult<>(ActionResult.PASS, itemStack);
+				return new TypedActionResult<>(ActionResult.field_5811, itemStack);
 			}
 		}
 	}

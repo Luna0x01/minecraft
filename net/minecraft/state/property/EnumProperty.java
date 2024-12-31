@@ -36,11 +36,11 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 	}
 
 	@Override
-	public Optional<T> getValueAsString(String value) {
-		return Optional.ofNullable(this.byName.get(value));
+	public Optional<T> getValue(String string) {
+		return Optional.ofNullable(this.byName.get(string));
 	}
 
-	public String name(T enum_) {
+	public String method_11846(T enum_) {
 		return enum_.asString();
 	}
 
@@ -63,19 +63,19 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 		return 31 * i + this.byName.hashCode();
 	}
 
-	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type) {
-		return of(name, type, Predicates.alwaysTrue());
+	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String string, Class<T> class_) {
+		return of(string, class_, Predicates.alwaysTrue());
 	}
 
-	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type, Predicate<T> filter) {
-		return of(name, type, (Collection<T>)Arrays.stream(type.getEnumConstants()).filter(filter).collect(Collectors.toList()));
+	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String string, Class<T> class_, Predicate<T> predicate) {
+		return of(string, class_, (Collection<T>)Arrays.stream(class_.getEnumConstants()).filter(predicate).collect(Collectors.toList()));
 	}
 
-	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type, T... values) {
-		return of(name, type, Lists.newArrayList(values));
+	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String string, Class<T> class_, T... enums) {
+		return of(string, class_, Lists.newArrayList(enums));
 	}
 
-	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type, Collection<T> values) {
-		return new EnumProperty<>(name, type, values);
+	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String string, Class<T> class_, Collection<T> collection) {
+		return new EnumProperty<>(string, class_, collection);
 	}
 }

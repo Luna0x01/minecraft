@@ -4,75 +4,77 @@ import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.class_2957;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.class_2840;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
+import net.minecraft.client.network.packet.BossBarS2CPacket;
+import net.minecraft.entity.boss.BossBar;
 import net.minecraft.util.Identifier;
 
 public class BossBarHud extends DrawableHelper {
-	private static final Identifier TEXTURE = new Identifier("textures/gui/bars.png");
+	private static final Identifier BAR_TEX = new Identifier("textures/gui/bars.png");
 	private final MinecraftClient client;
-	private final Map<UUID, class_2840> field_13306 = Maps.newLinkedHashMap();
+	private final Map<UUID, ClientBossBar> bossBars = Maps.newLinkedHashMap();
 
 	public BossBarHud(MinecraftClient minecraftClient) {
 		this.client = minecraftClient;
 	}
 
 	public void render() {
-		if (!this.field_13306.isEmpty()) {
-			int i = this.client.field_19944.method_18321();
+		if (!this.bossBars.isEmpty()) {
+			int i = this.client.window.getScaledWidth();
 			int j = 12;
 
-			for (class_2840 lv : this.field_13306.values()) {
+			for (ClientBossBar clientBossBar : this.bossBars.values()) {
 				int k = i / 2 - 91;
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-				this.client.getTextureManager().bindTexture(TEXTURE);
-				this.method_12169(k, j, lv);
-				String string = lv.getTitle().asFormattedString();
-				this.client.textRenderer.drawWithShadow(string, (float)(i / 2 - this.client.textRenderer.getStringWidth(string) / 2), (float)(j - 9), 16777215);
-				j += 10 + this.client.textRenderer.fontHeight;
-				if (j >= this.client.field_19944.method_18322() / 3) {
+				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				this.client.getTextureManager().bindTexture(BAR_TEX);
+				this.renderBossBar(k, j, clientBossBar);
+				String string = clientBossBar.getName().asFormattedString();
+				int m = this.client.textRenderer.getStringWidth(string);
+				int n = i / 2 - m / 2;
+				int o = j - 9;
+				this.client.textRenderer.drawWithShadow(string, (float)n, (float)o, 16777215);
+				j += 10 + 9;
+				if (j >= this.client.window.getScaledHeight() / 3) {
 					break;
 				}
 			}
 		}
 	}
 
-	private void method_12169(int i, int j, class_2957 arg) {
-		this.drawTexture(i, j, 0, arg.getColor().ordinal() * 5 * 2, 182, 5);
-		if (arg.getDivision() != class_2957.Division.PROGRESS) {
-			this.drawTexture(i, j, 0, 80 + (arg.getDivision().ordinal() - 1) * 5 * 2, 182, 5);
+	private void renderBossBar(int i, int j, BossBar bossBar) {
+		this.blit(i, j, 0, bossBar.getColor().ordinal() * 5 * 2, 182, 5);
+		if (bossBar.getOverlay() != BossBar.Style.field_5795) {
+			this.blit(i, j, 0, 80 + (bossBar.getOverlay().ordinal() - 1) * 5 * 2, 182, 5);
 		}
 
-		int k = (int)(arg.getHealth() * 183.0F);
+		int k = (int)(bossBar.getPercent() * 183.0F);
 		if (k > 0) {
-			this.drawTexture(i, j, 0, arg.getColor().ordinal() * 5 * 2 + 5, k, 5);
-			if (arg.getDivision() != class_2957.Division.PROGRESS) {
-				this.drawTexture(i, j, 0, 80 + (arg.getDivision().ordinal() - 1) * 5 * 2 + 5, k, 5);
+			this.blit(i, j, 0, bossBar.getColor().ordinal() * 5 * 2 + 5, k, 5);
+			if (bossBar.getOverlay() != BossBar.Style.field_5795) {
+				this.blit(i, j, 0, 80 + (bossBar.getOverlay().ordinal() - 1) * 5 * 2 + 5, k, 5);
 			}
 		}
 	}
 
-	public void method_12170(BossBarS2CPacket bossBarS2CPacket) {
-		if (bossBarS2CPacket.getAction() == BossBarS2CPacket.Action.ADD) {
-			this.field_13306.put(bossBarS2CPacket.getUuid(), new class_2840(bossBarS2CPacket));
-		} else if (bossBarS2CPacket.getAction() == BossBarS2CPacket.Action.REMOVE) {
-			this.field_13306.remove(bossBarS2CPacket.getUuid());
+	public void handlePacket(BossBarS2CPacket bossBarS2CPacket) {
+		if (bossBarS2CPacket.getType() == BossBarS2CPacket.Type.field_12078) {
+			this.bossBars.put(bossBarS2CPacket.getUuid(), new ClientBossBar(bossBarS2CPacket));
+		} else if (bossBarS2CPacket.getType() == BossBarS2CPacket.Type.field_12082) {
+			this.bossBars.remove(bossBarS2CPacket.getUuid());
 		} else {
-			((class_2840)this.field_13306.get(bossBarS2CPacket.getUuid())).method_12175(bossBarS2CPacket);
+			((ClientBossBar)this.bossBars.get(bossBarS2CPacket.getUuid())).handlePacket(bossBarS2CPacket);
 		}
 	}
 
-	public void method_12171() {
-		this.field_13306.clear();
+	public void clear() {
+		this.bossBars.clear();
 	}
 
-	public boolean method_12172() {
-		if (!this.field_13306.isEmpty()) {
-			for (class_2957 lv : this.field_13306.values()) {
-				if (lv.method_12930()) {
+	public boolean shouldPlayDragonMusic() {
+		if (!this.bossBars.isEmpty()) {
+			for (BossBar bossBar : this.bossBars.values()) {
+				if (bossBar.hasDragonMusic()) {
 					return true;
 				}
 			}
@@ -81,10 +83,10 @@ public class BossBarHud extends DrawableHelper {
 		return false;
 	}
 
-	public boolean method_12173() {
-		if (!this.field_13306.isEmpty()) {
-			for (class_2957 lv : this.field_13306.values()) {
-				if (lv.method_12929()) {
+	public boolean shouldDarkenSky() {
+		if (!this.bossBars.isEmpty()) {
+			for (BossBar bossBar : this.bossBars.values()) {
+				if (bossBar.getDarkenSky()) {
 					return true;
 				}
 			}
@@ -93,10 +95,10 @@ public class BossBarHud extends DrawableHelper {
 		return false;
 	}
 
-	public boolean method_12174() {
-		if (!this.field_13306.isEmpty()) {
-			for (class_2957 lv : this.field_13306.values()) {
-				if (lv.method_12931()) {
+	public boolean shouldThickenFog() {
+		if (!this.bossBars.isEmpty()) {
+			for (BossBar bossBar : this.bossBars.values()) {
+				if (bossBar.getThickenFog()) {
 					return true;
 				}
 			}

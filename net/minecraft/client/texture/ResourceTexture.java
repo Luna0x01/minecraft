@@ -1,7 +1,9 @@
 package net.minecraft.client.texture;
 
+import com.mojang.blaze3d.platform.TextureUtil;
+import java.io.Closeable;
 import java.io.IOException;
-import net.minecraft.class_4277;
+import javax.annotation.Nullable;
 import net.minecraft.client.resource.metadata.TextureResourceMetadata;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
@@ -11,49 +13,131 @@ import org.apache.logging.log4j.Logger;
 
 public class ResourceTexture extends AbstractTexture {
 	private static final Logger LOGGER = LogManager.getLogger();
-	protected final Identifier field_6555;
+	protected final Identifier location;
 
 	public ResourceTexture(Identifier identifier) {
-		this.field_6555 = identifier;
+		this.location = identifier;
 	}
 
 	@Override
-	public void load(ResourceManager manager) throws IOException {
-		Resource resource = manager.getResource(this.field_6555);
+	public void load(ResourceManager resourceManager) throws IOException {
+		ResourceTexture.TextureData textureData = this.loadTextureData(resourceManager);
 		Throwable var3 = null;
 
-		try (class_4277 lv = class_4277.method_19472(resource.getInputStream())) {
+		try {
 			boolean bl = false;
 			boolean bl2 = false;
-			if (resource.hasMetadata()) {
-				try {
-					TextureResourceMetadata textureResourceMetadata = resource.method_21371(TextureResourceMetadata.field_21050);
-					if (textureResourceMetadata != null) {
-						bl = textureResourceMetadata.method_5980();
-						bl2 = textureResourceMetadata.method_5981();
-					}
-				} catch (RuntimeException var32) {
-					LOGGER.warn("Failed reading metadata of: {}", this.field_6555, var32);
-				}
+			textureData.checkException();
+			TextureResourceMetadata textureResourceMetadata = textureData.getMetadata();
+			if (textureResourceMetadata != null) {
+				bl = textureResourceMetadata.shouldBlur();
+				bl2 = textureResourceMetadata.shouldClamp();
 			}
 
-			this.method_19530();
-			TextureUtil.prepareImage(this.getGlId(), 0, lv.method_19458(), lv.method_19478());
-			lv.method_19463(0, 0, 0, 0, 0, lv.method_19458(), lv.method_19478(), bl, bl2, false);
-		} catch (Throwable var35) {
-			var3 = var35;
-			throw var35;
+			this.bindTexture();
+			TextureUtil.prepareImage(this.getGlId(), 0, textureData.getImage().getWidth(), textureData.getImage().getHeight());
+			textureData.getImage().upload(0, 0, 0, 0, 0, textureData.getImage().getWidth(), textureData.getImage().getHeight(), bl, bl2, false);
+		} catch (Throwable var14) {
+			var3 = var14;
+			throw var14;
 		} finally {
-			if (resource != null) {
+			if (textureData != null) {
 				if (var3 != null) {
 					try {
-						resource.close();
-					} catch (Throwable var30) {
-						var3.addSuppressed(var30);
+						textureData.close();
+					} catch (Throwable var13) {
+						var3.addSuppressed(var13);
 					}
 				} else {
-					resource.close();
+					textureData.close();
 				}
+			}
+		}
+	}
+
+	protected ResourceTexture.TextureData loadTextureData(ResourceManager resourceManager) {
+		return ResourceTexture.TextureData.load(resourceManager, this.location);
+	}
+
+	public static class TextureData implements Closeable {
+		private final TextureResourceMetadata metadata;
+		private final NativeImage image;
+		private final IOException exception;
+
+		public TextureData(IOException iOException) {
+			this.exception = iOException;
+			this.metadata = null;
+			this.image = null;
+		}
+
+		public TextureData(@Nullable TextureResourceMetadata textureResourceMetadata, NativeImage nativeImage) {
+			this.exception = null;
+			this.metadata = textureResourceMetadata;
+			this.image = nativeImage;
+		}
+
+		public static ResourceTexture.TextureData load(ResourceManager resourceManager, Identifier identifier) {
+			try {
+				Resource resource = resourceManager.getResource(identifier);
+				Throwable var3 = null;
+
+				ResourceTexture.TextureData runtimeException;
+				try {
+					NativeImage nativeImage = NativeImage.read(resource.getInputStream());
+					TextureResourceMetadata textureResourceMetadata = null;
+
+					try {
+						textureResourceMetadata = resource.getMetadata(TextureResourceMetadata.READER);
+					} catch (RuntimeException var17) {
+						ResourceTexture.LOGGER.warn("Failed reading metadata of: {}", identifier, var17);
+					}
+
+					runtimeException = new ResourceTexture.TextureData(textureResourceMetadata, nativeImage);
+				} catch (Throwable var18) {
+					var3 = var18;
+					throw var18;
+				} finally {
+					if (resource != null) {
+						if (var3 != null) {
+							try {
+								resource.close();
+							} catch (Throwable var16) {
+								var3.addSuppressed(var16);
+							}
+						} else {
+							resource.close();
+						}
+					}
+				}
+
+				return runtimeException;
+			} catch (IOException var20) {
+				return new ResourceTexture.TextureData(var20);
+			}
+		}
+
+		@Nullable
+		public TextureResourceMetadata getMetadata() {
+			return this.metadata;
+		}
+
+		public NativeImage getImage() throws IOException {
+			if (this.exception != null) {
+				throw this.exception;
+			} else {
+				return this.image;
+			}
+		}
+
+		public void close() {
+			if (this.image != null) {
+				this.image.close();
+			}
+		}
+
+		public void checkException() throws IOException {
+			if (this.exception != null) {
+				throw this.exception;
 			}
 		}
 	}

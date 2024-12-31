@@ -3,55 +3,62 @@ package net.minecraft.block.entity;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
-import net.minecraft.class_3893;
-import net.minecraft.class_3915;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.ChatSerializer;
+import net.minecraft.text.Texts;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
-public class SignBlockEntity extends BlockEntity implements class_3893 {
+public class SignBlockEntity extends BlockEntity {
 	public final Text[] text = new Text[]{new LiteralText(""), new LiteralText(""), new LiteralText(""), new LiteralText("")};
-	public int lineBeingEdited = -1;
+	private boolean caretVisible;
+	private int currentRow = -1;
+	private int selectionStart = -1;
+	private int selectionEnd = -1;
 	private boolean editable = true;
 	private PlayerEntity editor;
-	private final String[] field_18645 = new String[4];
+	private final String[] textBeingEdited = new String[4];
+	private DyeColor textColor = DyeColor.field_7963;
 
 	public SignBlockEntity() {
-		super(BlockEntityType.SIGN);
+		super(BlockEntityType.field_11911);
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
 
 		for (int i = 0; i < 4; i++) {
-			String string = Text.Serializer.serialize(this.text[i]);
-			nbt.putString("Text" + (i + 1), string);
+			String string = Text.Serializer.toJson(this.text[i]);
+			compoundTag.putString("Text" + (i + 1), string);
 		}
 
-		return nbt;
+		compoundTag.putString("Color", this.textColor.getName());
+		return compoundTag;
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
+	public void fromTag(CompoundTag compoundTag) {
 		this.editable = false;
-		super.fromNbt(nbt);
+		super.fromTag(compoundTag);
+		this.textColor = DyeColor.byName(compoundTag.getString("Color"), DyeColor.field_7963);
 
 		for (int i = 0; i < 4; i++) {
-			String string = nbt.getString("Text" + (i + 1));
-			Text text = Text.Serializer.deserializeText(string);
+			String string = compoundTag.getString("Text" + (i + 1));
+			Text text = Text.Serializer.fromJson(string.isEmpty() ? "\"\"" : string);
 			if (this.world instanceof ServerWorld) {
 				try {
-					this.text[i] = ChatSerializer.method_20185(this.method_16839(null), text, null);
+					this.text[i] = Texts.parse(this.getCommandSource(null), text, null, 0);
 				} catch (CommandSyntaxException var6) {
 					this.text[i] = text;
 				}
@@ -59,41 +66,41 @@ public class SignBlockEntity extends BlockEntity implements class_3893 {
 				this.text[i] = text;
 			}
 
-			this.field_18645[i] = null;
+			this.textBeingEdited[i] = null;
 		}
 	}
 
-	public Text method_16836(int i) {
+	public Text getTextOnRow(int i) {
 		return this.text[i];
 	}
 
-	public void method_16837(int i, Text text) {
+	public void setTextOnRow(int i, Text text) {
 		this.text[i] = text;
-		this.field_18645[i] = null;
+		this.textBeingEdited[i] = null;
 	}
 
 	@Nullable
-	public String method_16838(int i, Function<Text, String> function) {
-		if (this.field_18645[i] == null && this.text[i] != null) {
-			this.field_18645[i] = (String)function.apply(this.text[i]);
+	public String getTextBeingEditedOnRow(int i, Function<Text, String> function) {
+		if (this.textBeingEdited[i] == null && this.text[i] != null) {
+			this.textBeingEdited[i] = (String)function.apply(this.text[i]);
 		}
 
-		return this.field_18645[i];
+		return this.textBeingEdited[i];
 	}
 
 	@Nullable
 	@Override
-	public BlockEntityUpdateS2CPacket getUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 9, this.getUpdatePacketContent());
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 9, this.toInitialChunkDataTag());
 	}
 
 	@Override
-	public NbtCompound getUpdatePacketContent() {
-		return this.toNbt(new NbtCompound());
+	public CompoundTag toInitialChunkDataTag() {
+		return this.toTag(new CompoundTag());
 	}
 
 	@Override
-	public boolean shouldNotCopyNbtFromItem() {
+	public boolean shouldNotCopyTagFromItem() {
 		return true;
 	}
 
@@ -101,28 +108,28 @@ public class SignBlockEntity extends BlockEntity implements class_3893 {
 		return this.editable;
 	}
 
-	public void setEditable(boolean editable) {
-		this.editable = editable;
-		if (!editable) {
+	public void setEditable(boolean bl) {
+		this.editable = bl;
+		if (!bl) {
 			this.editor = null;
 		}
 	}
 
-	public void setEditor(PlayerEntity editor) {
-		this.editor = editor;
+	public void setEditor(PlayerEntity playerEntity) {
+		this.editor = playerEntity;
 	}
 
 	public PlayerEntity getEditor() {
 		return this.editor;
 	}
 
-	public boolean onActivate(PlayerEntity player) {
+	public boolean onActivate(PlayerEntity playerEntity) {
 		for (Text text : this.text) {
 			Style style = text == null ? null : text.getStyle();
 			if (style != null && style.getClickEvent() != null) {
 				ClickEvent clickEvent = style.getClickEvent();
-				if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
-					player.method_12833().method_2971().method_17519(this.method_16839((ServerPlayerEntity)player), clickEvent.getValue());
+				if (clickEvent.getAction() == ClickEvent.Action.field_11750) {
+					playerEntity.getServer().getCommandManager().execute(this.getCommandSource((ServerPlayerEntity)playerEntity), clickEvent.getValue());
 				}
 			}
 		}
@@ -130,15 +137,11 @@ public class SignBlockEntity extends BlockEntity implements class_3893 {
 		return true;
 	}
 
-	@Override
-	public void method_5505(Text text) {
-	}
-
-	public class_3915 method_16839(@Nullable ServerPlayerEntity serverPlayerEntity) {
-		String string = serverPlayerEntity == null ? "Sign" : serverPlayerEntity.method_15540().getString();
-		Text text = (Text)(serverPlayerEntity == null ? new LiteralText("Sign") : serverPlayerEntity.getName());
-		return new class_3915(
-			this,
+	public ServerCommandSource getCommandSource(@Nullable ServerPlayerEntity serverPlayerEntity) {
+		String string = serverPlayerEntity == null ? "Sign" : serverPlayerEntity.getName().getString();
+		Text text = (Text)(serverPlayerEntity == null ? new LiteralText("Sign") : serverPlayerEntity.getDisplayName());
+		return new ServerCommandSource(
+			CommandOutput.DUMMY,
 			new Vec3d((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5),
 			Vec2f.ZERO,
 			(ServerWorld)this.world,
@@ -150,18 +153,48 @@ public class SignBlockEntity extends BlockEntity implements class_3893 {
 		);
 	}
 
-	@Override
-	public boolean method_17413() {
-		return false;
+	public DyeColor getTextColor() {
+		return this.textColor;
 	}
 
-	@Override
-	public boolean method_17414() {
-		return false;
+	public boolean setTextColor(DyeColor dyeColor) {
+		if (dyeColor != this.getTextColor()) {
+			this.textColor = dyeColor;
+			this.markDirty();
+			this.world.updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), 3);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
-	@Override
-	public boolean method_17412() {
-		return false;
+	public void setSelectionState(int i, int j, int k, boolean bl) {
+		this.currentRow = i;
+		this.selectionStart = j;
+		this.selectionEnd = k;
+		this.caretVisible = bl;
+	}
+
+	public void resetSelectionState() {
+		this.currentRow = -1;
+		this.selectionStart = -1;
+		this.selectionEnd = -1;
+		this.caretVisible = false;
+	}
+
+	public boolean isCaretVisible() {
+		return this.caretVisible;
+	}
+
+	public int getCurrentRow() {
+		return this.currentRow;
+	}
+
+	public int getSelectionStart() {
+		return this.selectionStart;
+	}
+
+	public int getSelectionEnd() {
+		return this.selectionEnd;
 	}
 }

@@ -10,13 +10,13 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 public abstract class AbstractTeam {
-	public boolean isEqual(@Nullable AbstractTeam team) {
-		return team == null ? false : this == team;
+	public boolean isEqual(@Nullable AbstractTeam abstractTeam) {
+		return abstractTeam == null ? false : this == abstractTeam;
 	}
 
 	public abstract String getName();
 
-	public abstract Text method_18122(Text text);
+	public abstract Text modifyText(Text text);
 
 	public abstract boolean shouldShowFriendlyInvisibles();
 
@@ -24,62 +24,62 @@ public abstract class AbstractTeam {
 
 	public abstract AbstractTeam.VisibilityRule getNameTagVisibilityRule();
 
-	public abstract Formatting method_12130();
+	public abstract Formatting getColor();
 
 	public abstract Collection<String> getPlayerList();
 
 	public abstract AbstractTeam.VisibilityRule getDeathMessageVisibilityRule();
 
-	public abstract AbstractTeam.CollisionRule method_12129();
+	public abstract AbstractTeam.CollisionRule getCollisionRule();
 
 	public static enum CollisionRule {
-		ALWAYS("always", 0),
-		NEVER("never", 1),
-		PUSH_OTHER_TEAMS("pushOtherTeams", 2),
-		PUSH_OWN_TEAM("pushOwnTeam", 3);
+		field_1437("always", 0),
+		field_1435("never", 1),
+		field_1434("pushOtherTeams", 2),
+		field_1440("pushOwnTeam", 3);
 
-		private static final Map<String, AbstractTeam.CollisionRule> field_19877 = (Map<String, AbstractTeam.CollisionRule>)Arrays.stream(values())
+		private static final Map<String, AbstractTeam.CollisionRule> COLLISION_RULES = (Map<String, AbstractTeam.CollisionRule>)Arrays.stream(values())
 			.collect(Collectors.toMap(collisionRule -> collisionRule.name, collisionRule -> collisionRule));
 		public final String name;
-		public final int id;
+		public final int value;
 
 		@Nullable
-		public static AbstractTeam.CollisionRule method_12132(String string) {
-			return (AbstractTeam.CollisionRule)field_19877.get(string);
+		public static AbstractTeam.CollisionRule getRule(String string) {
+			return (AbstractTeam.CollisionRule)COLLISION_RULES.get(string);
 		}
 
 		private CollisionRule(String string2, int j) {
 			this.name = string2;
-			this.id = j;
+			this.value = j;
 		}
 
-		public Text method_18124() {
+		public Text getTranslationKey() {
 			return new TranslatableText("team.collision." + this.name);
 		}
 	}
 
 	public static enum VisibilityRule {
-		ALWAYS("always", 0),
-		NEVER("never", 1),
-		HIDE_FOR_OTHER_TEAMS("hideForOtherTeams", 2),
-		HIDE_FOR_OWN_TEAM("hideForOwnTeam", 3);
+		field_1442("always", 0),
+		field_1443("never", 1),
+		field_1444("hideForOtherTeams", 2),
+		field_1446("hideForOwnTeam", 3);
 
-		private static final Map<String, AbstractTeam.VisibilityRule> field_19878 = (Map<String, AbstractTeam.VisibilityRule>)Arrays.stream(values())
+		private static final Map<String, AbstractTeam.VisibilityRule> VISIBILITY_RULES = (Map<String, AbstractTeam.VisibilityRule>)Arrays.stream(values())
 			.collect(Collectors.toMap(visibilityRule -> visibilityRule.name, visibilityRule -> visibilityRule));
 		public final String name;
-		public final int id;
+		public final int value;
 
 		@Nullable
-		public static AbstractTeam.VisibilityRule getRuleByName(String name) {
-			return (AbstractTeam.VisibilityRule)field_19878.get(name);
+		public static AbstractTeam.VisibilityRule getRule(String string) {
+			return (AbstractTeam.VisibilityRule)VISIBILITY_RULES.get(string);
 		}
 
 		private VisibilityRule(String string2, int j) {
 			this.name = string2;
-			this.id = j;
+			this.value = j;
 		}
 
-		public Text method_18127() {
+		public Text getTranslationKey() {
 			return new TranslatableText("team.visibility." + this.name);
 		}
 	}

@@ -12,11 +12,11 @@ public class LiteralText extends BaseText {
 	}
 
 	@Override
-	public String computeValue() {
+	public String asString() {
 		return this.string;
 	}
 
-	public LiteralText copy() {
+	public LiteralText method_10992() {
 		return new LiteralText(this.string);
 	}
 

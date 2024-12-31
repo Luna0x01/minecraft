@@ -22,11 +22,15 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.PositionTracker;
 import net.minecraft.text.Text;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public class PacketByteBuf extends ByteBuf {
 	private final ByteBuf parent;
@@ -35,10 +39,10 @@ public class PacketByteBuf extends ByteBuf {
 		this.parent = byteBuf;
 	}
 
-	public static int getVarIntSizeBytes(int size) {
-		for (int i = 1; i < 5; i++) {
-			if ((size & -1 << i * 7) == 0) {
-				return i;
+	public static int getVarIntSizeBytes(int i) {
+		for (int j = 1; j < 5; j++) {
+			if ((i & -1 << j * 7) == 0) {
+				return j;
 			}
 		}
 
@@ -55,21 +59,21 @@ public class PacketByteBuf extends ByteBuf {
 		return this.readByteArray(this.readableBytes());
 	}
 
-	public byte[] readByteArray(int size) {
-		int i = this.readVarInt();
-		if (i > size) {
-			throw new DecoderException("ByteArray with size " + i + " is bigger than allowed " + size);
+	public byte[] readByteArray(int i) {
+		int j = this.readVarInt();
+		if (j > i) {
+			throw new DecoderException("ByteArray with size " + j + " is bigger than allowed " + i);
 		} else {
-			byte[] bs = new byte[i];
+			byte[] bs = new byte[j];
 			this.readBytes(bs);
 			return bs;
 		}
 	}
 
-	public PacketByteBuf writeIntArray(int[] intArray) {
-		this.writeVarInt(intArray.length);
+	public PacketByteBuf writeIntArray(int[] is) {
+		this.writeVarInt(is.length);
 
-		for (int i : intArray) {
+		for (int i : is) {
 			this.writeVarInt(i);
 		}
 
@@ -80,15 +84,15 @@ public class PacketByteBuf extends ByteBuf {
 		return this.readIntArray(this.readableBytes());
 	}
 
-	public int[] readIntArray(int size) {
-		int i = this.readVarInt();
-		if (i > size) {
-			throw new DecoderException("VarIntArray with size " + i + " is bigger than allowed " + size);
+	public int[] readIntArray(int i) {
+		int j = this.readVarInt();
+		if (j > i) {
+			throw new DecoderException("VarIntArray with size " + j + " is bigger than allowed " + i);
 		} else {
-			int[] is = new int[i];
+			int[] is = new int[j];
 
-			for (int j = 0; j < is.length; j++) {
-				is[j] = this.readVarInt();
+			for (int k = 0; k < is.length; k++) {
+				is[k] = this.readVarInt();
 			}
 
 			return is;
@@ -105,50 +109,54 @@ public class PacketByteBuf extends ByteBuf {
 		return this;
 	}
 
-	public long[] readLongArray(@Nullable long[] dest) {
-		return this.readLongArray(dest, this.readableBytes() / 8);
+	public long[] readLongArray(@Nullable long[] ls) {
+		return this.readLongArray(ls, this.readableBytes() / 8);
 	}
 
-	public long[] readLongArray(@Nullable long[] dest, int size) {
-		int i = this.readVarInt();
-		if (dest == null || dest.length != i) {
-			if (i > size) {
-				throw new DecoderException("LongArray with size " + i + " is bigger than allowed " + size);
+	public long[] readLongArray(@Nullable long[] ls, int i) {
+		int j = this.readVarInt();
+		if (ls == null || ls.length != j) {
+			if (j > i) {
+				throw new DecoderException("LongArray with size " + j + " is bigger than allowed " + i);
 			}
 
-			dest = new long[i];
+			ls = new long[j];
 		}
 
-		for (int j = 0; j < dest.length; j++) {
-			dest[j] = this.readLong();
+		for (int k = 0; k < ls.length; k++) {
+			ls[k] = this.readLong();
 		}
 
-		return dest;
+		return ls;
 	}
 
 	public BlockPos readBlockPos() {
 		return BlockPos.fromLong(this.readLong());
 	}
 
-	public PacketByteBuf writeBlockPos(BlockPos pos) {
-		this.writeLong(pos.asLong());
+	public PacketByteBuf writeBlockPos(BlockPos blockPos) {
+		this.writeLong(blockPos.asLong());
 		return this;
 	}
 
+	public ChunkSectionPos readChunkSectionPos() {
+		return ChunkSectionPos.from(this.readLong());
+	}
+
 	public Text readText() {
-		return Text.Serializer.deserializeText(this.readString(262144));
+		return Text.Serializer.fromJson(this.readString(262144));
 	}
 
 	public PacketByteBuf writeText(Text text) {
-		return this.method_20167(Text.Serializer.serialize(text), 262144);
+		return this.writeString(Text.Serializer.toJson(text), 262144);
 	}
 
-	public <T extends Enum<T>> T readEnumConstant(Class<T> instance) {
-		return (T)instance.getEnumConstants()[this.readVarInt()];
+	public <T extends Enum<T>> T readEnumConstant(Class<T> class_) {
+		return (T)class_.getEnumConstants()[this.readVarInt()];
 	}
 
-	public PacketByteBuf writeEnumConstant(Enum<?> constant) {
-		return this.writeVarInt(constant.ordinal());
+	public PacketByteBuf writeEnumConstant(Enum<?> enum_) {
+		return this.writeVarInt(enum_.ordinal());
 	}
 
 	public int readVarInt() {
@@ -183,9 +191,9 @@ public class PacketByteBuf extends ByteBuf {
 		return l;
 	}
 
-	public PacketByteBuf writeUuid(UUID uuid) {
-		this.writeLong(uuid.getMostSignificantBits());
-		this.writeLong(uuid.getLeastSignificantBits());
+	public PacketByteBuf writeUuid(UUID uUID) {
+		this.writeLong(uUID.getMostSignificantBits());
+		this.writeLong(uUID.getLeastSignificantBits());
 		return this;
 	}
 
@@ -193,17 +201,17 @@ public class PacketByteBuf extends ByteBuf {
 		return new UUID(this.readLong(), this.readLong());
 	}
 
-	public PacketByteBuf writeVarInt(int integer) {
-		while ((integer & -128) != 0) {
-			this.writeByte(integer & 127 | 128);
-			integer >>>= 7;
+	public PacketByteBuf writeVarInt(int i) {
+		while ((i & -128) != 0) {
+			this.writeByte(i & 127 | 128);
+			i >>>= 7;
 		}
 
-		this.writeByte(integer);
+		this.writeByte(i);
 		return this;
 	}
 
-	public PacketByteBuf method_10608(long l) {
+	public PacketByteBuf writeVarLong(long l) {
 		while ((l & -128L) != 0L) {
 			this.writeByte((int)(l & 127L) | 128);
 			l >>>= 7;
@@ -213,12 +221,12 @@ public class PacketByteBuf extends ByteBuf {
 		return this;
 	}
 
-	public PacketByteBuf writeNbtCompound(@Nullable NbtCompound nbt) {
-		if (nbt == null) {
+	public PacketByteBuf writeCompoundTag(@Nullable CompoundTag compoundTag) {
+		if (compoundTag == null) {
 			this.writeByte(0);
 		} else {
 			try {
-				NbtIo.write(nbt, new ByteBufOutputStream(this));
+				NbtIo.write(compoundTag, new ByteBufOutputStream(this));
 			} catch (IOException var3) {
 				throw new EncoderException(var3);
 			}
@@ -228,7 +236,7 @@ public class PacketByteBuf extends ByteBuf {
 	}
 
 	@Nullable
-	public NbtCompound readNbtCompound() {
+	public CompoundTag readCompoundTag() {
 		int i = this.readerIndex();
 		byte b = this.readByte();
 		if (b == 0) {
@@ -244,20 +252,20 @@ public class PacketByteBuf extends ByteBuf {
 		}
 	}
 
-	public PacketByteBuf writeItemStack(ItemStack stack) {
-		if (stack.isEmpty()) {
+	public PacketByteBuf writeItemStack(ItemStack itemStack) {
+		if (itemStack.isEmpty()) {
 			this.writeBoolean(false);
 		} else {
 			this.writeBoolean(true);
-			Item item = stack.getItem();
+			Item item = itemStack.getItem();
 			this.writeVarInt(Item.getRawId(item));
-			this.writeByte(stack.getCount());
-			NbtCompound nbtCompound = null;
-			if (item.isDamageable() || item.shouldSyncNbtToClient()) {
-				nbtCompound = stack.getNbt();
+			this.writeByte(itemStack.getCount());
+			CompoundTag compoundTag = null;
+			if (item.isDamageable() || item.shouldSyncTagToClient()) {
+				compoundTag = itemStack.getTag();
 			}
 
-			this.writeNbtCompound(nbtCompound);
+			this.writeCompoundTag(compoundTag);
 		}
 
 		return this;
@@ -270,22 +278,26 @@ public class PacketByteBuf extends ByteBuf {
 			int i = this.readVarInt();
 			int j = this.readByte();
 			ItemStack itemStack = new ItemStack(Item.byRawId(i), j);
-			itemStack.setNbt(this.readNbtCompound());
+			itemStack.setTag(this.readCompoundTag());
 			return itemStack;
 		}
 	}
 
-	public String readString(int maxLength) {
-		int i = this.readVarInt();
-		if (i > maxLength * 4) {
-			throw new DecoderException("The received encoded string buffer length is longer than maximum allowed (" + i + " > " + maxLength * 4 + ")");
-		} else if (i < 0) {
+	public String readString() {
+		return this.readString(32767);
+	}
+
+	public String readString(int i) {
+		int j = this.readVarInt();
+		if (j > i * 4) {
+			throw new DecoderException("The received encoded string buffer length is longer than maximum allowed (" + j + " > " + i * 4 + ")");
+		} else if (j < 0) {
 			throw new DecoderException("The received encoded string buffer length is less than zero! Weird string!");
 		} else {
-			String string = this.toString(this.readerIndex(), i, StandardCharsets.UTF_8);
-			this.readerIndex(this.readerIndex() + i);
-			if (string.length() > maxLength) {
-				throw new DecoderException("The received string length is longer than maximum allowed (" + i + " > " + maxLength + ")");
+			String string = this.toString(this.readerIndex(), j, StandardCharsets.UTF_8);
+			this.readerIndex(this.readerIndex() + j);
+			if (string.length() > i) {
+				throw new DecoderException("The received string length is longer than maximum allowed (" + j + " > " + i + ")");
 			} else {
 				return string;
 			}
@@ -293,10 +305,10 @@ public class PacketByteBuf extends ByteBuf {
 	}
 
 	public PacketByteBuf writeString(String string) {
-		return this.method_20167(string, 32767);
+		return this.writeString(string, 32767);
 	}
 
-	public PacketByteBuf method_20167(String string, int i) {
+	public PacketByteBuf writeString(String string, int i) {
 		byte[] bs = string.getBytes(StandardCharsets.UTF_8);
 		if (bs.length > i) {
 			throw new EncoderException("String too big (was " + bs.length + " bytes encoded, max " + i + ")");
@@ -311,8 +323,8 @@ public class PacketByteBuf extends ByteBuf {
 		return new Identifier(this.readString(32767));
 	}
 
-	public PacketByteBuf writeIdentifier(Identifier id) {
-		this.writeString(id.toString());
+	public PacketByteBuf writeIdentifier(Identifier identifier) {
+		this.writeString(identifier.toString());
 		return this;
 	}
 
@@ -325,12 +337,35 @@ public class PacketByteBuf extends ByteBuf {
 		return this;
 	}
 
+	public BlockHitResult readBlockHitResult() {
+		BlockPos blockPos = this.readBlockPos();
+		Direction direction = this.readEnumConstant(Direction.class);
+		float f = this.readFloat();
+		float g = this.readFloat();
+		float h = this.readFloat();
+		boolean bl = this.readBoolean();
+		return new BlockHitResult(
+			new Vec3d((double)((float)blockPos.getX() + f), (double)((float)blockPos.getY() + g), (double)((float)blockPos.getZ() + h)), direction, blockPos, bl
+		);
+	}
+
+	public void writeBlockHitResult(BlockHitResult blockHitResult) {
+		BlockPos blockPos = blockHitResult.getBlockPos();
+		this.writeBlockPos(blockPos);
+		this.writeEnumConstant(blockHitResult.getSide());
+		Vec3d vec3d = blockHitResult.getPos();
+		this.writeFloat((float)(vec3d.x - (double)blockPos.getX()));
+		this.writeFloat((float)(vec3d.y - (double)blockPos.getY()));
+		this.writeFloat((float)(vec3d.z - (double)blockPos.getZ()));
+		this.writeBoolean(blockHitResult.method_17781());
+	}
+
 	public int capacity() {
 		return this.parent.capacity();
 	}
 
-	public ByteBuf capacity(int capacity) {
-		return this.parent.capacity(capacity);
+	public ByteBuf capacity(int i) {
+		return this.parent.capacity(i);
 	}
 
 	public int maxCapacity() {
@@ -369,20 +404,20 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.readerIndex();
 	}
 
-	public ByteBuf readerIndex(int index) {
-		return this.parent.readerIndex(index);
+	public ByteBuf readerIndex(int i) {
+		return this.parent.readerIndex(i);
 	}
 
 	public int writerIndex() {
 		return this.parent.writerIndex();
 	}
 
-	public ByteBuf writerIndex(int index) {
-		return this.parent.writerIndex(index);
+	public ByteBuf writerIndex(int i) {
+		return this.parent.writerIndex(i);
 	}
 
-	public ByteBuf setIndex(int readerIndex, int writerIndex) {
-		return this.parent.setIndex(readerIndex, writerIndex);
+	public ByteBuf setIndex(int i, int j) {
+		return this.parent.setIndex(i, j);
 	}
 
 	public int readableBytes() {
@@ -401,16 +436,16 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.isReadable();
 	}
 
-	public boolean isReadable(int size) {
-		return this.parent.isReadable(size);
+	public boolean isReadable(int i) {
+		return this.parent.isReadable(i);
 	}
 
 	public boolean isWritable() {
 		return this.parent.isWritable();
 	}
 
-	public boolean isWritable(int size) {
-		return this.parent.isWritable(size);
+	public boolean isWritable(int i) {
+		return this.parent.isWritable(i);
 	}
 
 	public ByteBuf clear() {
@@ -441,124 +476,124 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.discardSomeReadBytes();
 	}
 
-	public ByteBuf ensureWritable(int minBytes) {
-		return this.parent.ensureWritable(minBytes);
+	public ByteBuf ensureWritable(int i) {
+		return this.parent.ensureWritable(i);
 	}
 
-	public int ensureWritable(int minBytes, boolean force) {
-		return this.parent.ensureWritable(minBytes, force);
+	public int ensureWritable(int i, boolean bl) {
+		return this.parent.ensureWritable(i, bl);
 	}
 
-	public boolean getBoolean(int index) {
-		return this.parent.getBoolean(index);
+	public boolean getBoolean(int i) {
+		return this.parent.getBoolean(i);
 	}
 
-	public byte getByte(int index) {
-		return this.parent.getByte(index);
+	public byte getByte(int i) {
+		return this.parent.getByte(i);
 	}
 
-	public short getUnsignedByte(int index) {
-		return this.parent.getUnsignedByte(index);
+	public short getUnsignedByte(int i) {
+		return this.parent.getUnsignedByte(i);
 	}
 
-	public short getShort(int index) {
-		return this.parent.getShort(index);
+	public short getShort(int i) {
+		return this.parent.getShort(i);
 	}
 
 	public short getShortLE(int i) {
 		return this.parent.getShortLE(i);
 	}
 
-	public int getUnsignedShort(int index) {
-		return this.parent.getUnsignedShort(index);
+	public int getUnsignedShort(int i) {
+		return this.parent.getUnsignedShort(i);
 	}
 
 	public int getUnsignedShortLE(int i) {
 		return this.parent.getUnsignedShortLE(i);
 	}
 
-	public int getMedium(int index) {
-		return this.parent.getMedium(index);
+	public int getMedium(int i) {
+		return this.parent.getMedium(i);
 	}
 
 	public int getMediumLE(int i) {
 		return this.parent.getMediumLE(i);
 	}
 
-	public int getUnsignedMedium(int index) {
-		return this.parent.getUnsignedMedium(index);
+	public int getUnsignedMedium(int i) {
+		return this.parent.getUnsignedMedium(i);
 	}
 
 	public int getUnsignedMediumLE(int i) {
 		return this.parent.getUnsignedMediumLE(i);
 	}
 
-	public int getInt(int index) {
-		return this.parent.getInt(index);
+	public int getInt(int i) {
+		return this.parent.getInt(i);
 	}
 
 	public int getIntLE(int i) {
 		return this.parent.getIntLE(i);
 	}
 
-	public long getUnsignedInt(int index) {
-		return this.parent.getUnsignedInt(index);
+	public long getUnsignedInt(int i) {
+		return this.parent.getUnsignedInt(i);
 	}
 
 	public long getUnsignedIntLE(int i) {
 		return this.parent.getUnsignedIntLE(i);
 	}
 
-	public long getLong(int index) {
-		return this.parent.getLong(index);
+	public long getLong(int i) {
+		return this.parent.getLong(i);
 	}
 
 	public long getLongLE(int i) {
 		return this.parent.getLongLE(i);
 	}
 
-	public char getChar(int index) {
-		return this.parent.getChar(index);
+	public char getChar(int i) {
+		return this.parent.getChar(i);
 	}
 
-	public float getFloat(int index) {
-		return this.parent.getFloat(index);
+	public float getFloat(int i) {
+		return this.parent.getFloat(i);
 	}
 
-	public double getDouble(int index) {
-		return this.parent.getDouble(index);
+	public double getDouble(int i) {
+		return this.parent.getDouble(i);
 	}
 
-	public ByteBuf getBytes(int index, ByteBuf buf) {
-		return this.parent.getBytes(index, buf);
+	public ByteBuf getBytes(int i, ByteBuf byteBuf) {
+		return this.parent.getBytes(i, byteBuf);
 	}
 
-	public ByteBuf getBytes(int index, ByteBuf buf, int length) {
-		return this.parent.getBytes(index, buf, length);
+	public ByteBuf getBytes(int i, ByteBuf byteBuf, int j) {
+		return this.parent.getBytes(i, byteBuf, j);
 	}
 
-	public ByteBuf getBytes(int index, ByteBuf buf, int outputIndex, int length) {
-		return this.parent.getBytes(index, buf, outputIndex, length);
+	public ByteBuf getBytes(int i, ByteBuf byteBuf, int j, int k) {
+		return this.parent.getBytes(i, byteBuf, j, k);
 	}
 
-	public ByteBuf getBytes(int index, byte[] bytes) {
-		return this.parent.getBytes(index, bytes);
+	public ByteBuf getBytes(int i, byte[] bs) {
+		return this.parent.getBytes(i, bs);
 	}
 
-	public ByteBuf getBytes(int index, byte[] bytes, int outputIndex, int length) {
-		return this.parent.getBytes(index, bytes, outputIndex, length);
+	public ByteBuf getBytes(int i, byte[] bs, int j, int k) {
+		return this.parent.getBytes(i, bs, j, k);
 	}
 
-	public ByteBuf getBytes(int index, ByteBuffer buf) {
-		return this.parent.getBytes(index, buf);
+	public ByteBuf getBytes(int i, ByteBuffer byteBuffer) {
+		return this.parent.getBytes(i, byteBuffer);
 	}
 
-	public ByteBuf getBytes(int index, OutputStream stream, int length) throws IOException {
-		return this.parent.getBytes(index, stream, length);
+	public ByteBuf getBytes(int i, OutputStream outputStream, int j) throws IOException {
+		return this.parent.getBytes(i, outputStream, j);
 	}
 
-	public int getBytes(int index, GatheringByteChannel channel, int length) throws IOException {
-		return this.parent.getBytes(index, channel, length);
+	public int getBytes(int i, GatheringByteChannel gatheringByteChannel, int j) throws IOException {
+		return this.parent.getBytes(i, gatheringByteChannel, j);
 	}
 
 	public int getBytes(int i, FileChannel fileChannel, long l, int j) throws IOException {
@@ -569,96 +604,96 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.getCharSequence(i, j, charset);
 	}
 
-	public ByteBuf setBoolean(int index, boolean value) {
-		return this.parent.setBoolean(index, value);
+	public ByteBuf setBoolean(int i, boolean bl) {
+		return this.parent.setBoolean(i, bl);
 	}
 
-	public ByteBuf setByte(int index, int value) {
-		return this.parent.setByte(index, value);
+	public ByteBuf setByte(int i, int j) {
+		return this.parent.setByte(i, j);
 	}
 
-	public ByteBuf setShort(int index, int value) {
-		return this.parent.setShort(index, value);
+	public ByteBuf setShort(int i, int j) {
+		return this.parent.setShort(i, j);
 	}
 
 	public ByteBuf setShortLE(int i, int j) {
 		return this.parent.setShortLE(i, j);
 	}
 
-	public ByteBuf setMedium(int index, int value) {
-		return this.parent.setMedium(index, value);
+	public ByteBuf setMedium(int i, int j) {
+		return this.parent.setMedium(i, j);
 	}
 
 	public ByteBuf setMediumLE(int i, int j) {
 		return this.parent.setMediumLE(i, j);
 	}
 
-	public ByteBuf setInt(int index, int value) {
-		return this.parent.setInt(index, value);
+	public ByteBuf setInt(int i, int j) {
+		return this.parent.setInt(i, j);
 	}
 
 	public ByteBuf setIntLE(int i, int j) {
 		return this.parent.setIntLE(i, j);
 	}
 
-	public ByteBuf setLong(int index, long value) {
-		return this.parent.setLong(index, value);
+	public ByteBuf setLong(int i, long l) {
+		return this.parent.setLong(i, l);
 	}
 
 	public ByteBuf setLongLE(int i, long l) {
 		return this.parent.setLongLE(i, l);
 	}
 
-	public ByteBuf setChar(int index, int value) {
-		return this.parent.setChar(index, value);
+	public ByteBuf setChar(int i, int j) {
+		return this.parent.setChar(i, j);
 	}
 
-	public ByteBuf setFloat(int index, float value) {
-		return this.parent.setFloat(index, value);
+	public ByteBuf setFloat(int i, float f) {
+		return this.parent.setFloat(i, f);
 	}
 
-	public ByteBuf setDouble(int index, double value) {
-		return this.parent.setDouble(index, value);
+	public ByteBuf setDouble(int i, double d) {
+		return this.parent.setDouble(i, d);
 	}
 
-	public ByteBuf setBytes(int index, ByteBuf buf) {
-		return this.parent.setBytes(index, buf);
+	public ByteBuf setBytes(int i, ByteBuf byteBuf) {
+		return this.parent.setBytes(i, byteBuf);
 	}
 
-	public ByteBuf setBytes(int index, ByteBuf buf, int length) {
-		return this.parent.setBytes(index, buf, length);
+	public ByteBuf setBytes(int i, ByteBuf byteBuf, int j) {
+		return this.parent.setBytes(i, byteBuf, j);
 	}
 
-	public ByteBuf setBytes(int index, ByteBuf buf, int sourceIndex, int length) {
-		return this.parent.setBytes(index, buf, sourceIndex, length);
+	public ByteBuf setBytes(int i, ByteBuf byteBuf, int j, int k) {
+		return this.parent.setBytes(i, byteBuf, j, k);
 	}
 
-	public ByteBuf setBytes(int index, byte[] bytes) {
-		return this.parent.setBytes(index, bytes);
+	public ByteBuf setBytes(int i, byte[] bs) {
+		return this.parent.setBytes(i, bs);
 	}
 
-	public ByteBuf setBytes(int index, byte[] bytes, int sourceIndex, int length) {
-		return this.parent.setBytes(index, bytes, sourceIndex, length);
+	public ByteBuf setBytes(int i, byte[] bs, int j, int k) {
+		return this.parent.setBytes(i, bs, j, k);
 	}
 
-	public ByteBuf setBytes(int index, ByteBuffer buf) {
-		return this.parent.setBytes(index, buf);
+	public ByteBuf setBytes(int i, ByteBuffer byteBuffer) {
+		return this.parent.setBytes(i, byteBuffer);
 	}
 
-	public int setBytes(int index, InputStream stream, int length) throws IOException {
-		return this.parent.setBytes(index, stream, length);
+	public int setBytes(int i, InputStream inputStream, int j) throws IOException {
+		return this.parent.setBytes(i, inputStream, j);
 	}
 
-	public int setBytes(int index, ScatteringByteChannel channel, int length) throws IOException {
-		return this.parent.setBytes(index, channel, length);
+	public int setBytes(int i, ScatteringByteChannel scatteringByteChannel, int j) throws IOException {
+		return this.parent.setBytes(i, scatteringByteChannel, j);
 	}
 
 	public int setBytes(int i, FileChannel fileChannel, long l, int j) throws IOException {
 		return this.parent.setBytes(i, fileChannel, l, j);
 	}
 
-	public ByteBuf setZero(int index, int length) {
-		return this.parent.setZero(index, length);
+	public ByteBuf setZero(int i, int j) {
+		return this.parent.setZero(i, j);
 	}
 
 	public int setCharSequence(int i, CharSequence charSequence, Charset charset) {
@@ -745,48 +780,48 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.readDouble();
 	}
 
-	public ByteBuf readBytes(int length) {
-		return this.parent.readBytes(length);
+	public ByteBuf readBytes(int i) {
+		return this.parent.readBytes(i);
 	}
 
-	public ByteBuf readSlice(int length) {
-		return this.parent.readSlice(length);
+	public ByteBuf readSlice(int i) {
+		return this.parent.readSlice(i);
 	}
 
 	public ByteBuf readRetainedSlice(int i) {
 		return this.parent.readRetainedSlice(i);
 	}
 
-	public ByteBuf readBytes(ByteBuf buf) {
-		return this.parent.readBytes(buf);
+	public ByteBuf readBytes(ByteBuf byteBuf) {
+		return this.parent.readBytes(byteBuf);
 	}
 
-	public ByteBuf readBytes(ByteBuf buf, int length) {
-		return this.parent.readBytes(buf, length);
+	public ByteBuf readBytes(ByteBuf byteBuf, int i) {
+		return this.parent.readBytes(byteBuf, i);
 	}
 
-	public ByteBuf readBytes(ByteBuf buf, int outputIndex, int length) {
-		return this.parent.readBytes(buf, outputIndex, length);
+	public ByteBuf readBytes(ByteBuf byteBuf, int i, int j) {
+		return this.parent.readBytes(byteBuf, i, j);
 	}
 
-	public ByteBuf readBytes(byte[] bytes) {
-		return this.parent.readBytes(bytes);
+	public ByteBuf readBytes(byte[] bs) {
+		return this.parent.readBytes(bs);
 	}
 
-	public ByteBuf readBytes(byte[] bytes, int outputIndex, int length) {
-		return this.parent.readBytes(bytes, outputIndex, length);
+	public ByteBuf readBytes(byte[] bs, int i, int j) {
+		return this.parent.readBytes(bs, i, j);
 	}
 
-	public ByteBuf readBytes(ByteBuffer buf) {
-		return this.parent.readBytes(buf);
+	public ByteBuf readBytes(ByteBuffer byteBuffer) {
+		return this.parent.readBytes(byteBuffer);
 	}
 
-	public ByteBuf readBytes(OutputStream stream, int length) throws IOException {
-		return this.parent.readBytes(stream, length);
+	public ByteBuf readBytes(OutputStream outputStream, int i) throws IOException {
+		return this.parent.readBytes(outputStream, i);
 	}
 
-	public int readBytes(GatheringByteChannel cannel, int length) throws IOException {
-		return this.parent.readBytes(cannel, length);
+	public int readBytes(GatheringByteChannel gatheringByteChannel, int i) throws IOException {
+		return this.parent.readBytes(gatheringByteChannel, i);
 	}
 
 	public CharSequence readCharSequence(int i, Charset charset) {
@@ -797,120 +832,120 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.readBytes(fileChannel, l, i);
 	}
 
-	public ByteBuf skipBytes(int length) {
-		return this.parent.skipBytes(length);
+	public ByteBuf skipBytes(int i) {
+		return this.parent.skipBytes(i);
 	}
 
-	public ByteBuf writeBoolean(boolean value) {
-		return this.parent.writeBoolean(value);
+	public ByteBuf writeBoolean(boolean bl) {
+		return this.parent.writeBoolean(bl);
 	}
 
-	public ByteBuf writeByte(int value) {
-		return this.parent.writeByte(value);
+	public ByteBuf writeByte(int i) {
+		return this.parent.writeByte(i);
 	}
 
-	public ByteBuf writeShort(int value) {
-		return this.parent.writeShort(value);
+	public ByteBuf writeShort(int i) {
+		return this.parent.writeShort(i);
 	}
 
 	public ByteBuf writeShortLE(int i) {
 		return this.parent.writeShortLE(i);
 	}
 
-	public ByteBuf writeMedium(int value) {
-		return this.parent.writeMedium(value);
+	public ByteBuf writeMedium(int i) {
+		return this.parent.writeMedium(i);
 	}
 
 	public ByteBuf writeMediumLE(int i) {
 		return this.parent.writeMediumLE(i);
 	}
 
-	public ByteBuf writeInt(int value) {
-		return this.parent.writeInt(value);
+	public ByteBuf writeInt(int i) {
+		return this.parent.writeInt(i);
 	}
 
 	public ByteBuf writeIntLE(int i) {
 		return this.parent.writeIntLE(i);
 	}
 
-	public ByteBuf writeLong(long value) {
-		return this.parent.writeLong(value);
+	public ByteBuf writeLong(long l) {
+		return this.parent.writeLong(l);
 	}
 
 	public ByteBuf writeLongLE(long l) {
 		return this.parent.writeLongLE(l);
 	}
 
-	public ByteBuf writeChar(int value) {
-		return this.parent.writeChar(value);
+	public ByteBuf writeChar(int i) {
+		return this.parent.writeChar(i);
 	}
 
-	public ByteBuf writeFloat(float value) {
-		return this.parent.writeFloat(value);
+	public ByteBuf writeFloat(float f) {
+		return this.parent.writeFloat(f);
 	}
 
-	public ByteBuf writeDouble(double value) {
-		return this.parent.writeDouble(value);
+	public ByteBuf writeDouble(double d) {
+		return this.parent.writeDouble(d);
 	}
 
-	public ByteBuf writeBytes(ByteBuf buf) {
-		return this.parent.writeBytes(buf);
+	public ByteBuf writeBytes(ByteBuf byteBuf) {
+		return this.parent.writeBytes(byteBuf);
 	}
 
-	public ByteBuf writeBytes(ByteBuf buf, int length) {
-		return this.parent.writeBytes(buf, length);
+	public ByteBuf writeBytes(ByteBuf byteBuf, int i) {
+		return this.parent.writeBytes(byteBuf, i);
 	}
 
-	public ByteBuf writeBytes(ByteBuf buf, int sourceIndex, int length) {
-		return this.parent.writeBytes(buf, sourceIndex, length);
+	public ByteBuf writeBytes(ByteBuf byteBuf, int i, int j) {
+		return this.parent.writeBytes(byteBuf, i, j);
 	}
 
-	public ByteBuf writeBytes(byte[] bytes) {
-		return this.parent.writeBytes(bytes);
+	public ByteBuf writeBytes(byte[] bs) {
+		return this.parent.writeBytes(bs);
 	}
 
-	public ByteBuf writeBytes(byte[] bytes, int sourceIndex, int length) {
-		return this.parent.writeBytes(bytes, sourceIndex, length);
+	public ByteBuf writeBytes(byte[] bs, int i, int j) {
+		return this.parent.writeBytes(bs, i, j);
 	}
 
-	public ByteBuf writeBytes(ByteBuffer buf) {
-		return this.parent.writeBytes(buf);
+	public ByteBuf writeBytes(ByteBuffer byteBuffer) {
+		return this.parent.writeBytes(byteBuffer);
 	}
 
-	public int writeBytes(InputStream stream, int length) throws IOException {
-		return this.parent.writeBytes(stream, length);
+	public int writeBytes(InputStream inputStream, int i) throws IOException {
+		return this.parent.writeBytes(inputStream, i);
 	}
 
-	public int writeBytes(ScatteringByteChannel channel, int length) throws IOException {
-		return this.parent.writeBytes(channel, length);
+	public int writeBytes(ScatteringByteChannel scatteringByteChannel, int i) throws IOException {
+		return this.parent.writeBytes(scatteringByteChannel, i);
 	}
 
 	public int writeBytes(FileChannel fileChannel, long l, int i) throws IOException {
 		return this.parent.writeBytes(fileChannel, l, i);
 	}
 
-	public ByteBuf writeZero(int length) {
-		return this.parent.writeZero(length);
+	public ByteBuf writeZero(int i) {
+		return this.parent.writeZero(i);
 	}
 
 	public int writeCharSequence(CharSequence charSequence, Charset charset) {
 		return this.parent.writeCharSequence(charSequence, charset);
 	}
 
-	public int indexOf(int start, int end, byte value) {
-		return this.parent.indexOf(start, end, value);
+	public int indexOf(int i, int j, byte b) {
+		return this.parent.indexOf(i, j, b);
 	}
 
-	public int bytesBefore(byte value) {
-		return this.parent.bytesBefore(value);
+	public int bytesBefore(byte b) {
+		return this.parent.bytesBefore(b);
 	}
 
-	public int bytesBefore(int index, byte value) {
-		return this.parent.bytesBefore(index, value);
+	public int bytesBefore(int i, byte b) {
+		return this.parent.bytesBefore(i, b);
 	}
 
-	public int bytesBefore(int index, int length, byte value) {
-		return this.parent.bytesBefore(index, length, value);
+	public int bytesBefore(int i, int j, byte b) {
+		return this.parent.bytesBefore(i, j, b);
 	}
 
 	public int forEachByte(ByteProcessor byteProcessor) {
@@ -933,8 +968,8 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.copy();
 	}
 
-	public ByteBuf copy(int index, int length) {
-		return this.parent.copy(index, length);
+	public ByteBuf copy(int i, int j) {
+		return this.parent.copy(i, j);
 	}
 
 	public ByteBuf slice() {
@@ -945,8 +980,8 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.retainedSlice();
 	}
 
-	public ByteBuf slice(int index, int length) {
-		return this.parent.slice(index, length);
+	public ByteBuf slice(int i, int j) {
+		return this.parent.slice(i, j);
 	}
 
 	public ByteBuf retainedSlice(int i, int j) {
@@ -969,20 +1004,20 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.nioBuffer();
 	}
 
-	public ByteBuffer nioBuffer(int index, int length) {
-		return this.parent.nioBuffer(index, length);
+	public ByteBuffer nioBuffer(int i, int j) {
+		return this.parent.nioBuffer(i, j);
 	}
 
-	public ByteBuffer internalNioBuffer(int index, int length) {
-		return this.parent.internalNioBuffer(index, length);
+	public ByteBuffer internalNioBuffer(int i, int j) {
+		return this.parent.internalNioBuffer(i, j);
 	}
 
 	public ByteBuffer[] nioBuffers() {
 		return this.parent.nioBuffers();
 	}
 
-	public ByteBuffer[] nioBuffers(int index, int length) {
-		return this.parent.nioBuffers(index, length);
+	public ByteBuffer[] nioBuffers(int i, int j) {
+		return this.parent.nioBuffers(i, j);
 	}
 
 	public boolean hasArray() {
@@ -1009,8 +1044,8 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.toString(charset);
 	}
 
-	public String toString(int index, int length, Charset charset) {
-		return this.parent.toString(index, length, charset);
+	public String toString(int i, int j, Charset charset) {
+		return this.parent.toString(i, j, charset);
 	}
 
 	public int hashCode() {
@@ -1053,7 +1088,7 @@ public class PacketByteBuf extends ByteBuf {
 		return this.parent.release();
 	}
 
-	public boolean release(int decrement) {
-		return this.parent.release(decrement);
+	public boolean release(int i) {
+		return this.parent.release(i);
 	}
 }

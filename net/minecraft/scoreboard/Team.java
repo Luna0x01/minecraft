@@ -7,27 +7,27 @@ import javax.annotation.Nullable;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.ChatSerializer;
+import net.minecraft.text.Texts;
 import net.minecraft.util.Formatting;
 
 public class Team extends AbstractTeam {
-	private final Scoreboard scoreboardInstance;
+	private final Scoreboard scoreboard;
 	private final String name;
 	private final Set<String> playerList = Sets.newHashSet();
-	private Text field_19872;
-	private Text field_19873 = new LiteralText("");
-	private Text field_19874 = new LiteralText("");
+	private Text displayName;
+	private Text prefix = new LiteralText("");
+	private Text suffix = new LiteralText("");
 	private boolean friendlyFire = true;
 	private boolean showFriendlyInvisibles = true;
-	private AbstractTeam.VisibilityRule nameTagVisibilityRule = AbstractTeam.VisibilityRule.ALWAYS;
-	private AbstractTeam.VisibilityRule deathMessageVisibilityRule = AbstractTeam.VisibilityRule.ALWAYS;
-	private Formatting currentFormatting = Formatting.RESET;
-	private AbstractTeam.CollisionRule field_13263 = AbstractTeam.CollisionRule.ALWAYS;
+	private AbstractTeam.VisibilityRule nameTagVisibilityRule = AbstractTeam.VisibilityRule.field_1442;
+	private AbstractTeam.VisibilityRule deathMessageVisibilityRule = AbstractTeam.VisibilityRule.field_1442;
+	private Formatting color = Formatting.field_1070;
+	private AbstractTeam.CollisionRule collisionRule = AbstractTeam.CollisionRule.field_1437;
 
 	public Team(Scoreboard scoreboard, String string) {
-		this.scoreboardInstance = scoreboard;
+		this.scoreboard = scoreboard;
 		this.name = string;
-		this.field_19872 = new LiteralText(string);
+		this.displayName = new LiteralText(string);
 	}
 
 	@Override
@@ -35,49 +35,49 @@ public class Team extends AbstractTeam {
 		return this.name;
 	}
 
-	public Text method_18101() {
-		return this.field_19872;
+	public Text getDisplayName() {
+		return this.displayName;
 	}
 
-	public Text method_18103() {
-		Text text = ChatSerializer.method_20188(
-			this.field_19872
-				.method_20177()
-				.styled(style -> style.setInsertion(this.name).setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText(this.name))))
+	public Text getFormattedName() {
+		Text text = Texts.bracketed(
+			this.displayName
+				.deepCopy()
+				.styled(style -> style.setInsertion(this.name).setHoverEvent(new HoverEvent(HoverEvent.Action.field_11762, new LiteralText(this.name))))
 		);
-		Formatting formatting = this.method_12130();
-		if (formatting != Formatting.RESET) {
+		Formatting formatting = this.getColor();
+		if (formatting != Formatting.field_1070) {
 			text.formatted(formatting);
 		}
 
 		return text;
 	}
 
-	public void method_18098(Text text) {
+	public void setDisplayName(Text text) {
 		if (text == null) {
 			throw new IllegalArgumentException("Name cannot be null");
 		} else {
-			this.field_19872 = text;
-			this.scoreboardInstance.updateScoreboardTeam(this);
+			this.displayName = text;
+			this.scoreboard.updateScoreboardTeam(this);
 		}
 	}
 
-	public void method_18100(@Nullable Text text) {
-		this.field_19873 = (Text)(text == null ? new LiteralText("") : text.method_20177());
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setPrefix(@Nullable Text text) {
+		this.prefix = (Text)(text == null ? new LiteralText("") : text.deepCopy());
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
-	public Text method_18104() {
-		return this.field_19873;
+	public Text getPrefix() {
+		return this.prefix;
 	}
 
-	public void method_18102(@Nullable Text text) {
-		this.field_19874 = (Text)(text == null ? new LiteralText("") : text.method_20177());
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setSuffix(@Nullable Text text) {
+		this.suffix = (Text)(text == null ? new LiteralText("") : text.deepCopy());
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
-	public Text method_18105() {
-		return this.field_19874;
+	public Text getSuffix() {
+		return this.suffix;
 	}
 
 	@Override
@@ -86,18 +86,18 @@ public class Team extends AbstractTeam {
 	}
 
 	@Override
-	public Text method_18122(Text text) {
-		Text text2 = new LiteralText("").append(this.field_19873).append(text).append(this.field_19874);
-		Formatting formatting = this.method_12130();
-		if (formatting != Formatting.RESET) {
+	public Text modifyText(Text text) {
+		Text text2 = new LiteralText("").append(this.prefix).append(text).append(this.suffix);
+		Formatting formatting = this.getColor();
+		if (formatting != Formatting.field_1070) {
 			text2.formatted(formatting);
 		}
 
 		return text2;
 	}
 
-	public static Text method_18097(@Nullable AbstractTeam abstractTeam, Text text) {
-		return abstractTeam == null ? text.method_20177() : abstractTeam.method_18122(text);
+	public static Text modifyText(@Nullable AbstractTeam abstractTeam, Text text) {
+		return abstractTeam == null ? text.deepCopy() : abstractTeam.modifyText(text);
 	}
 
 	@Override
@@ -105,9 +105,9 @@ public class Team extends AbstractTeam {
 		return this.friendlyFire;
 	}
 
-	public void setFriendlyFireAllowed(boolean friendlyFire) {
-		this.friendlyFire = friendlyFire;
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setFriendlyFireAllowed(boolean bl) {
+		this.friendlyFire = bl;
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
 	@Override
@@ -115,9 +115,9 @@ public class Team extends AbstractTeam {
 		return this.showFriendlyInvisibles;
 	}
 
-	public void setShowFriendlyInvisibles(boolean showFriendlyInvisible) {
-		this.showFriendlyInvisibles = showFriendlyInvisible;
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setShowFriendlyInvisibles(boolean bl) {
+		this.showFriendlyInvisibles = bl;
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
 	@Override
@@ -130,24 +130,24 @@ public class Team extends AbstractTeam {
 		return this.deathMessageVisibilityRule;
 	}
 
-	public void method_12128(AbstractTeam.VisibilityRule visibilityRule) {
+	public void setNameTagVisibilityRule(AbstractTeam.VisibilityRule visibilityRule) {
 		this.nameTagVisibilityRule = visibilityRule;
-		this.scoreboardInstance.updateScoreboardTeam(this);
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
-	public void setDeathMessageVisibilityRule(AbstractTeam.VisibilityRule rule) {
-		this.deathMessageVisibilityRule = rule;
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setDeathMessageVisibilityRule(AbstractTeam.VisibilityRule visibilityRule) {
+		this.deathMessageVisibilityRule = visibilityRule;
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
 	@Override
-	public AbstractTeam.CollisionRule method_12129() {
-		return this.field_13263;
+	public AbstractTeam.CollisionRule getCollisionRule() {
+		return this.collisionRule;
 	}
 
-	public void method_9353(AbstractTeam.CollisionRule collisionRule) {
-		this.field_13263 = collisionRule;
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setCollisionRule(AbstractTeam.CollisionRule collisionRule) {
+		this.collisionRule = collisionRule;
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
 	public int getFriendlyFlagsBitwise() {
@@ -163,18 +163,18 @@ public class Team extends AbstractTeam {
 		return i;
 	}
 
-	public void setFriendlyFlagsBitwise(int bit) {
-		this.setFriendlyFireAllowed((bit & 1) > 0);
-		this.setShowFriendlyInvisibles((bit & 2) > 0);
+	public void setFriendlyFlagsBitwise(int i) {
+		this.setFriendlyFireAllowed((i & 1) > 0);
+		this.setShowFriendlyInvisibles((i & 2) > 0);
 	}
 
-	public void setFormatting(Formatting formatting) {
-		this.currentFormatting = formatting;
-		this.scoreboardInstance.updateScoreboardTeam(this);
+	public void setColor(Formatting formatting) {
+		this.color = formatting;
+		this.scoreboard.updateScoreboardTeam(this);
 	}
 
 	@Override
-	public Formatting method_12130() {
-		return this.currentFormatting;
+	public Formatting getColor() {
+		return this.color;
 	}
 }

@@ -13,59 +13,59 @@ import net.minecraft.world.World;
 public class CompassItem extends Item {
 	public CompassItem(Item.Settings settings) {
 		super(settings);
-		this.addProperty(new Identifier("angle"), new ItemPropertyGetter() {
-			private double field_12290;
-			private double field_12291;
-			private long field_12292;
+		this.addPropertyGetter(new Identifier("angle"), new ItemPropertyGetter() {
+			private double angle;
+			private double step;
+			private long lastTick;
 
 			@Override
 			public float call(ItemStack itemStack, @Nullable World world, @Nullable LivingEntity livingEntity) {
-				if (livingEntity == null && !itemStack.isInItemFrame()) {
+				if (livingEntity == null && !itemStack.isInFrame()) {
 					return 0.0F;
 				} else {
 					boolean bl = livingEntity != null;
-					Entity entity = (Entity)(bl ? livingEntity : itemStack.getItemFrame());
+					Entity entity = (Entity)(bl ? livingEntity : itemStack.getFrame());
 					if (world == null) {
 						world = entity.world;
 					}
 
 					double f;
-					if (world.dimension.canPlayersSleep()) {
-						double d = bl ? (double)entity.yaw : this.method_11369((ItemFrameEntity)entity);
+					if (world.dimension.hasVisibleSky()) {
+						double d = bl ? (double)entity.yaw : this.getYaw((ItemFrameEntity)entity);
 						d = MathHelper.floorMod(d / 360.0, 1.0);
-						double e = this.method_11368(world, entity) / (float) (Math.PI * 2);
+						double e = this.getAngleToSpawn(world, entity) / (float) (Math.PI * 2);
 						f = 0.5 - (d - 0.25 - e);
 					} else {
 						f = Math.random();
 					}
 
 					if (bl) {
-						f = this.method_11367(world, f);
+						f = this.getAngle(world, f);
 					}
 
 					return MathHelper.floorMod((float)f, 1.0F);
 				}
 			}
 
-			private double method_11367(World world, double d) {
-				if (world.getLastUpdateTime() != this.field_12292) {
-					this.field_12292 = world.getLastUpdateTime();
-					double e = d - this.field_12290;
+			private double getAngle(World world, double d) {
+				if (world.getTime() != this.lastTick) {
+					this.lastTick = world.getTime();
+					double e = d - this.angle;
 					e = MathHelper.floorMod(e + 0.5, 1.0) - 0.5;
-					this.field_12291 += e * 0.1;
-					this.field_12291 *= 0.8;
-					this.field_12290 = MathHelper.floorMod(this.field_12290 + this.field_12291, 1.0);
+					this.step += e * 0.1;
+					this.step *= 0.8;
+					this.angle = MathHelper.floorMod(this.angle + this.step, 1.0);
 				}
 
-				return this.field_12290;
+				return this.angle;
 			}
 
-			private double method_11369(ItemFrameEntity itemFrameEntity) {
-				return (double)MathHelper.wrapDegrees(180 + itemFrameEntity.direction.getHorizontal() * 90);
+			private double getYaw(ItemFrameEntity itemFrameEntity) {
+				return (double)MathHelper.wrapDegrees(180 + itemFrameEntity.getHorizontalFacing().getHorizontal() * 90);
 			}
 
-			private double method_11368(IWorld iWorld, Entity entity) {
-				BlockPos blockPos = iWorld.method_3585();
+			private double getAngleToSpawn(IWorld iWorld, Entity entity) {
+				BlockPos blockPos = iWorld.getSpawnPos();
 				return Math.atan2((double)blockPos.getZ() - entity.z, (double)blockPos.getX() - entity.x);
 			}
 		});

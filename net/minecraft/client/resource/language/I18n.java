@@ -3,15 +3,15 @@ package net.minecraft.client.resource.language;
 public class I18n {
 	private static TranslationStorage storage;
 
-	static void setTranslationStorage(TranslationStorage storage) {
-		I18n.storage = storage;
+	static void setLanguage(TranslationStorage translationStorage) {
+		storage = translationStorage;
 	}
 
-	public static String translate(String key, Object... args) {
-		return storage.translateAndFormat(key, args);
+	public static String translate(String string, Object... objects) {
+		return storage.translate(string, objects);
 	}
 
-	public static boolean method_12500(String string) {
-		return storage.method_12501(string);
+	public static boolean hasTranslation(String string) {
+		return storage.containsKey(string);
 	}
 }

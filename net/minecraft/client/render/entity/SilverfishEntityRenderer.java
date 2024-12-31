@@ -4,18 +4,18 @@ import net.minecraft.client.render.entity.model.SilverfishEntityModel;
 import net.minecraft.entity.mob.SilverfishEntity;
 import net.minecraft.util.Identifier;
 
-public class SilverfishEntityRenderer extends MobEntityRenderer<SilverfishEntity> {
-	private static final Identifier SILVERFISH_TEX = new Identifier("textures/entity/silverfish.png");
+public class SilverfishEntityRenderer extends MobEntityRenderer<SilverfishEntity, SilverfishEntityModel<SilverfishEntity>> {
+	private static final Identifier SKIN = new Identifier("textures/entity/silverfish.png");
 
 	public SilverfishEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new SilverfishEntityModel(), 0.3F);
+		super(entityRenderDispatcher, new SilverfishEntityModel<>(), 0.3F);
 	}
 
-	protected float method_5771(SilverfishEntity silverfishEntity) {
+	protected float method_4107(SilverfishEntity silverfishEntity) {
 		return 180.0F;
 	}
 
-	protected Identifier getTexture(SilverfishEntity silverfishEntity) {
-		return SILVERFISH_TEX;
+	protected Identifier method_4108(SilverfishEntity silverfishEntity) {
+		return SKIN;
 	}
 }

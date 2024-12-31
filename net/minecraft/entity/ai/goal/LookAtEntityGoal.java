@@ -1,33 +1,47 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.predicate.EntityPredicate;
+import net.minecraft.predicate.entity.EntityPredicates;
 
 public class LookAtEntityGoal extends Goal {
-	protected MobEntity mob;
+	protected final MobEntity mob;
 	protected Entity target;
-	protected float range;
+	protected final float range;
 	private int lookTime;
 	private final float chance;
-	protected Class<? extends Entity> targetType;
+	protected final Class<? extends LivingEntity> targetType;
+	protected final TargetPredicate targetPredicate;
 
-	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends Entity> class_, float f) {
+	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends LivingEntity> class_, float f) {
 		this(mobEntity, class_, f, 0.02F);
 	}
 
-	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends Entity> class_, float f, float g) {
+	public LookAtEntityGoal(MobEntity mobEntity, Class<? extends LivingEntity> class_, float f, float g) {
 		this.mob = mobEntity;
 		this.targetType = class_;
 		this.range = f;
 		this.chance = g;
-		this.setCategoryBits(2);
+		this.setControls(EnumSet.of(Goal.Control.field_18406));
+		if (class_ == PlayerEntity.class) {
+			this.targetPredicate = new TargetPredicate()
+				.setBaseMaxDistance((double)f)
+				.includeTeammates()
+				.includeInvulnerable()
+				.ignoreEntityTargetRules()
+				.setPredicate(livingEntity -> EntityPredicates.rides(mobEntity).test(livingEntity));
+		} else {
+			this.targetPredicate = new TargetPredicate().setBaseMaxDistance((double)f).includeTeammates().includeInvulnerable().ignoreEntityTargetRules();
+		}
 	}
 
 	@Override
 	public boolean canStart() {
-		if (this.mob.getRandom().nextFloat() >= this.chance) {
+		if (this.mob.getRand().nextFloat() >= this.chance) {
 			return false;
 		} else {
 			if (this.mob.getTarget() != null) {
@@ -35,11 +49,19 @@ public class LookAtEntityGoal extends Goal {
 			}
 
 			if (this.targetType == PlayerEntity.class) {
+				this.target = this.mob.world.getClosestPlayer(this.targetPredicate, this.mob, this.mob.x, this.mob.y + (double)this.mob.getStandingEyeHeight(), this.mob.z);
+			} else {
 				this.target = this.mob
 					.world
-					.method_16360(this.mob.x, this.mob.y, this.mob.z, (double)this.range, EntityPredicate.field_16705.and(EntityPredicate.method_15608(this.mob)));
-			} else {
-				this.target = this.mob.world.getEntitiesByClass(this.targetType, this.mob.getBoundingBox().expand((double)this.range, 3.0, (double)this.range), this.mob);
+					.method_21727(
+						this.targetType,
+						this.targetPredicate,
+						this.mob,
+						this.mob.x,
+						this.mob.y + (double)this.mob.getStandingEyeHeight(),
+						this.mob.z,
+						this.mob.getBoundingBox().expand((double)this.range, 3.0, (double)this.range)
+					);
 			}
 
 			return this.target != null;
@@ -57,7 +79,7 @@ public class LookAtEntityGoal extends Goal {
 
 	@Override
 	public void start() {
-		this.lookTime = 40 + this.mob.getRandom().nextInt(40);
+		this.lookTime = 40 + this.mob.getRand().nextInt(40);
 	}
 
 	@Override
@@ -67,11 +89,7 @@ public class LookAtEntityGoal extends Goal {
 
 	@Override
 	public void tick() {
-		this.mob
-			.getLookControl()
-			.lookAt(
-				this.target.x, this.target.y + (double)this.target.getEyeHeight(), this.target.z, (float)this.mob.method_13081(), (float)this.mob.getLookPitchSpeed()
-			);
+		this.mob.getLookControl().lookAt(this.target.x, this.target.y + (double)this.target.getStandingEyeHeight(), this.target.z);
 		this.lookTime--;
 	}
 }

@@ -11,10 +11,10 @@ public class AlphaChunkDataArray {
 		this.xOffset = i + 4;
 	}
 
-	public int get(int x, int y, int z) {
-		int i = x << this.xOffset | z << this.zOffset | y;
-		int j = i >> 1;
-		int k = i & 1;
-		return k == 0 ? this.data[j] & 15 : this.data[j] >> 4 & 15;
+	public int get(int i, int j, int k) {
+		int l = i << this.xOffset | k << this.zOffset | j;
+		int m = l >> 1;
+		int n = l & 1;
+		return n == 0 ? this.data[m] & 15 : this.data[m] >> 4 & 15;
 	}
 }

@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 public abstract class BaseText implements Text {
-	protected List<Text> siblings = Lists.newArrayList();
+	protected final List<Text> siblings = Lists.newArrayList();
 	private Style style;
 
 	@Override

@@ -2,17 +2,17 @@ package net.minecraft.entity.vehicle;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.SpawnerBlockEntityBehavior;
 import net.minecraft.entity.EntityType;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.MobSpawnerLogic;
 import net.minecraft.world.World;
 
 public class SpawnerMinecartEntity extends AbstractMinecartEntity {
-	private final SpawnerBlockEntityBehavior spawner = new SpawnerBlockEntityBehavior() {
+	private final MobSpawnerLogic logic = new MobSpawnerLogic() {
 		@Override
-		public void sendStatus(int status) {
-			SpawnerMinecartEntity.this.world.sendEntityStatus(SpawnerMinecartEntity.this, (byte)status);
+		public void sendStatus(int i) {
+			SpawnerMinecartEntity.this.world.sendEntityStatus(SpawnerMinecartEntity.this, (byte)i);
 		}
 
 		@Override
@@ -26,45 +26,45 @@ public class SpawnerMinecartEntity extends AbstractMinecartEntity {
 		}
 	};
 
-	public SpawnerMinecartEntity(World world) {
-		super(EntityType.SPAWNER_MINECART, world);
+	public SpawnerMinecartEntity(EntityType<? extends SpawnerMinecartEntity> entityType, World world) {
+		super(entityType, world);
 	}
 
 	public SpawnerMinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.SPAWNER_MINECART, world, d, e, f);
+		super(EntityType.field_6142, world, d, e, f);
 	}
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.SPAWNER;
+		return AbstractMinecartEntity.Type.field_7680;
 	}
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.SPAWNER.getDefaultState();
+		return Blocks.field_10260.getDefaultState();
 	}
 
 	@Override
-	protected void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.spawner.deserialize(nbt);
+	protected void readCustomDataFromTag(CompoundTag compoundTag) {
+		super.readCustomDataFromTag(compoundTag);
+		this.logic.deserialize(compoundTag);
 	}
 
 	@Override
-	protected void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		this.spawner.toTag(nbt);
+	protected void writeCustomDataToTag(CompoundTag compoundTag) {
+		super.writeCustomDataToTag(compoundTag);
+		this.logic.serialize(compoundTag);
 	}
 
 	@Override
-	public void handleStatus(byte status) {
-		this.spawner.handleStatus(status);
+	public void handleStatus(byte b) {
+		this.logic.method_8275(b);
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		this.spawner.tick();
+		this.logic.update();
 	}
 
 	@Override

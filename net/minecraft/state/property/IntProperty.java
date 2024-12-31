@@ -48,21 +48,21 @@ public class IntProperty extends AbstractProperty<Integer> {
 		return 31 * super.computeHashCode() + this.values.hashCode();
 	}
 
-	public static IntProperty of(String name, int min, int max) {
-		return new IntProperty(name, min, max);
+	public static IntProperty of(String string, int i, int j) {
+		return new IntProperty(string, i, j);
 	}
 
 	@Override
-	public Optional<Integer> getValueAsString(String value) {
+	public Optional<Integer> getValue(String string) {
 		try {
-			Integer integer = Integer.valueOf(value);
+			Integer integer = Integer.valueOf(string);
 			return this.values.contains(integer) ? Optional.of(integer) : Optional.empty();
 		} catch (NumberFormatException var3) {
 			return Optional.empty();
 		}
 	}
 
-	public String name(Integer integer) {
+	public String method_11868(Integer integer) {
 		return integer.toString();
 	}
 }

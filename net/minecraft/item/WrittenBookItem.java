@@ -2,25 +2,26 @@ package net.minecraft.item;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.client.TooltipContext;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.LecternBlock;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.slot.Slot;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class WrittenBookItem extends Item {
@@ -28,91 +29,105 @@ public class WrittenBookItem extends Item {
 		super(settings);
 	}
 
-	public static boolean isValid(@Nullable NbtCompound nbt) {
-		if (!WritableBookItem.isValid(nbt)) {
+	public static boolean isValid(@Nullable CompoundTag compoundTag) {
+		if (!WritableBookItem.isValid(compoundTag)) {
 			return false;
-		} else if (!nbt.contains("title", 8)) {
+		} else if (!compoundTag.containsKey("title", 8)) {
 			return false;
 		} else {
-			String string = nbt.getString("title");
-			return string.length() > 32 ? false : nbt.contains("author", 8);
+			String string = compoundTag.getString("title");
+			return string.length() > 32 ? false : compoundTag.containsKey("author", 8);
 		}
 	}
 
-	public static int getGeneration(ItemStack stack) {
-		return stack.getNbt().getInt("generation");
+	public static int getGeneration(ItemStack itemStack) {
+		return itemStack.getTag().getInt("generation");
+	}
+
+	public static int getPageCount(ItemStack itemStack) {
+		CompoundTag compoundTag = itemStack.getTag();
+		return compoundTag != null ? compoundTag.getList("pages", 8).size() : 0;
 	}
 
 	@Override
-	public Text getDisplayName(ItemStack stack) {
-		if (stack.hasNbt()) {
-			NbtCompound nbtCompound = stack.getNbt();
-			String string = nbtCompound.getString("title");
+	public Text getName(ItemStack itemStack) {
+		if (itemStack.hasTag()) {
+			CompoundTag compoundTag = itemStack.getTag();
+			String string = compoundTag.getString("title");
 			if (!ChatUtil.isEmpty(string)) {
 				return new LiteralText(string);
 			}
 		}
 
-		return super.getDisplayName(stack);
+		return super.getName(itemStack);
 	}
 
 	@Override
-	public void appendTooltips(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext tooltipContext) {
-		if (stack.hasNbt()) {
-			NbtCompound nbtCompound = stack.getNbt();
-			String string = nbtCompound.getString("author");
+	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
+		if (itemStack.hasTag()) {
+			CompoundTag compoundTag = itemStack.getTag();
+			String string = compoundTag.getString("author");
 			if (!ChatUtil.isEmpty(string)) {
-				tooltip.add(new TranslatableText("book.byAuthor", string).formatted(Formatting.GRAY));
+				list.add(new TranslatableText("book.byAuthor", string).formatted(Formatting.field_1080));
 			}
 
-			tooltip.add(new TranslatableText("book.generation." + nbtCompound.getInt("generation")).formatted(Formatting.GRAY));
+			list.add(new TranslatableText("book.generation." + compoundTag.getInt("generation")).formatted(Formatting.field_1080));
 		}
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
-		ItemStack itemStack = player.getStackInHand(hand);
-		if (!world.isClient) {
-			this.resolveContents(itemStack, player);
+	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
+		World world = itemUsageContext.getWorld();
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		BlockState blockState = world.getBlockState(blockPos);
+		if (blockState.getBlock() == Blocks.field_16330) {
+			return LecternBlock.putBookIfAbsent(world, blockPos, blockState, itemUsageContext.getStack()) ? ActionResult.field_5812 : ActionResult.field_5811;
+		} else {
+			return ActionResult.field_5811;
 		}
-
-		player.method_3201(itemStack, hand);
-		player.method_15932(Stats.USED.method_21429(this));
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
-	private void resolveContents(ItemStack stack, PlayerEntity player) {
-		NbtCompound nbtCompound = stack.getNbt();
-		if (nbtCompound != null && !nbtCompound.getBoolean("resolved")) {
-			nbtCompound.putBoolean("resolved", true);
-			if (isValid(nbtCompound)) {
-				NbtList nbtList = nbtCompound.getList("pages", 8);
+	@Override
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		playerEntity.openEditBookScreen(itemStack, hand);
+		playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+	}
 
-				for (int i = 0; i < nbtList.size(); i++) {
-					String string = nbtList.getString(i);
+	public static boolean resolve(ItemStack itemStack, @Nullable ServerCommandSource serverCommandSource, @Nullable PlayerEntity playerEntity) {
+		CompoundTag compoundTag = itemStack.getTag();
+		if (compoundTag != null && !compoundTag.getBoolean("resolved")) {
+			compoundTag.putBoolean("resolved", true);
+			if (!isValid(compoundTag)) {
+				return false;
+			} else {
+				ListTag listTag = compoundTag.getList("pages", 8);
+
+				for (int i = 0; i < listTag.size(); i++) {
+					String string = listTag.getString(i);
 
 					Text text2;
 					try {
-						text2 = Text.Serializer.lenientDeserializeText(string);
-						text2 = ChatSerializer.method_20185(player.method_15582(), text2, player);
+						text2 = Text.Serializer.fromLenientJson(string);
+						text2 = Texts.parse(serverCommandSource, text2, playerEntity, 0);
 					} catch (Exception var9) {
 						text2 = new LiteralText(string);
 					}
 
-					nbtList.set(i, (NbtElement)(new NbtString(Text.Serializer.serialize(text2))));
+					listTag.method_10606(i, new StringTag(Text.Serializer.toJson(text2)));
 				}
 
-				nbtCompound.put("pages", nbtList);
-				if (player instanceof ServerPlayerEntity && player.getMainHandStack() == stack) {
-					Slot slot = player.openScreenHandler.getSlot(player.inventory, player.inventory.selectedSlot);
-					((ServerPlayerEntity)player).networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(0, slot.id, stack));
-				}
+				compoundTag.put("pages", listTag);
+				return true;
 			}
+		} else {
+			return false;
 		}
 	}
 
 	@Override
-	public boolean hasEnchantmentGlint(ItemStack stack) {
+	public boolean hasEnchantmentGlint(ItemStack itemStack) {
 		return true;
 	}
 }

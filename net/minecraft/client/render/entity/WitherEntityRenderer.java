@@ -6,27 +6,27 @@ import net.minecraft.client.render.entity.model.WitherEntityModel;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.util.Identifier;
 
-public class WitherEntityRenderer extends MobEntityRenderer<WitherEntity> {
-	private static final Identifier WITHER_INVULNERABLE_TEX = new Identifier("textures/entity/wither/wither_invulnerable.png");
-	private static final Identifier WITHER_TEX = new Identifier("textures/entity/wither/wither.png");
+public class WitherEntityRenderer extends MobEntityRenderer<WitherEntity, WitherEntityModel<WitherEntity>> {
+	private static final Identifier INVINCIBLE_SKIN = new Identifier("textures/entity/wither/wither_invulnerable.png");
+	private static final Identifier SKIN = new Identifier("textures/entity/wither/wither.png");
 
 	public WitherEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new WitherEntityModel(0.0F), 1.0F);
+		super(entityRenderDispatcher, new WitherEntityModel<>(0.0F), 1.0F);
 		this.addFeature(new WitherArmorFeatureRenderer(this));
 	}
 
-	protected Identifier getTexture(WitherEntity witherEntity) {
-		int i = witherEntity.getInvulnerabilityTime();
-		return i > 0 && (i > 80 || i / 5 % 2 != 1) ? WITHER_INVULNERABLE_TEX : WITHER_TEX;
+	protected Identifier method_4153(WitherEntity witherEntity) {
+		int i = witherEntity.getInvulTimer();
+		return i > 0 && (i > 80 || i / 5 % 2 != 1) ? INVINCIBLE_SKIN : SKIN;
 	}
 
-	protected void scale(WitherEntity witherEntity, float f) {
+	protected void method_4152(WitherEntity witherEntity, float f) {
 		float g = 2.0F;
-		int i = witherEntity.getInvulnerabilityTime();
+		int i = witherEntity.getInvulTimer();
 		if (i > 0) {
 			g -= ((float)i - f) / 220.0F * 0.5F;
 		}
 
-		GlStateManager.scale(g, g, g);
+		GlStateManager.scalef(g, g, g);
 	}
 }

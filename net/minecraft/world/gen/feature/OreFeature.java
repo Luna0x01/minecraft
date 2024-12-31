@@ -1,21 +1,27 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.BitSet;
 import java.util.Random;
-import net.minecraft.class_3798;
-import net.minecraft.class_3804;
-import net.minecraft.class_3844;
-import net.minecraft.class_3875;
-import net.minecraft.server.world.ChunkGenerator;
+import java.util.function.Function;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
-public class OreFeature extends class_3844<class_3875> {
-	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3875 arg) {
+public class OreFeature extends Feature<OreFeatureConfig> {
+	public OreFeature(Function<Dynamic<?>, ? extends OreFeatureConfig> function) {
+		super(function);
+	}
+
+	public boolean method_13628(
+		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, OreFeatureConfig oreFeatureConfig
+	) {
 		float f = random.nextFloat() * (float) Math.PI;
-		float g = (float)arg.field_19228 / 8.0F;
-		int i = MathHelper.ceil(((float)arg.field_19228 / 16.0F * 2.0F + 1.0F) / 2.0F);
+		float g = (float)oreFeatureConfig.size / 8.0F;
+		int i = MathHelper.ceil(((float)oreFeatureConfig.size / 16.0F * 2.0F + 1.0F) / 2.0F);
 		double d = (double)((float)blockPos.getX() + MathHelper.sin(f) * g);
 		double e = (double)((float)blockPos.getX() - MathHelper.sin(f) * g);
 		double h = (double)((float)blockPos.getZ() + MathHelper.cos(f) * g);
@@ -31,8 +37,8 @@ public class OreFeature extends class_3844<class_3875> {
 
 		for (int s = n; s <= n + q; s++) {
 			for (int t = p; t <= p + q; t++) {
-				if (o <= iWorld.method_16372(class_3804.class_3805.OCEAN_FLOOR_WG, s, t)) {
-					return this.method_17393(iWorld, random, arg, d, e, h, j, l, m, n, o, p, q, r);
+				if (o <= iWorld.getTop(Heightmap.Type.field_13195, s, t)) {
+					return this.generateVeinPart(iWorld, random, oreFeatureConfig, d, e, h, j, l, m, n, o, p, q, r);
 				}
 			}
 		}
@@ -40,20 +46,33 @@ public class OreFeature extends class_3844<class_3875> {
 		return false;
 	}
 
-	protected boolean method_17393(
-		IWorld iWorld, Random random, class_3875 arg, double d, double e, double f, double g, double h, double i, int j, int k, int l, int m, int n
+	protected boolean generateVeinPart(
+		IWorld iWorld,
+		Random random,
+		OreFeatureConfig oreFeatureConfig,
+		double d,
+		double e,
+		double f,
+		double g,
+		double h,
+		double i,
+		int j,
+		int k,
+		int l,
+		int m,
+		int n
 	) {
 		int o = 0;
 		BitSet bitSet = new BitSet(m * n * m);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		double[] ds = new double[arg.field_19228 * 4];
+		double[] ds = new double[oreFeatureConfig.size * 4];
 
-		for (int p = 0; p < arg.field_19228; p++) {
-			float q = (float)p / (float)arg.field_19228;
-			double r = d + (e - d) * (double)q;
-			double s = h + (i - h) * (double)q;
-			double t = f + (g - f) * (double)q;
-			double u = random.nextDouble() * (double)arg.field_19228 / 16.0;
+		for (int p = 0; p < oreFeatureConfig.size; p++) {
+			float q = (float)p / (float)oreFeatureConfig.size;
+			double r = MathHelper.lerp((double)q, d, e);
+			double s = MathHelper.lerp((double)q, h, i);
+			double t = MathHelper.lerp((double)q, f, g);
+			double u = random.nextDouble() * (double)oreFeatureConfig.size / 16.0;
 			double v = ((double)(MathHelper.sin((float) Math.PI * q) + 1.0F) * u + 1.0) / 2.0;
 			ds[p * 4 + 0] = r;
 			ds[p * 4 + 1] = s;
@@ -61,9 +80,9 @@ public class OreFeature extends class_3844<class_3875> {
 			ds[p * 4 + 3] = v;
 		}
 
-		for (int w = 0; w < arg.field_19228 - 1; w++) {
+		for (int w = 0; w < oreFeatureConfig.size - 1; w++) {
 			if (!(ds[w * 4 + 3] <= 0.0)) {
-				for (int x = w + 1; x < arg.field_19228; x++) {
+				for (int x = w + 1; x < oreFeatureConfig.size; x++) {
 					if (!(ds[x * 4 + 3] <= 0.0)) {
 						double y = ds[w * 4 + 0] - ds[x * 4 + 0];
 						double z = ds[w * 4 + 1] - ds[x * 4 + 1];
@@ -81,7 +100,7 @@ public class OreFeature extends class_3844<class_3875> {
 			}
 		}
 
-		for (int ac = 0; ac < arg.field_19228; ac++) {
+		for (int ac = 0; ac < oreFeatureConfig.size; ac++) {
 			double ad = ds[ac * 4 + 3];
 			if (!(ad < 0.0)) {
 				double ae = ds[ac * 4 + 0];
@@ -106,9 +125,9 @@ public class OreFeature extends class_3844<class_3875> {
 										int at = an - j + (ap - k) * m + (ar - l) * m * n;
 										if (!bitSet.get(at)) {
 											bitSet.set(at);
-											mutable.setPosition(an, ap, ar);
-											if (arg.field_19227.test(iWorld.getBlockState(mutable))) {
-												iWorld.setBlockState(mutable, arg.field_19229, 2);
+											mutable.set(an, ap, ar);
+											if (oreFeatureConfig.target.getCondition().test(iWorld.getBlockState(mutable))) {
+												iWorld.setBlockState(mutable, oreFeatureConfig.state, 2);
 												o++;
 											}
 										}

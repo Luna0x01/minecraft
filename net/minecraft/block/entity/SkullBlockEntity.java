@@ -7,75 +7,72 @@ import com.mojang.authlib.properties.Property;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.ChatUtil;
+import net.minecraft.util.TagHelper;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.UserCache;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
 
 public class SkullBlockEntity extends BlockEntity implements Tickable {
 	private GameProfile owner;
-	private int field_12854;
-	private boolean field_12855;
-	private boolean field_18646 = true;
-	private static UserCache field_12856;
-	private static MinecraftSessionService field_12857;
+	private int ticksPowered;
+	private boolean isPowered;
+	private static UserCache userCache;
+	private static MinecraftSessionService sessionService;
 
 	public SkullBlockEntity() {
-		super(BlockEntityType.SKULL);
+		super(BlockEntityType.field_11913);
 	}
 
-	public static void method_11666(UserCache userCache) {
-		field_12856 = userCache;
+	public static void setUserCache(UserCache userCache) {
+		SkullBlockEntity.userCache = userCache;
 	}
 
-	public static void method_11665(MinecraftSessionService minecraftSessionService) {
-		field_12857 = minecraftSessionService;
+	public static void setSessionService(MinecraftSessionService minecraftSessionService) {
+		sessionService = minecraftSessionService;
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
 		if (this.owner != null) {
-			NbtCompound nbtCompound = new NbtCompound();
-			NbtHelper.fromGameProfile(nbtCompound, this.owner);
-			nbt.put("Owner", nbtCompound);
+			CompoundTag compoundTag2 = new CompoundTag();
+			TagHelper.serializeProfile(compoundTag2, this.owner);
+			compoundTag.put("Owner", compoundTag2);
 		}
 
-		return nbt;
+		return compoundTag;
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		super.fromNbt(nbt);
-		if (nbt.contains("Owner", 10)) {
-			this.method_16841(NbtHelper.toGameProfile(nbt.getCompound("Owner")));
-		} else if (nbt.contains("ExtraType", 8)) {
-			String string = nbt.getString("ExtraType");
+	public void fromTag(CompoundTag compoundTag) {
+		super.fromTag(compoundTag);
+		if (compoundTag.containsKey("Owner", 10)) {
+			this.setOwnerAndType(TagHelper.deserializeProfile(compoundTag.getCompound("Owner")));
+		} else if (compoundTag.containsKey("ExtraType", 8)) {
+			String string = compoundTag.getString("ExtraType");
 			if (!ChatUtil.isEmpty(string)) {
-				this.method_16841(new GameProfile(null, string));
+				this.setOwnerAndType(new GameProfile(null, string));
 			}
 		}
 	}
 
 	@Override
 	public void tick() {
-		Block block = this.method_16783().getBlock();
-		if (block == Blocks.DRAGON_HEAD || block == Blocks.DRAGON_WALL_HEAD) {
+		Block block = this.getCachedState().getBlock();
+		if (block == Blocks.field_10337 || block == Blocks.field_10472) {
 			if (this.world.isReceivingRedstonePower(this.pos)) {
-				this.field_12855 = true;
-				this.field_12854++;
+				this.isPowered = true;
+				this.ticksPowered++;
 			} else {
-				this.field_12855 = false;
+				this.isPowered = false;
 			}
 		}
 	}
 
-	public float method_11664(float f) {
-		return this.field_12855 ? (float)this.field_12854 + f : (float)this.field_12854;
+	public float getTicksPowered(float f) {
+		return this.isPowered ? (float)this.ticksPowered + f : (float)this.ticksPowered;
 	}
 
 	@Nullable
@@ -85,16 +82,16 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 
 	@Nullable
 	@Override
-	public BlockEntityUpdateS2CPacket getUpdatePacket() {
-		return new BlockEntityUpdateS2CPacket(this.pos, 4, this.getUpdatePacketContent());
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 4, this.toInitialChunkDataTag());
 	}
 
 	@Override
-	public NbtCompound getUpdatePacketContent() {
-		return this.toNbt(new NbtCompound());
+	public CompoundTag toInitialChunkDataTag() {
+		return this.toTag(new CompoundTag());
 	}
 
-	public void method_16841(@Nullable GameProfile gameProfile) {
+	public void setOwnerAndType(@Nullable GameProfile gameProfile) {
 		this.owner = gameProfile;
 		this.loadOwnerProperties();
 	}
@@ -104,39 +101,27 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 		this.markDirty();
 	}
 
-	public static GameProfile loadProperties(GameProfile profile) {
-		if (profile != null && !ChatUtil.isEmpty(profile.getName())) {
-			if (profile.isComplete() && profile.getProperties().containsKey("textures")) {
-				return profile;
-			} else if (field_12856 != null && field_12857 != null) {
-				GameProfile gameProfile = field_12856.findByName(profile.getName());
-				if (gameProfile == null) {
-					return profile;
+	public static GameProfile loadProperties(GameProfile gameProfile) {
+		if (gameProfile != null && !ChatUtil.isEmpty(gameProfile.getName())) {
+			if (gameProfile.isComplete() && gameProfile.getProperties().containsKey("textures")) {
+				return gameProfile;
+			} else if (userCache != null && sessionService != null) {
+				GameProfile gameProfile2 = userCache.findByName(gameProfile.getName());
+				if (gameProfile2 == null) {
+					return gameProfile;
 				} else {
-					Property property = (Property)Iterables.getFirst(gameProfile.getProperties().get("textures"), null);
+					Property property = (Property)Iterables.getFirst(gameProfile2.getProperties().get("textures"), null);
 					if (property == null) {
-						gameProfile = field_12857.fillProfileProperties(gameProfile, true);
+						gameProfile2 = sessionService.fillProfileProperties(gameProfile2, true);
 					}
 
-					return gameProfile;
+					return gameProfile2;
 				}
 			} else {
-				return profile;
+				return gameProfile;
 			}
 		} else {
-			return profile;
+			return gameProfile;
 		}
-	}
-
-	public static void method_16840(BlockView blockView, BlockPos blockPos) {
-		BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
-		if (blockEntity instanceof SkullBlockEntity) {
-			SkullBlockEntity skullBlockEntity = (SkullBlockEntity)blockEntity;
-			skullBlockEntity.field_18646 = false;
-		}
-	}
-
-	public boolean method_16842() {
-		return this.field_18646;
 	}
 }

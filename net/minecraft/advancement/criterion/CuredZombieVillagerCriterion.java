@@ -9,125 +9,129 @@ import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.minecraft.class_3528;
-import net.minecraft.advancement.AdvancementFile;
+import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.predicate.entity.EntityPredicate;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> {
-	private static final Identifier CURED_ZOMBIE_VILLAGER = new Identifier("cured_zombie_villager");
-	private final Map<AdvancementFile, CuredZombieVillagerCriterion.class_3156> field_15552 = Maps.newHashMap();
+public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillagerCriterion.Conditions> {
+	private static final Identifier ID = new Identifier("cured_zombie_villager");
+	private final Map<PlayerAdvancementTracker, CuredZombieVillagerCriterion.Handler> handlers = Maps.newHashMap();
 
 	@Override
-	public Identifier getIdentifier() {
-		return CURED_ZOMBIE_VILLAGER;
+	public Identifier getId() {
+		return ID;
 	}
 
 	@Override
-	public void method_14973(AdvancementFile file, Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> arg) {
-		CuredZombieVillagerCriterion.class_3156 lv = (CuredZombieVillagerCriterion.class_3156)this.field_15552.get(file);
-		if (lv == null) {
-			lv = new CuredZombieVillagerCriterion.class_3156(file);
-			this.field_15552.put(file, lv);
+	public void beginTrackingCondition(
+		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer
+	) {
+		CuredZombieVillagerCriterion.Handler handler = (CuredZombieVillagerCriterion.Handler)this.handlers.get(playerAdvancementTracker);
+		if (handler == null) {
+			handler = new CuredZombieVillagerCriterion.Handler(playerAdvancementTracker);
+			this.handlers.put(playerAdvancementTracker, handler);
 		}
 
-		lv.method_14098(arg);
+		handler.addCondition(conditionsContainer);
 	}
 
 	@Override
-	public void method_14974(AdvancementFile file, Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> arg) {
-		CuredZombieVillagerCriterion.class_3156 lv = (CuredZombieVillagerCriterion.class_3156)this.field_15552.get(file);
-		if (lv != null) {
-			lv.method_14099(arg);
-			if (lv.method_14096()) {
-				this.field_15552.remove(file);
+	public void endTrackingCondition(
+		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer
+	) {
+		CuredZombieVillagerCriterion.Handler handler = (CuredZombieVillagerCriterion.Handler)this.handlers.get(playerAdvancementTracker);
+		if (handler != null) {
+			handler.removeCondition(conditionsContainer);
+			if (handler.isEmpty()) {
+				this.handlers.remove(playerAdvancementTracker);
 			}
 		}
 	}
 
 	@Override
-	public void removeAdvancementFile(AdvancementFile file) {
-		this.field_15552.remove(file);
+	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
+		this.handlers.remove(playerAdvancementTracker);
 	}
 
-	public CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		class_3528 lv = class_3528.method_15905(jsonObject.get("zombie"));
-		class_3528 lv2 = class_3528.method_15905(jsonObject.get("villager"));
-		return new CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance(lv, lv2);
+	public CuredZombieVillagerCriterion.Conditions method_8830(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		EntityPredicate entityPredicate = EntityPredicate.deserialize(jsonObject.get("zombie"));
+		EntityPredicate entityPredicate2 = EntityPredicate.deserialize(jsonObject.get("villager"));
+		return new CuredZombieVillagerCriterion.Conditions(entityPredicate, entityPredicate2);
 	}
 
-	public void grant(ServerPlayerEntity player, ZombieEntity zombie, VillagerEntity villager) {
-		CuredZombieVillagerCriterion.class_3156 lv = (CuredZombieVillagerCriterion.class_3156)this.field_15552.get(player.getAdvancementFile());
-		if (lv != null) {
-			lv.method_14097(player, zombie, villager);
+	public void handle(ServerPlayerEntity serverPlayerEntity, ZombieEntity zombieEntity, VillagerEntity villagerEntity) {
+		CuredZombieVillagerCriterion.Handler handler = (CuredZombieVillagerCriterion.Handler)this.handlers.get(serverPlayerEntity.getAdvancementManager());
+		if (handler != null) {
+			handler.handle(serverPlayerEntity, zombieEntity, villagerEntity);
 		}
 	}
 
-	public static class CuredZombieVillagerCriterionInstance extends AbstractCriterionInstance {
-		private final class_3528 field_15555;
-		private final class_3528 field_15556;
+	public static class Conditions extends AbstractCriterionConditions {
+		private final EntityPredicate zombie;
+		private final EntityPredicate villager;
 
-		public CuredZombieVillagerCriterionInstance(class_3528 arg, class_3528 arg2) {
-			super(CuredZombieVillagerCriterion.CURED_ZOMBIE_VILLAGER);
-			this.field_15555 = arg;
-			this.field_15556 = arg2;
+		public Conditions(EntityPredicate entityPredicate, EntityPredicate entityPredicate2) {
+			super(CuredZombieVillagerCriterion.ID);
+			this.zombie = entityPredicate;
+			this.villager = entityPredicate2;
 		}
 
-		public static CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance method_15639() {
-			return new CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance(class_3528.field_17075, class_3528.field_17075);
+		public static CuredZombieVillagerCriterion.Conditions any() {
+			return new CuredZombieVillagerCriterion.Conditions(EntityPredicate.ANY, EntityPredicate.ANY);
 		}
 
-		public boolean method_14100(ServerPlayerEntity player, ZombieEntity zombie, VillagerEntity villager) {
-			return !this.field_15555.method_15906(player, zombie) ? false : this.field_15556.method_15906(player, villager);
+		public boolean matches(ServerPlayerEntity serverPlayerEntity, ZombieEntity zombieEntity, VillagerEntity villagerEntity) {
+			return !this.zombie.test(serverPlayerEntity, zombieEntity) ? false : this.villager.test(serverPlayerEntity, villagerEntity);
 		}
 
 		@Override
-		public JsonElement method_21241() {
+		public JsonElement toJson() {
 			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("zombie", this.field_15555.method_15904());
-			jsonObject.add("villager", this.field_15556.method_15904());
+			jsonObject.add("zombie", this.zombie.serialize());
+			jsonObject.add("villager", this.villager.serialize());
 			return jsonObject;
 		}
 	}
 
-	static class class_3156 {
-		private final AdvancementFile file;
-		private final Set<Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance>> field_15554 = Sets.newHashSet();
+	static class Handler {
+		private final PlayerAdvancementTracker manager;
+		private final Set<Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions>> conditions = Sets.newHashSet();
 
-		public class_3156(AdvancementFile advancementFile) {
-			this.file = advancementFile;
+		public Handler(PlayerAdvancementTracker playerAdvancementTracker) {
+			this.manager = playerAdvancementTracker;
 		}
 
-		public boolean method_14096() {
-			return this.field_15554.isEmpty();
+		public boolean isEmpty() {
+			return this.conditions.isEmpty();
 		}
 
-		public void method_14098(Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> arg) {
-			this.field_15554.add(arg);
+		public void addCondition(Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer) {
+			this.conditions.add(conditionsContainer);
 		}
 
-		public void method_14099(Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> arg) {
-			this.field_15554.remove(arg);
+		public void removeCondition(Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer) {
+			this.conditions.remove(conditionsContainer);
 		}
 
-		public void method_14097(ServerPlayerEntity player, ZombieEntity entity, VillagerEntity villager) {
-			List<Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance>> list = null;
+		public void handle(ServerPlayerEntity serverPlayerEntity, ZombieEntity zombieEntity, VillagerEntity villagerEntity) {
+			List<Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions>> list = null;
 
-			for (Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> lv : this.field_15554) {
-				if (lv.method_14975().method_14100(player, entity, villager)) {
+			for (Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer : this.conditions) {
+				if (conditionsContainer.getConditions().matches(serverPlayerEntity, zombieEntity, villagerEntity)) {
 					if (list == null) {
 						list = Lists.newArrayList();
 					}
 
-					list.add(lv);
+					list.add(conditionsContainer);
 				}
 			}
 
 			if (list != null) {
-				for (Criterion.class_3353<CuredZombieVillagerCriterion.CuredZombieVillagerCriterionInstance> lv2 : list) {
-					lv2.method_14976(this.file);
+				for (Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer2 : list) {
+					conditionsContainer2.apply(this.manager);
 				}
 			}
 		}

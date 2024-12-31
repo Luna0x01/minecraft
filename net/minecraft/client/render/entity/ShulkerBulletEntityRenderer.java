@@ -2,19 +2,19 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.ShulkerBulletEntityModel;
-import net.minecraft.entity.ShulkerBulletEntity;
+import net.minecraft.entity.projectile.ShulkerBulletEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class ShulkerBulletEntityRenderer extends EntityRenderer<ShulkerBulletEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/shulker/spark.png");
-	private final ShulkerBulletEntityModel model = new ShulkerBulletEntityModel();
+	private static final Identifier SKIN = new Identifier("textures/entity/shulker/spark.png");
+	private final ShulkerBulletEntityModel<ShulkerBulletEntity> model = new ShulkerBulletEntityModel<>();
 
 	public ShulkerBulletEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	private float method_12466(float f, float g, float h) {
+	private float method_4104(float f, float g, float h) {
 		float i = g - f;
 
 		while (i < -180.0F) {
@@ -28,30 +28,30 @@ public class ShulkerBulletEntityRenderer extends EntityRenderer<ShulkerBulletEnt
 		return f + h * i;
 	}
 
-	public void render(ShulkerBulletEntity shulkerBulletEntity, double d, double e, double f, float g, float h) {
+	public void method_4103(ShulkerBulletEntity shulkerBulletEntity, double d, double e, double f, float g, float h) {
 		GlStateManager.pushMatrix();
-		float i = this.method_12466(shulkerBulletEntity.prevYaw, shulkerBulletEntity.yaw, h);
-		float j = shulkerBulletEntity.prevPitch + (shulkerBulletEntity.pitch - shulkerBulletEntity.prevPitch) * h;
-		float k = (float)shulkerBulletEntity.ticksAlive + h;
-		GlStateManager.translate((float)d, (float)e + 0.15F, (float)f);
-		GlStateManager.rotate(MathHelper.sin(k * 0.1F) * 180.0F, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate(MathHelper.cos(k * 0.1F) * 180.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.rotate(MathHelper.sin(k * 0.15F) * 360.0F, 0.0F, 0.0F, 1.0F);
+		float i = this.method_4104(shulkerBulletEntity.prevYaw, shulkerBulletEntity.yaw, h);
+		float j = MathHelper.lerp(h, shulkerBulletEntity.prevPitch, shulkerBulletEntity.pitch);
+		float k = (float)shulkerBulletEntity.age + h;
+		GlStateManager.translatef((float)d, (float)e + 0.15F, (float)f);
+		GlStateManager.rotatef(MathHelper.sin(k * 0.1F) * 180.0F, 0.0F, 1.0F, 0.0F);
+		GlStateManager.rotatef(MathHelper.cos(k * 0.1F) * 180.0F, 1.0F, 0.0F, 0.0F);
+		GlStateManager.rotatef(MathHelper.sin(k * 0.15F) * 360.0F, 0.0F, 0.0F, 1.0F);
 		float l = 0.03125F;
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.scale(-1.0F, -1.0F, 1.0F);
-		this.bindTexture(shulkerBulletEntity);
+		GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
+		this.bindEntityTexture(shulkerBulletEntity);
 		this.model.render(shulkerBulletEntity, 0.0F, 0.0F, 0.0F, i, j, 0.03125F);
 		GlStateManager.enableBlend();
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 0.5F);
-		GlStateManager.scale(1.5F, 1.5F, 1.5F);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 0.5F);
+		GlStateManager.scalef(1.5F, 1.5F, 1.5F);
 		this.model.render(shulkerBulletEntity, 0.0F, 0.0F, 0.0F, i, j, 0.03125F);
 		GlStateManager.disableBlend();
 		GlStateManager.popMatrix();
 		super.render(shulkerBulletEntity, d, e, f, g, h);
 	}
 
-	protected Identifier getTexture(ShulkerBulletEntity shulkerBulletEntity) {
-		return TEXTURE;
+	protected Identifier method_4105(ShulkerBulletEntity shulkerBulletEntity) {
+		return SKIN;
 	}
 }

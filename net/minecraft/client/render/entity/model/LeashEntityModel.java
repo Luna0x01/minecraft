@@ -1,10 +1,10 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.model.Cuboid;
 import net.minecraft.entity.Entity;
 
-public class LeashEntityModel extends EntityModel {
-	private final ModelPart field_6395;
+public class LeashEntityModel<T extends Entity> extends EntityModel<T> {
+	private final Cuboid field_3431;
 
 	public LeashEntityModel() {
 		this(0, 0, 32, 32);
@@ -13,21 +13,21 @@ public class LeashEntityModel extends EntityModel {
 	public LeashEntityModel(int i, int j, int k, int l) {
 		this.textureWidth = k;
 		this.textureHeight = l;
-		this.field_6395 = new ModelPart(this, i, j);
-		this.field_6395.addCuboid(-3.0F, -6.0F, -3.0F, 6, 8, 6, 0.0F);
-		this.field_6395.setPivot(0.0F, 0.0F, 0.0F);
+		this.field_3431 = new Cuboid(this, i, j);
+		this.field_3431.addBox(-3.0F, -6.0F, -3.0F, 6, 8, 6, 0.0F);
+		this.field_3431.setRotationPoint(0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_6395.render(scale);
+	public void render(T entity, float f, float g, float h, float i, float j, float k) {
+		this.setAngles(entity, f, g, h, i, j, k);
+		this.field_3431.render(k);
 	}
 
 	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_6395.posY = age * (float) (Math.PI / 180.0);
-		this.field_6395.posX = headPitch * (float) (Math.PI / 180.0);
+	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+		super.setAngles(entity, f, g, h, i, j, k);
+		this.field_3431.yaw = i * (float) (Math.PI / 180.0);
+		this.field_3431.pitch = j * (float) (Math.PI / 180.0);
 	}
 }

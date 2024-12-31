@@ -10,10 +10,10 @@ public class DedicatedPlayerManager extends PlayerManager {
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	public DedicatedPlayerManager(MinecraftDedicatedServer minecraftDedicatedServer) {
-		super(minecraftDedicatedServer);
-		this.setViewDistance(minecraftDedicatedServer.getIntOrDefault("view-distance", 10));
-		this.maxPlayers = minecraftDedicatedServer.getIntOrDefault("max-players", 20);
-		this.setWhitelistEnabled(minecraftDedicatedServer.getBooleanOrDefault("white-list", false));
+		super(minecraftDedicatedServer, minecraftDedicatedServer.getProperties().maxPlayers);
+		ServerPropertiesHandler serverPropertiesHandler = minecraftDedicatedServer.getProperties();
+		this.setViewDistance(serverPropertiesHandler.viewDistance);
+		super.setWhitelistEnabled(serverPropertiesHandler.whiteList.get());
 		if (!minecraftDedicatedServer.isSinglePlayer()) {
 			this.getUserBanList().setEnabled(true);
 			this.getIpBanList().setEnabled(true);
@@ -32,21 +32,20 @@ public class DedicatedPlayerManager extends PlayerManager {
 	}
 
 	@Override
-	public void setWhitelistEnabled(boolean whitelistEnabled) {
-		super.setWhitelistEnabled(whitelistEnabled);
-		this.getServer().setProperty("white-list", whitelistEnabled);
-		this.getServer().saveAbstractPropertiesHandler();
+	public void setWhitelistEnabled(boolean bl) {
+		super.setWhitelistEnabled(bl);
+		this.method_13938().setUseWhitelist(bl);
 	}
 
 	@Override
-	public void op(GameProfile profile) {
-		super.op(profile);
+	public void addToOperators(GameProfile gameProfile) {
+		super.addToOperators(gameProfile);
 		this.saveOpList();
 	}
 
 	@Override
-	public void deop(GameProfile profile) {
-		super.deop(profile);
+	public void removeFromOperators(GameProfile gameProfile) {
+		super.removeFromOperators(gameProfile);
 		this.saveOpList();
 	}
 
@@ -120,16 +119,16 @@ public class DedicatedPlayerManager extends PlayerManager {
 	}
 
 	@Override
-	public boolean isWhitelisted(GameProfile profile) {
-		return !this.isWhitelistEnabled() || this.isOperator(profile) || this.getWhitelist().isAllowed(profile);
+	public boolean isWhitelisted(GameProfile gameProfile) {
+		return !this.isWhitelistEnabled() || this.isOperator(gameProfile) || this.getWhitelist().isAllowed(gameProfile);
 	}
 
-	public MinecraftDedicatedServer getServer() {
+	public MinecraftDedicatedServer method_13938() {
 		return (MinecraftDedicatedServer)super.getServer();
 	}
 
 	@Override
-	public boolean canBypassPlayerLimit(GameProfile profile) {
-		return this.getOpList().isOp(profile);
+	public boolean canBypassPlayerLimit(GameProfile gameProfile) {
+		return this.getOpList().isOp(gameProfile);
 	}
 }

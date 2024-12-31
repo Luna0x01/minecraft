@@ -1,27 +1,12 @@
 package net.minecraft.client.gui.widget;
 
-import javax.annotation.Nullable;
-import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.options.Option;
 
-public abstract class OptionButtonWidget extends ButtonWidget {
-	@Nullable
-	private final GameOptions.Option option;
+public class OptionButtonWidget extends ButtonWidget {
+	private final Option option;
 
-	public OptionButtonWidget(int i, int j, int k, String string) {
-		this(i, j, k, null, string);
-	}
-
-	public OptionButtonWidget(int i, int j, int k, @Nullable GameOptions.Option option, String string) {
-		this(i, j, k, 150, 20, option, string);
-	}
-
-	public OptionButtonWidget(int i, int j, int k, int l, int m, @Nullable GameOptions.Option option, String string) {
-		super(i, j, k, l, m, string);
+	public OptionButtonWidget(int i, int j, int k, int l, Option option, String string, ButtonWidget.PressAction pressAction) {
+		super(i, j, k, l, string, pressAction);
 		this.option = option;
-	}
-
-	@Nullable
-	public GameOptions.Option getOption() {
-		return this.option;
 	}
 }

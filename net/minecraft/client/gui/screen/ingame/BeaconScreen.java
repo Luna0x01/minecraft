@@ -1,44 +1,62 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.class_4390;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
+import net.minecraft.client.gui.widget.AbstractPressableButtonWidget;
+import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.container.BeaconContainer;
+import net.minecraft.container.Container;
+import net.minecraft.container.ContainerListener;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.GuiCloseC2SPacket;
-import net.minecraft.screen.BeaconScreenHandler;
+import net.minecraft.server.network.packet.GuiCloseC2SPacket;
+import net.minecraft.server.network.packet.UpdateBeaconC2SPacket;
+import net.minecraft.text.Text;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class BeaconScreen extends HandledScreen {
-	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Identifier TEXTURE = new Identifier("textures/gui/container/beacon.png");
-	private final Inventory beaconInventory;
+public class BeaconScreen extends AbstractContainerScreen<BeaconContainer> {
+	private static final Identifier BG_TEX = new Identifier("textures/gui/container/beacon.png");
 	private BeaconScreen.DoneButtonWidget doneButton;
 	private boolean consumeGem;
+	private StatusEffect primaryEffect;
+	private StatusEffect secondaryEffect;
 
-	public BeaconScreen(PlayerInventory playerInventory, Inventory inventory) {
-		super(new BeaconScreenHandler(playerInventory, inventory));
-		this.beaconInventory = inventory;
-		this.backgroundWidth = 230;
-		this.backgroundHeight = 219;
+	public BeaconScreen(BeaconContainer beaconContainer, PlayerInventory playerInventory, Text text) {
+		super(beaconContainer, playerInventory, text);
+		this.containerWidth = 230;
+		this.containerHeight = 219;
+		beaconContainer.addListener(new ContainerListener() {
+			@Override
+			public void onContainerRegistered(Container container, DefaultedList<ItemStack> defaultedList) {
+			}
+
+			@Override
+			public void onContainerSlotUpdate(Container container, int i, ItemStack itemStack) {
+			}
+
+			@Override
+			public void onContainerPropertyUpdate(Container container, int i, int j) {
+				BeaconScreen.this.primaryEffect = beaconContainer.getPrimaryEffect();
+				BeaconScreen.this.secondaryEffect = beaconContainer.getSecondaryEffect();
+				BeaconScreen.this.consumeGem = true;
+			}
+		});
 	}
 
 	@Override
 	protected void init() {
 		super.init();
-		this.doneButton = new BeaconScreen.DoneButtonWidget(-1, this.x + 164, this.y + 107);
-		this.addButton(this.doneButton);
-		this.addButton(new BeaconScreen.CancelButtonWidget(-2, this.x + 190, this.y + 107));
+		this.doneButton = this.addButton(new BeaconScreen.DoneButtonWidget(this.left + 164, this.top + 107));
+		this.addButton(new BeaconScreen.CancelButtonWidget(this.left + 190, this.top + 107));
 		this.consumeGem = true;
 		this.doneButton.active = false;
 	}
@@ -46,219 +64,230 @@ public class BeaconScreen extends HandledScreen {
 	@Override
 	public void tick() {
 		super.tick();
-		int i = this.beaconInventory.getProperty(0);
-		StatusEffect statusEffect = StatusEffect.byIndex(this.beaconInventory.getProperty(1));
-		StatusEffect statusEffect2 = StatusEffect.byIndex(this.beaconInventory.getProperty(2));
+		int i = this.container.getProperties();
 		if (this.consumeGem && i >= 0) {
 			this.consumeGem = false;
-			int j = 100;
 
-			for (int k = 0; k <= 2; k++) {
-				int l = BeaconBlockEntity.EFFECTS[k].length;
-				int m = l * 22 + (l - 1) * 2;
+			for (int j = 0; j <= 2; j++) {
+				int k = BeaconBlockEntity.EFFECTS_BY_LEVEL[j].length;
+				int l = k * 22 + (k - 1) * 2;
 
-				for (int n = 0; n < l; n++) {
-					StatusEffect statusEffect3 = BeaconBlockEntity.EFFECTS[k][n];
+				for (int m = 0; m < k; m++) {
+					StatusEffect statusEffect = BeaconBlockEntity.EFFECTS_BY_LEVEL[j][m];
 					BeaconScreen.EffectButtonWidget effectButtonWidget = new BeaconScreen.EffectButtonWidget(
-						j++, this.x + 76 + n * 24 - m / 2, this.y + 22 + k * 25, statusEffect3, k
+						this.left + 76 + m * 24 - l / 2, this.top + 22 + j * 25, statusEffect, true
 					);
 					this.addButton(effectButtonWidget);
-					if (k >= i) {
+					if (j >= i) {
 						effectButtonWidget.active = false;
-					} else if (statusEffect3 == statusEffect) {
+					} else if (statusEffect == this.primaryEffect) {
 						effectButtonWidget.setDisabled(true);
 					}
 				}
 			}
 
-			int o = 3;
-			int p = BeaconBlockEntity.EFFECTS[3].length + 1;
-			int q = p * 22 + (p - 1) * 2;
+			int n = 3;
+			int o = BeaconBlockEntity.EFFECTS_BY_LEVEL[3].length + 1;
+			int p = o * 22 + (o - 1) * 2;
 
-			for (int r = 0; r < p - 1; r++) {
-				StatusEffect statusEffect4 = BeaconBlockEntity.EFFECTS[3][r];
-				BeaconScreen.EffectButtonWidget effectButtonWidget2 = new BeaconScreen.EffectButtonWidget(j++, this.x + 167 + r * 24 - q / 2, this.y + 47, statusEffect4, 3);
+			for (int q = 0; q < o - 1; q++) {
+				StatusEffect statusEffect2 = BeaconBlockEntity.EFFECTS_BY_LEVEL[3][q];
+				BeaconScreen.EffectButtonWidget effectButtonWidget2 = new BeaconScreen.EffectButtonWidget(
+					this.left + 167 + q * 24 - p / 2, this.top + 47, statusEffect2, false
+				);
 				this.addButton(effectButtonWidget2);
 				if (3 >= i) {
 					effectButtonWidget2.active = false;
-				} else if (statusEffect4 == statusEffect2) {
+				} else if (statusEffect2 == this.secondaryEffect) {
 					effectButtonWidget2.setDisabled(true);
 				}
 			}
 
-			if (statusEffect != null) {
+			if (this.primaryEffect != null) {
 				BeaconScreen.EffectButtonWidget effectButtonWidget3 = new BeaconScreen.EffectButtonWidget(
-					j++, this.x + 167 + (p - 1) * 24 - q / 2, this.y + 47, statusEffect, 3
+					this.left + 167 + (o - 1) * 24 - p / 2, this.top + 47, this.primaryEffect, false
 				);
 				this.addButton(effectButtonWidget3);
 				if (3 >= i) {
 					effectButtonWidget3.active = false;
-				} else if (statusEffect == statusEffect2) {
+				} else if (this.primaryEffect == this.secondaryEffect) {
 					effectButtonWidget3.setDisabled(true);
 				}
 			}
 		}
 
-		this.doneButton.active = !this.beaconInventory.getInvStack(0).isEmpty() && statusEffect != null;
+		this.doneButton.active = this.container.hasPayment() && this.primaryEffect != null;
 	}
 
 	@Override
-	protected void drawForeground(int mouseX, int mouseY) {
-		DiffuseLighting.disable();
-		this.drawCenteredString(this.textRenderer, I18n.translate("block.minecraft.beacon.primary"), 62, 10, 14737632);
-		this.drawCenteredString(this.textRenderer, I18n.translate("block.minecraft.beacon.secondary"), 169, 10, 14737632);
+	protected void drawForeground(int i, int j) {
+		GuiLighting.disable();
+		this.drawCenteredString(this.font, I18n.translate("block.minecraft.beacon.primary"), 62, 10, 14737632);
+		this.drawCenteredString(this.font, I18n.translate("block.minecraft.beacon.secondary"), 169, 10, 14737632);
 
-		for (ButtonWidget buttonWidget : this.buttons) {
-			if (buttonWidget.isHovered()) {
-				buttonWidget.renderToolTip(mouseX - this.x, mouseY - this.y);
+		for (AbstractButtonWidget abstractButtonWidget : this.buttons) {
+			if (abstractButtonWidget.isHovered()) {
+				abstractButtonWidget.renderToolTip(i - this.left, j - this.top);
 				break;
 			}
 		}
 
-		DiffuseLighting.enable();
+		GuiLighting.enableForItems();
 	}
 
 	@Override
-	protected void drawBackground(float delta, int mouseX, int mouseY) {
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(TEXTURE);
-		int i = (this.width - this.backgroundWidth) / 2;
-		int j = (this.height - this.backgroundHeight) / 2;
-		this.drawTexture(i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
-		this.field_20308.field_20932 = 100.0F;
-		this.field_20308.method_19397(new ItemStack(Items.EMERALD), i + 42, j + 109);
-		this.field_20308.method_19397(new ItemStack(Items.DIAMOND), i + 42 + 22, j + 109);
-		this.field_20308.method_19397(new ItemStack(Items.GOLD_INGOT), i + 42 + 44, j + 109);
-		this.field_20308.method_19397(new ItemStack(Items.IRON_INGOT), i + 42 + 66, j + 109);
-		this.field_20308.field_20932 = 0.0F;
+	protected void drawBackground(float f, int i, int j) {
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		this.minecraft.getTextureManager().bindTexture(BG_TEX);
+		int k = (this.width - this.containerWidth) / 2;
+		int l = (this.height - this.containerHeight) / 2;
+		this.blit(k, l, 0, 0, this.containerWidth, this.containerHeight);
+		this.itemRenderer.zOffset = 100.0F;
+		this.itemRenderer.renderGuiItem(new ItemStack(Items.field_8687), k + 42, l + 109);
+		this.itemRenderer.renderGuiItem(new ItemStack(Items.field_8477), k + 42 + 22, l + 109);
+		this.itemRenderer.renderGuiItem(new ItemStack(Items.field_8695), k + 42 + 44, l + 109);
+		this.itemRenderer.renderGuiItem(new ItemStack(Items.field_8620), k + 42 + 66, l + 109);
+		this.itemRenderer.zOffset = 0.0F;
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float tickDelta) {
+	public void render(int i, int j, float f) {
 		this.renderBackground();
-		super.render(mouseX, mouseY, tickDelta);
-		this.renderTooltip(mouseX, mouseY);
+		super.render(i, j, f);
+		this.drawMouseoverTooltip(i, j);
 	}
 
-	abstract static class BaseButtonWidget extends ButtonWidget {
-		private final Identifier texture;
-		private final int u;
-		private final int v;
+	abstract static class BaseButtonWidget extends AbstractPressableButtonWidget {
 		private boolean disabled;
 
-		protected BaseButtonWidget(int i, int j, int k, Identifier identifier, int l, int m) {
-			super(i, j, k, 22, 22, "");
-			this.texture = identifier;
-			this.u = l;
-			this.v = m;
+		protected BaseButtonWidget(int i, int j) {
+			super(i, j, 22, 22, "");
 		}
 
 		@Override
-		public void method_891(int i, int j, float f) {
-			if (this.visible) {
-				MinecraftClient.getInstance().getTextureManager().bindTexture(BeaconScreen.TEXTURE);
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-				this.hovered = i >= this.x && j >= this.y && i < this.x + this.width && j < this.y + this.height;
-				int k = 219;
-				int l = 0;
-				if (!this.active) {
-					l += this.width * 2;
-				} else if (this.disabled) {
-					l += this.width * 1;
-				} else if (this.hovered) {
-					l += this.width * 3;
-				}
-
-				this.drawTexture(this.x, this.y, l, 219, this.width, this.height);
-				if (!BeaconScreen.TEXTURE.equals(this.texture)) {
-					MinecraftClient.getInstance().getTextureManager().bindTexture(this.texture);
-				}
-
-				this.drawTexture(this.x + 2, this.y + 2, this.u, this.v, 18, 18);
+		public void renderButton(int i, int j, float f) {
+			MinecraftClient.getInstance().getTextureManager().bindTexture(BeaconScreen.BG_TEX);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			int k = 219;
+			int l = 0;
+			if (!this.active) {
+				l += this.width * 2;
+			} else if (this.disabled) {
+				l += this.width * 1;
+			} else if (this.isHovered()) {
+				l += this.width * 3;
 			}
+
+			this.blit(this.x, this.y, l, 219, this.width, this.height);
+			this.renderExtra();
 		}
+
+		protected abstract void renderExtra();
 
 		public boolean isDisabled() {
 			return this.disabled;
 		}
 
-		public void setDisabled(boolean disabled) {
-			this.disabled = disabled;
+		public void setDisabled(boolean bl) {
+			this.disabled = bl;
 		}
 	}
 
-	class CancelButtonWidget extends BeaconScreen.BaseButtonWidget {
-		public CancelButtonWidget(int i, int j, int k) {
-			super(i, j, k, BeaconScreen.TEXTURE, 112, 220);
+	class CancelButtonWidget extends BeaconScreen.IconButtonWidget {
+		public CancelButtonWidget(int i, int j) {
+			super(i, j, 112, 220);
 		}
 
 		@Override
-		public void method_18374(double d, double e) {
-			BeaconScreen.this.client.player.networkHandler.sendPacket(new GuiCloseC2SPacket(BeaconScreen.this.client.player.openScreenHandler.syncId));
-			BeaconScreen.this.client.setScreen(null);
+		public void onPress() {
+			BeaconScreen.this.minecraft.player.networkHandler.sendPacket(new GuiCloseC2SPacket(BeaconScreen.this.minecraft.player.container.syncId));
+			BeaconScreen.this.minecraft.openScreen(null);
 		}
 
 		@Override
-		public void renderToolTip(int mouseX, int mouseY) {
-			BeaconScreen.this.renderTooltip(I18n.translate("gui.cancel"), mouseX, mouseY);
+		public void renderToolTip(int i, int j) {
+			BeaconScreen.this.renderTooltip(I18n.translate("gui.cancel"), i, j);
 		}
 	}
 
-	class DoneButtonWidget extends BeaconScreen.BaseButtonWidget {
-		public DoneButtonWidget(int i, int j, int k) {
-			super(i, j, k, BeaconScreen.TEXTURE, 90, 220);
+	class DoneButtonWidget extends BeaconScreen.IconButtonWidget {
+		public DoneButtonWidget(int i, int j) {
+			super(i, j, 90, 220);
 		}
 
 		@Override
-		public void method_18374(double d, double e) {
-			BeaconScreen.this.client
+		public void onPress() {
+			BeaconScreen.this.minecraft
 				.getNetworkHandler()
-				.sendPacket(new class_4390(BeaconScreen.this.beaconInventory.getProperty(1), BeaconScreen.this.beaconInventory.getProperty(2)));
-			BeaconScreen.this.client.player.networkHandler.sendPacket(new GuiCloseC2SPacket(BeaconScreen.this.client.player.openScreenHandler.syncId));
-			BeaconScreen.this.client.setScreen(null);
+				.sendPacket(new UpdateBeaconC2SPacket(StatusEffect.getRawId(BeaconScreen.this.primaryEffect), StatusEffect.getRawId(BeaconScreen.this.secondaryEffect)));
+			BeaconScreen.this.minecraft.player.networkHandler.sendPacket(new GuiCloseC2SPacket(BeaconScreen.this.minecraft.player.container.syncId));
+			BeaconScreen.this.minecraft.openScreen(null);
 		}
 
 		@Override
-		public void renderToolTip(int mouseX, int mouseY) {
-			BeaconScreen.this.renderTooltip(I18n.translate("gui.done"), mouseX, mouseY);
+		public void renderToolTip(int i, int j) {
+			BeaconScreen.this.renderTooltip(I18n.translate("gui.done"), i, j);
 		}
 	}
 
 	class EffectButtonWidget extends BeaconScreen.BaseButtonWidget {
-		private final StatusEffect field_13329;
-		private final int baseLevels;
+		private final StatusEffect effect;
+		private final Sprite sprite;
+		private final boolean primary;
 
-		public EffectButtonWidget(int i, int j, int k, StatusEffect statusEffect, int l) {
-			super(i, j, k, HandledScreen.INVENTORY_TEXTURE, statusEffect.getIconLevel() % 12 * 18, 198 + statusEffect.getIconLevel() / 12 * 18);
-			this.field_13329 = statusEffect;
-			this.baseLevels = l;
+		public EffectButtonWidget(int i, int j, StatusEffect statusEffect, boolean bl) {
+			super(i, j);
+			this.effect = statusEffect;
+			this.sprite = MinecraftClient.getInstance().getStatusEffectSpriteManager().getSprite(statusEffect);
+			this.primary = bl;
 		}
 
 		@Override
-		public void method_18374(double d, double e) {
+		public void onPress() {
 			if (!this.isDisabled()) {
-				int i = StatusEffect.getIndex(this.field_13329);
-				if (this.baseLevels < 3) {
-					BeaconScreen.this.beaconInventory.setProperty(1, i);
+				if (this.primary) {
+					BeaconScreen.this.primaryEffect = this.effect;
 				} else {
-					BeaconScreen.this.beaconInventory.setProperty(2, i);
+					BeaconScreen.this.secondaryEffect = this.effect;
 				}
 
 				BeaconScreen.this.buttons.clear();
-				BeaconScreen.this.field_20307.clear();
+				BeaconScreen.this.children.clear();
 				BeaconScreen.this.init();
 				BeaconScreen.this.tick();
 			}
 		}
 
 		@Override
-		public void renderToolTip(int mouseX, int mouseY) {
-			String string = I18n.translate(this.field_13329.getTranslationKey());
-			if (this.baseLevels >= 3 && this.field_13329 != StatusEffects.REGENERATION) {
+		public void renderToolTip(int i, int j) {
+			String string = I18n.translate(this.effect.getTranslationKey());
+			if (!this.primary && this.effect != StatusEffects.field_5924) {
 				string = string + " II";
 			}
 
-			BeaconScreen.this.renderTooltip(string, mouseX, mouseY);
+			BeaconScreen.this.renderTooltip(string, i, j);
+		}
+
+		@Override
+		protected void renderExtra() {
+			MinecraftClient.getInstance().getTextureManager().bindTexture(SpriteAtlasTexture.STATUS_EFFECT_ATLAS_TEX);
+			blit(this.x + 2, this.y + 2, this.blitOffset, 18, 18, this.sprite);
+		}
+	}
+
+	abstract static class IconButtonWidget extends BeaconScreen.BaseButtonWidget {
+		private final int u;
+		private final int v;
+
+		protected IconButtonWidget(int i, int j, int k, int l) {
+			super(i, j);
+			this.u = k;
+			this.v = l;
+		}
+
+		@Override
+		protected void renderExtra() {
+			this.blit(this.x + 2, this.y + 2, this.u, this.v, 18, 18);
 		}
 	}
 }

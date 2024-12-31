@@ -6,8 +6,8 @@ public class MetricsData {
 	private int sampleCount;
 	private int writeIndex;
 
-	public void pushSample(long time) {
-		this.samples[this.writeIndex] = time;
+	public void pushSample(long l) {
+		this.samples[this.writeIndex] = l;
 		this.writeIndex++;
 		if (this.writeIndex == 240) {
 			this.writeIndex = 0;
@@ -21,8 +21,8 @@ public class MetricsData {
 		}
 	}
 
-	public int getFps(long l, int i) {
-		double d = (double)l / 1.6666666E7;
+	public int method_15248(long l, int i, int j) {
+		double d = (double)l / (double)(1000000000L / (long)j);
 		return (int)(d * (double)i);
 	}
 
@@ -34,8 +34,8 @@ public class MetricsData {
 		return this.writeIndex;
 	}
 
-	public int wrapIndex(int index) {
-		return index % 240;
+	public int wrapIndex(int i) {
+		return i % 240;
 	}
 
 	public long[] getSamples() {

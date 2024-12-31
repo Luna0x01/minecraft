@@ -1,5 +1,6 @@
 package net.minecraft.world.level.storage;
 
+import net.minecraft.SharedConstants;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -9,36 +10,36 @@ import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelProperties;
 
 public class LevelSummary implements Comparable<LevelSummary> {
-	private final String fileName;
+	private final String name;
 	private final String displayName;
 	private final long lastPlayed;
-	private final long sizeOnDisk;
+	private final long getSizeOnDisk;
 	private final boolean requiresConversion;
-	private final GameMode field_259;
-	private final boolean hardcore;
-	private final boolean cheats;
-	private final String field_13103;
-	private final int field_13104;
-	private final boolean field_13105;
-	private final LevelGeneratorType field_19775;
+	private final GameMode gameMode;
+	private final boolean isHardcore;
+	private final boolean commandsAllowed;
+	private final String versionName;
+	private final int versionId;
+	private final boolean isSnapshot;
+	private final LevelGeneratorType generatorType;
 
 	public LevelSummary(LevelProperties levelProperties, String string, String string2, long l, boolean bl) {
-		this.fileName = string;
+		this.name = string;
 		this.displayName = string2;
 		this.lastPlayed = levelProperties.getLastPlayed();
-		this.sizeOnDisk = l;
-		this.field_259 = levelProperties.getGamemode();
+		this.getSizeOnDisk = l;
+		this.gameMode = levelProperties.getGameMode();
 		this.requiresConversion = bl;
-		this.hardcore = levelProperties.isHardcore();
-		this.cheats = levelProperties.areCheatsEnabled();
-		this.field_13103 = levelProperties.method_11953();
-		this.field_13104 = levelProperties.method_11951();
-		this.field_13105 = levelProperties.method_11952();
-		this.field_19775 = levelProperties.getGeneratorType();
+		this.isHardcore = levelProperties.isHardcore();
+		this.commandsAllowed = levelProperties.areCommandsAllowed();
+		this.versionName = levelProperties.getVersionName();
+		this.versionId = levelProperties.getVersionId();
+		this.isSnapshot = levelProperties.isVersionSnapshot();
+		this.generatorType = levelProperties.getGeneratorType();
 	}
 
-	public String getFileName() {
-		return this.fileName;
+	public String getName() {
+		return this.name;
 	}
 
 	public String getDisplayName() {
@@ -46,7 +47,7 @@ public class LevelSummary implements Comparable<LevelSummary> {
 	}
 
 	public long getSizeOnDisk() {
-		return this.sizeOnDisk;
+		return this.getSizeOnDisk;
 	}
 
 	public boolean requiresConversion() {
@@ -57,43 +58,43 @@ public class LevelSummary implements Comparable<LevelSummary> {
 		return this.lastPlayed;
 	}
 
-	public int compareTo(LevelSummary levelSummary) {
+	public int method_251(LevelSummary levelSummary) {
 		if (this.lastPlayed < levelSummary.lastPlayed) {
 			return 1;
 		} else {
-			return this.lastPlayed > levelSummary.lastPlayed ? -1 : this.fileName.compareTo(levelSummary.fileName);
+			return this.lastPlayed > levelSummary.lastPlayed ? -1 : this.name.compareTo(levelSummary.name);
 		}
 	}
 
-	public GameMode method_261() {
-		return this.field_259;
+	public GameMode getGameMode() {
+		return this.gameMode;
 	}
 
 	public boolean isHardcore() {
-		return this.hardcore;
+		return this.isHardcore;
 	}
 
-	public boolean cheatsEnabled() {
-		return this.cheats;
+	public boolean hasCheats() {
+		return this.commandsAllowed;
 	}
 
-	public Text method_17972() {
-		return (Text)(ChatUtil.isEmpty(this.field_13103) ? new TranslatableText("selectWorld.versionUnknown") : new LiteralText(this.field_13103));
+	public Text getVersion() {
+		return (Text)(ChatUtil.isEmpty(this.versionName) ? new TranslatableText("selectWorld.versionUnknown") : new LiteralText(this.versionName));
 	}
 
-	public boolean method_11959() {
-		return this.method_11960() || this.method_17974() || this.method_17973();
+	public boolean isDifferentVersion() {
+		return this.isFutureLevel() || !SharedConstants.getGameVersion().isStable() && !this.isSnapshot || this.isOutdatedLevel() || this.isLegacyCustomizedWorld();
 	}
 
-	public boolean method_11960() {
-		return this.field_13104 > 1631;
+	public boolean isFutureLevel() {
+		return this.versionId > SharedConstants.getGameVersion().getWorldVersion();
 	}
 
-	public boolean method_17973() {
-		return this.field_19775 == LevelGeneratorType.CUSTOMIZED && this.field_13104 < 1466;
+	public boolean isLegacyCustomizedWorld() {
+		return this.generatorType == LevelGeneratorType.CUSTOMIZED && this.versionId < 1466;
 	}
 
-	public boolean method_17974() {
-		return this.field_13104 < 1631;
+	public boolean isOutdatedLevel() {
+		return this.versionId < SharedConstants.getGameVersion().getWorldVersion();
 	}
 }

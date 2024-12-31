@@ -1,10 +1,10 @@
 package net.minecraft.item;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.FenceBlock;
-import net.minecraft.entity.decoration.LeashKnotEntity;
+import net.minecraft.entity.decoration.LeadKnotEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -20,35 +20,35 @@ public class LeadItem extends Item {
 		World world = itemUsageContext.getWorld();
 		BlockPos blockPos = itemUsageContext.getBlockPos();
 		Block block = world.getBlockState(blockPos).getBlock();
-		if (block instanceof FenceBlock) {
+		if (block.matches(BlockTags.field_16584)) {
 			PlayerEntity playerEntity = itemUsageContext.getPlayer();
 			if (!world.isClient && playerEntity != null) {
-				useLead(playerEntity, world, blockPos);
+				attachHeldMobsToBlock(playerEntity, world, blockPos);
 			}
 
-			return ActionResult.SUCCESS;
+			return ActionResult.field_5812;
 		} else {
-			return ActionResult.PASS;
+			return ActionResult.field_5811;
 		}
 	}
 
-	public static boolean useLead(PlayerEntity player, World world, BlockPos pos) {
-		LeashKnotEntity leashKnotEntity = LeashKnotEntity.getOrCreate(world, pos);
+	public static boolean attachHeldMobsToBlock(PlayerEntity playerEntity, World world, BlockPos blockPos) {
+		LeadKnotEntity leadKnotEntity = null;
 		boolean bl = false;
 		double d = 7.0;
-		int i = pos.getX();
-		int j = pos.getY();
-		int k = pos.getZ();
+		int i = blockPos.getX();
+		int j = blockPos.getY();
+		int k = blockPos.getZ();
 
-		for (MobEntity mobEntity : world.getEntitiesInBox(
+		for (MobEntity mobEntity : world.getEntities(
 			MobEntity.class, new Box((double)i - 7.0, (double)j - 7.0, (double)k - 7.0, (double)i + 7.0, (double)j + 7.0, (double)k + 7.0)
 		)) {
-			if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == player) {
-				if (leashKnotEntity == null) {
-					leashKnotEntity = LeashKnotEntity.create(world, pos);
+			if (mobEntity.getHoldingEntity() == playerEntity) {
+				if (leadKnotEntity == null) {
+					leadKnotEntity = LeadKnotEntity.getOrCreate(world, blockPos);
 				}
 
-				mobEntity.attachLeash(leashKnotEntity, true);
+				mobEntity.attachLeash(leadKnotEntity, true);
 				bl = true;
 			}
 		}

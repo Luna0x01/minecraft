@@ -1,90 +1,103 @@
 package net.minecraft.world.biome;
 
-import net.minecraft.class_3801;
-import net.minecraft.class_3819;
-import net.minecraft.class_3829;
-import net.minecraft.class_3830;
-import net.minecraft.class_3831;
-import net.minecraft.class_3844;
-import net.minecraft.class_3845;
-import net.minecraft.class_3850;
-import net.minecraft.class_3868;
-import net.minecraft.class_3875;
-import net.minecraft.class_3877;
-import net.minecraft.class_3899;
-import net.minecraft.class_3934;
-import net.minecraft.class_3935;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.gen.surfacebuilder.SurfaceBuilder;
-import net.minecraft.predicate.block.BlockPredicate;
+import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.ProbabilityConfig;
+import net.minecraft.world.gen.carver.Carver;
+import net.minecraft.world.gen.decorator.ChanceRangeDecoratorConfig;
+import net.minecraft.world.gen.decorator.CountDecoratorConfig;
+import net.minecraft.world.gen.decorator.Decorator;
+import net.minecraft.world.gen.decorator.DecoratorConfig;
+import net.minecraft.world.gen.decorator.RangeDecoratorConfig;
+import net.minecraft.world.gen.feature.BushFeatureConfig;
+import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.feature.FeatureConfig;
+import net.minecraft.world.gen.feature.NetherSpringFeatureConfig;
+import net.minecraft.world.gen.feature.OreFeatureConfig;
+import net.minecraft.world.gen.feature.SpringFeatureConfig;
+import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 
 public final class NetherBiome extends Biome {
 	protected NetherBiome() {
 		super(
-			new Biome.Builder()
-				.setSurfaceBuilder(new SurfaceBuilder<>(field_17561, field_17592))
-				.setPrecipitation(Biome.Precipitation.NONE)
-				.setCategory(Biome.Category.NETHER)
-				.setDepth(0.1F)
-				.setScale(0.2F)
-				.setTemperature(2.0F)
-				.setDownfall(0.0F)
-				.setWaterColor(4159204)
-				.setWaterFogColor(329011)
-				.setParent(null)
+			new Biome.Settings()
+				.configureSurfaceBuilder(SurfaceBuilder.field_15693, SurfaceBuilder.NETHER_CONFIG)
+				.precipitation(Biome.Precipitation.NONE)
+				.category(Biome.Category.field_9366)
+				.depth(0.1F)
+				.scale(0.2F)
+				.temperature(2.0F)
+				.downfall(0.0F)
+				.waterColor(4159204)
+				.waterFogColor(329011)
+				.parent(null)
 		);
-		this.method_16436(class_3844.field_19192, new class_3868());
-		this.method_16429(class_3801.class_3802.AIR, method_16437(field_17601, new class_3877(0.2F)));
-		this.method_16432(
-			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19174, new class_3899(Fluids.LAVA), field_17620, new class_3831(20, 8, 16, 256))
-		);
-		this.method_16432(
-			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19162, new class_3819(Blocks.BROWN_MUSHROOM), field_17614, new class_3934(4))
-		);
-		this.method_16432(
-			class_3801.class_3803.VEGETAL_DECORATION, method_16433(class_3844.field_19162, new class_3819(Blocks.RED_MUSHROOM), field_17614, new class_3934(8))
-		);
-		this.method_16432(class_3801.class_3803.UNDERGROUND_DECORATION, method_16433(class_3844.field_19192, new class_3868(), field_17612, class_3830.field_19084));
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION, method_16433(class_3844.field_19165, new class_3850(false), field_17618, new class_3831(8, 4, 8, 128))
-		);
-		this.method_16432(class_3801.class_3803.UNDERGROUND_DECORATION, method_16433(class_3844.field_19139, class_3845.field_19203, field_17537, new class_3935(10)));
-		this.method_16432(class_3801.class_3803.UNDERGROUND_DECORATION, method_16433(class_3844.field_19143, class_3845.field_19203, field_17545, new class_3935(10)));
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION, method_16433(class_3844.field_19143, class_3845.field_19203, field_17618, new class_3831(10, 0, 0, 128))
-		);
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION,
-			method_16433(class_3844.field_19162, new class_3819(Blocks.BROWN_MUSHROOM), field_17622, new class_3829(0.5F, 0, 0, 128))
-		);
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION,
-			method_16433(class_3844.field_19162, new class_3819(Blocks.RED_MUSHROOM), field_17622, new class_3829(0.5F, 0, 0, 128))
-		);
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION,
-			method_16433(
-				class_3844.field_19168,
-				new class_3875(BlockPredicate.create(Blocks.NETHERRACK), Blocks.NETHER_QUARTZ_ORE.getDefaultState(), 14),
-				field_17618,
-				new class_3831(16, 10, 20, 128)
+		this.addStructureFeature(Feature.NETHER_BRIDGE, FeatureConfig.DEFAULT);
+		this.addCarver(GenerationStep.Carver.field_13169, configureCarver(Carver.field_13297, new ProbabilityConfig(0.2F)));
+		this.addFeature(
+			GenerationStep.Feature.field_13178,
+			configureFeature(
+				Feature.field_13513, new SpringFeatureConfig(Fluids.LAVA.getDefaultState()), Decorator.field_14266, new RangeDecoratorConfig(20, 8, 16, 256)
 			)
 		);
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION,
-			method_16433(
-				class_3844.field_19168, new class_3875(BlockPredicate.create(Blocks.NETHERRACK), Blocks.MAGMA_BLOCK.getDefaultState(), 33), field_17538, new class_3935(4)
+		DefaultBiomeFeatures.addDefaultMushrooms(this);
+		this.addFeature(
+			GenerationStep.Feature.field_13177, configureFeature(Feature.NETHER_BRIDGE, FeatureConfig.DEFAULT, Decorator.field_14250, DecoratorConfig.DEFAULT)
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(Feature.field_13563, new NetherSpringFeatureConfig(false), Decorator.field_14241, new RangeDecoratorConfig(8, 4, 8, 128))
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177, configureFeature(Feature.field_13523, FeatureConfig.DEFAULT, Decorator.field_14235, new CountDecoratorConfig(10))
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177, configureFeature(Feature.field_13568, FeatureConfig.DEFAULT, Decorator.field_14256, new CountDecoratorConfig(10))
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(Feature.field_13568, FeatureConfig.DEFAULT, Decorator.field_14241, new RangeDecoratorConfig(10, 0, 0, 128))
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(
+				Feature.field_13519, new BushFeatureConfig(Blocks.field_10251.getDefaultState()), Decorator.field_14248, new ChanceRangeDecoratorConfig(0.5F, 0, 0, 128)
 			)
 		);
-		this.method_16432(
-			class_3801.class_3803.UNDERGROUND_DECORATION, method_16433(class_3844.field_19165, new class_3850(true), field_17618, new class_3831(16, 10, 20, 128))
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(
+				Feature.field_13519, new BushFeatureConfig(Blocks.field_10559.getDefaultState()), Decorator.field_14248, new ChanceRangeDecoratorConfig(0.5F, 0, 0, 128)
+			)
 		);
-		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.GHAST, 50, 4, 4));
-		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.ZOMBIE_PIGMAN, 100, 4, 4));
-		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.MAGMA_CUBE, 2, 4, 4));
-		this.method_16425(EntityCategory.MONSTER, new Biome.SpawnEntry(EntityType.ENDERMAN, 1, 4, 4));
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(
+				Feature.field_13517,
+				new OreFeatureConfig(OreFeatureConfig.Target.field_13727, Blocks.field_10213.getDefaultState(), 14),
+				Decorator.field_14241,
+				new RangeDecoratorConfig(16, 10, 20, 128)
+			)
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(
+				Feature.field_13517,
+				new OreFeatureConfig(OreFeatureConfig.Target.field_13727, Blocks.field_10092.getDefaultState(), 33),
+				Decorator.field_14244,
+				new CountDecoratorConfig(4)
+			)
+		);
+		this.addFeature(
+			GenerationStep.Feature.field_13177,
+			configureFeature(Feature.field_13563, new NetherSpringFeatureConfig(true), Decorator.field_14241, new RangeDecoratorConfig(16, 10, 20, 128))
+		);
+		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6107, 50, 4, 4));
+		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6050, 100, 4, 4));
+		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6102, 2, 4, 4));
+		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6091, 1, 4, 4));
 	}
 }

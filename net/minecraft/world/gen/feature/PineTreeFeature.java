@@ -1,25 +1,27 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.class_3871;
-import net.minecraft.block.Block;
+import java.util.function.Function;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorld;
+import net.minecraft.util.math.MutableIntBoundingBox;
+import net.minecraft.world.ModifiableTestableWorld;
 
-public class PineTreeFeature extends FoliageFeature<class_3871> {
-	private static final BlockState LOG = Blocks.SPRUCE_LOG.getDefaultState();
-	private static final BlockState field_19230 = Blocks.SPRUCE_LEAVES.getDefaultState();
+public class PineTreeFeature extends AbstractTreeFeature<DefaultFeatureConfig> {
+	private static final BlockState LOG = Blocks.field_10037.getDefaultState();
+	private static final BlockState LEAVES = Blocks.field_9988.getDefaultState();
 
-	public PineTreeFeature() {
-		super(false);
+	public PineTreeFeature(Function<Dynamic<?>, ? extends DefaultFeatureConfig> function) {
+		super(function, false);
 	}
 
 	@Override
-	public boolean method_17294(Set<BlockPos> set, IWorld iWorld, Random random, BlockPos blockPos) {
+	public boolean generate(
+		Set<BlockPos> set, ModifiableTestableWorld modifiableTestableWorld, Random random, BlockPos blockPos, MutableIntBoundingBox mutableIntBoundingBox
+	) {
 		int i = random.nextInt(5) + 7;
 		int j = i - random.nextInt(2) - 3;
 		int k = i - j;
@@ -41,7 +43,7 @@ public class PineTreeFeature extends FoliageFeature<class_3871> {
 					for (int p = blockPos.getZ() - n; p <= blockPos.getZ() + n && bl; p++) {
 						if (m < 0 || m >= 256) {
 							bl = false;
-						} else if (!this.isBlockReplaceable(iWorld.getBlockState(mutable.setPosition(o, m, p)).getBlock())) {
+						} else if (!canTreeReplace(modifiableTestableWorld, mutable.set(o, m, p))) {
 							bl = false;
 						}
 					}
@@ -50,45 +52,41 @@ public class PineTreeFeature extends FoliageFeature<class_3871> {
 
 			if (!bl) {
 				return false;
-			} else {
-				Block block = iWorld.getBlockState(blockPos.down()).getBlock();
-				if ((block == Blocks.GRASS_BLOCK || Block.method_16588(block)) && blockPos.getY() < 256 - i - 1) {
-					this.method_17292(iWorld, blockPos.down());
-					int q = 0;
+			} else if (isNaturalDirtOrGrass(modifiableTestableWorld, blockPos.down()) && blockPos.getY() < 256 - i - 1) {
+				this.setToDirt(modifiableTestableWorld, blockPos.down());
+				int q = 0;
 
-					for (int r = blockPos.getY() + i; r >= blockPos.getY() + j; r--) {
-						for (int s = blockPos.getX() - q; s <= blockPos.getX() + q; s++) {
-							int t = s - blockPos.getX();
+				for (int r = blockPos.getY() + i; r >= blockPos.getY() + j; r--) {
+					for (int s = blockPos.getX() - q; s <= blockPos.getX() + q; s++) {
+						int t = s - blockPos.getX();
 
-							for (int u = blockPos.getZ() - q; u <= blockPos.getZ() + q; u++) {
-								int v = u - blockPos.getZ();
-								if (Math.abs(t) != q || Math.abs(v) != q || q <= 0) {
-									BlockPos blockPos2 = new BlockPos(s, r, u);
-									if (!iWorld.getBlockState(blockPos2).isFullOpaque(iWorld, blockPos2)) {
-										this.method_17344(iWorld, blockPos2, field_19230);
-									}
+						for (int u = blockPos.getZ() - q; u <= blockPos.getZ() + q; u++) {
+							int v = u - blockPos.getZ();
+							if (Math.abs(t) != q || Math.abs(v) != q || q <= 0) {
+								BlockPos blockPos2 = new BlockPos(s, r, u);
+								if (isAirOrLeaves(modifiableTestableWorld, blockPos2)) {
+									this.setBlockState(set, modifiableTestableWorld, blockPos2, LEAVES, mutableIntBoundingBox);
 								}
 							}
 						}
-
-						if (q >= 1 && r == blockPos.getY() + j + 1) {
-							q--;
-						} else if (q < l) {
-							q++;
-						}
 					}
 
-					for (int w = 0; w < i - 1; w++) {
-						BlockState blockState = iWorld.getBlockState(blockPos.up(w));
-						if (blockState.isAir() || blockState.isIn(BlockTags.LEAVES)) {
-							this.method_17293(set, iWorld, blockPos.up(w), LOG);
-						}
+					if (q >= 1 && r == blockPos.getY() + j + 1) {
+						q--;
+					} else if (q < l) {
+						q++;
 					}
-
-					return true;
-				} else {
-					return false;
 				}
+
+				for (int w = 0; w < i - 1; w++) {
+					if (isAirOrLeaves(modifiableTestableWorld, blockPos.up(w))) {
+						this.setBlockState(set, modifiableTestableWorld, blockPos.up(w), LOG, mutableIntBoundingBox);
+					}
+				}
+
+				return true;
+			} else {
+				return false;
 			}
 		} else {
 			return false;

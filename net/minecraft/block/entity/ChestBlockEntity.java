@@ -1,35 +1,37 @@
 package net.minecraft.block.entity;
 
-import net.minecraft.class_2960;
-import net.minecraft.class_3743;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.enums.ChestType;
-import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.client.block.ChestAnimationProgress;
+import net.minecraft.container.Container;
+import net.minecraft.container.GenericContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.DoubleInventory;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.screen.ChestScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Tickable;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
-public class ChestBlockEntity extends class_2737 implements class_3743, Tickable {
-	private DefaultedList<ItemStack> field_15152 = DefaultedList.ofSize(27, ItemStack.EMPTY);
+public class ChestBlockEntity extends LootableContainerBlockEntity implements ChestAnimationProgress, Tickable {
+	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(27, ItemStack.EMPTY);
 	protected float animationAngle;
-	protected float animationAnglePrev;
+	protected float lastAnimationAngle;
 	protected int viewerCount;
 	private int ticksOpen;
 
@@ -38,7 +40,7 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 	}
 
 	public ChestBlockEntity() {
-		this(BlockEntityType.CHEST);
+		this(BlockEntityType.field_11914);
 	}
 
 	@Override
@@ -47,8 +49,8 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 	}
 
 	@Override
-	public boolean isEmpty() {
-		for (ItemStack itemStack : this.field_15152) {
+	public boolean isInvEmpty() {
+		for (ItemStack itemStack : this.inventory) {
 			if (!itemStack.isEmpty()) {
 				return false;
 			}
@@ -58,42 +60,27 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 	}
 
 	@Override
-	public Text method_15540() {
-		Text text = this.method_15541();
-		return (Text)(text != null ? text : new TranslatableText("container.chest"));
+	protected Text getContainerName() {
+		return new TranslatableText("container.chest");
 	}
 
 	@Override
-	public void fromNbt(NbtCompound nbt) {
-		super.fromNbt(nbt);
-		this.field_15152 = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
-		if (!this.method_11661(nbt)) {
-			class_2960.method_13927(nbt, this.field_15152);
-		}
-
-		if (nbt.contains("CustomName", 8)) {
-			this.field_18643 = Text.Serializer.deserializeText(nbt.getString("CustomName"));
+	public void fromTag(CompoundTag compoundTag) {
+		super.fromTag(compoundTag);
+		this.inventory = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
+		if (!this.deserializeLootTable(compoundTag)) {
+			Inventories.fromTag(compoundTag, this.inventory);
 		}
 	}
 
 	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
-		super.toNbt(nbt);
-		if (!this.method_11663(nbt)) {
-			class_2960.method_13923(nbt, this.field_15152);
+	public CompoundTag toTag(CompoundTag compoundTag) {
+		super.toTag(compoundTag);
+		if (!this.serializeLootTable(compoundTag)) {
+			Inventories.toTag(compoundTag, this.inventory);
 		}
 
-		Text text = this.method_15541();
-		if (text != null) {
-			nbt.putString("CustomName", Text.Serializer.serialize(text));
-		}
-
-		return nbt;
-	}
-
-	@Override
-	public int getInvMaxStackAmount() {
-		return 64;
+		return compoundTag;
 	}
 
 	@Override
@@ -102,39 +89,15 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 		int j = this.pos.getY();
 		int k = this.pos.getZ();
 		this.ticksOpen++;
-		if (!this.world.isClient && this.viewerCount != 0 && (this.ticksOpen + i + j + k) % 200 == 0) {
-			this.viewerCount = 0;
-			float f = 5.0F;
-
-			for (PlayerEntity playerEntity : this.world
-				.getEntitiesInBox(
-					PlayerEntity.class,
-					new Box(
-						(double)((float)i - 5.0F),
-						(double)((float)j - 5.0F),
-						(double)((float)k - 5.0F),
-						(double)((float)(i + 1) + 5.0F),
-						(double)((float)(j + 1) + 5.0F),
-						(double)((float)(k + 1) + 5.0F)
-					)
-				)) {
-				if (playerEntity.openScreenHandler instanceof ChestScreenHandler) {
-					Inventory inventory = ((ChestScreenHandler)playerEntity.openScreenHandler).getInventory();
-					if (inventory == this || inventory instanceof DoubleInventory && ((DoubleInventory)inventory).isPart(this)) {
-						this.viewerCount++;
-					}
-				}
-			}
-		}
-
-		this.animationAnglePrev = this.animationAngle;
-		float g = 0.1F;
+		this.viewerCount = tickViewerCount(this.world, this, this.ticksOpen, i, j, k, this.viewerCount);
+		this.lastAnimationAngle = this.animationAngle;
+		float f = 0.1F;
 		if (this.viewerCount > 0 && this.animationAngle == 0.0F) {
-			this.method_16794(Sounds.BLOCK_CHEST_OPEN);
+			this.playSound(SoundEvents.field_14982);
 		}
 
 		if (this.viewerCount == 0 && this.animationAngle > 0.0F || this.viewerCount > 0 && this.animationAngle < 1.0F) {
-			float h = this.animationAngle;
+			float g = this.animationAngle;
 			if (this.viewerCount > 0) {
 				this.animationAngle += 0.1F;
 			} else {
@@ -145,9 +108,9 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 				this.animationAngle = 1.0F;
 			}
 
-			float l = 0.5F;
-			if (this.animationAngle < 0.5F && h >= 0.5F) {
-				this.method_16794(Sounds.BLOCK_CHEST_CLOSE);
+			float h = 0.5F;
+			if (this.animationAngle < 0.5F && g >= 0.5F) {
+				this.playSound(SoundEvents.field_14823);
 			}
 
 			if (this.animationAngle < 0.0F) {
@@ -156,54 +119,88 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 		}
 	}
 
-	private void method_16794(Sound sound) {
-		ChestType chestType = this.method_16783().getProperty(ChestBlock.CHEST_TYPE);
-		if (chestType != ChestType.LEFT) {
+	public static int tickViewerCount(World world, LockableContainerBlockEntity lockableContainerBlockEntity, int i, int j, int k, int l, int m) {
+		if (!world.isClient && m != 0 && (i + j + k + l) % 200 == 0) {
+			m = countViewers(world, lockableContainerBlockEntity, j, k, l);
+		}
+
+		return m;
+	}
+
+	public static int countViewers(World world, LockableContainerBlockEntity lockableContainerBlockEntity, int i, int j, int k) {
+		int l = 0;
+		float f = 5.0F;
+
+		for (PlayerEntity playerEntity : world.getEntities(
+			PlayerEntity.class,
+			new Box(
+				(double)((float)i - 5.0F),
+				(double)((float)j - 5.0F),
+				(double)((float)k - 5.0F),
+				(double)((float)(i + 1) + 5.0F),
+				(double)((float)(j + 1) + 5.0F),
+				(double)((float)(k + 1) + 5.0F)
+			)
+		)) {
+			if (playerEntity.container instanceof GenericContainer) {
+				Inventory inventory = ((GenericContainer)playerEntity.container).getInventory();
+				if (inventory == lockableContainerBlockEntity || inventory instanceof DoubleInventory && ((DoubleInventory)inventory).isPart(lockableContainerBlockEntity)) {
+					l++;
+				}
+			}
+		}
+
+		return l;
+	}
+
+	private void playSound(SoundEvent soundEvent) {
+		ChestType chestType = this.getCachedState().get(ChestBlock.CHEST_TYPE);
+		if (chestType != ChestType.field_12574) {
 			double d = (double)this.pos.getX() + 0.5;
 			double e = (double)this.pos.getY() + 0.5;
 			double f = (double)this.pos.getZ() + 0.5;
-			if (chestType == ChestType.RIGHT) {
-				Direction direction = ChestBlock.getFacing(this.method_16783());
+			if (chestType == ChestType.field_12571) {
+				Direction direction = ChestBlock.getFacing(this.getCachedState());
 				d += (double)direction.getOffsetX() * 0.5;
 				f += (double)direction.getOffsetZ() * 0.5;
 			}
 
-			this.world.playSound(null, d, e, f, sound, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+			this.world.playSound(null, d, e, f, soundEvent, SoundCategory.field_15245, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 		}
 	}
 
 	@Override
-	public boolean onBlockAction(int code, int data) {
-		if (code == 1) {
-			this.viewerCount = data;
+	public boolean onBlockAction(int i, int j) {
+		if (i == 1) {
+			this.viewerCount = j;
 			return true;
 		} else {
-			return super.onBlockAction(code, data);
+			return super.onBlockAction(i, j);
 		}
 	}
 
 	@Override
-	public void onInvOpen(PlayerEntity player) {
-		if (!player.isSpectator()) {
+	public void onInvOpen(PlayerEntity playerEntity) {
+		if (!playerEntity.isSpectator()) {
 			if (this.viewerCount < 0) {
 				this.viewerCount = 0;
 			}
 
 			this.viewerCount++;
-			this.method_16795();
+			this.onInvOpenOrClose();
 		}
 	}
 
 	@Override
-	public void onInvClose(PlayerEntity player) {
-		if (!player.isSpectator()) {
+	public void onInvClose(PlayerEntity playerEntity) {
+		if (!playerEntity.isSpectator()) {
 			this.viewerCount--;
-			this.method_16795();
+			this.onInvOpenOrClose();
 		}
 	}
 
-	protected void method_16795() {
-		Block block = this.method_16783().getBlock();
+	protected void onInvOpenOrClose() {
+		Block block = this.getCachedState().getBlock();
 		if (block instanceof ChestBlock) {
 			this.world.addBlockAction(this.pos, block, 1, this.viewerCount);
 			this.world.updateNeighborsAlways(this.pos, block);
@@ -211,32 +208,21 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 	}
 
 	@Override
-	public String getId() {
-		return "minecraft:chest";
+	protected DefaultedList<ItemStack> getInvStackList() {
+		return this.inventory;
 	}
 
 	@Override
-	public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
-		this.method_11662(player);
-		return new ChestScreenHandler(inventory, this, player);
+	protected void setInvStackList(DefaultedList<ItemStack> defaultedList) {
+		this.inventory = defaultedList;
 	}
 
 	@Override
-	protected DefaultedList<ItemStack> method_13730() {
-		return this.field_15152;
+	public float getAnimationProgress(float f) {
+		return MathHelper.lerp(f, this.lastAnimationAngle, this.animationAngle);
 	}
 
-	@Override
-	protected void method_16834(DefaultedList<ItemStack> defaultedList) {
-		this.field_15152 = defaultedList;
-	}
-
-	@Override
-	public float method_16830(float f) {
-		return this.animationAnglePrev + (this.animationAngle - this.animationAnglePrev) * f;
-	}
-
-	public static int method_16792(BlockView blockView, BlockPos blockPos) {
+	public static int getPlayersLookingInChestCount(BlockView blockView, BlockPos blockPos) {
 		BlockState blockState = blockView.getBlockState(blockPos);
 		if (blockState.getBlock().hasBlockEntity()) {
 			BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
@@ -248,9 +234,14 @@ public class ChestBlockEntity extends class_2737 implements class_3743, Tickable
 		return 0;
 	}
 
-	public static void method_16793(ChestBlockEntity chestBlockEntity, ChestBlockEntity chestBlockEntity2) {
-		DefaultedList<ItemStack> defaultedList = chestBlockEntity.method_13730();
-		chestBlockEntity.method_16834(chestBlockEntity2.method_13730());
-		chestBlockEntity2.method_16834(defaultedList);
+	public static void copyInventory(ChestBlockEntity chestBlockEntity, ChestBlockEntity chestBlockEntity2) {
+		DefaultedList<ItemStack> defaultedList = chestBlockEntity.getInvStackList();
+		chestBlockEntity.setInvStackList(chestBlockEntity2.getInvStackList());
+		chestBlockEntity2.setInvStackList(defaultedList);
+	}
+
+	@Override
+	protected Container createContainer(int i, PlayerInventory playerInventory) {
+		return GenericContainer.createGeneric9x3(i, playerInventory, this);
 	}
 }

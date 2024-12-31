@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.client.network.packet.DisconnectS2CPacket;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.DecoderHandler;
 import net.minecraft.network.LegacyQueryHandler;
@@ -32,7 +33,6 @@ import net.minecraft.network.NetworkSide;
 import net.minecraft.network.PacketEncoder;
 import net.minecraft.network.SizePrepender;
 import net.minecraft.network.SplitterHandler;
-import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
 import net.minecraft.server.network.IntegratedServerHandshakeNetworkHandler;
 import net.minecraft.server.network.ServerHandshakeNetworkHandler;
 import net.minecraft.text.LiteralText;
@@ -62,7 +62,7 @@ public class ServerNetworkIo {
 		this.active = true;
 	}
 
-	public void bind(@Nullable InetAddress address, int port) throws IOException {
+	public void bind(@Nullable InetAddress inetAddress, int i) throws IOException {
 		synchronized (this.channels) {
 			Class<? extends ServerSocketChannel> class_;
 			Lazy<? extends EventLoopGroup> lazy;
@@ -91,10 +91,10 @@ public class ServerNetworkIo {
 											.addLast("timeout", new ReadTimeoutHandler(30))
 											.addLast("legacy_query", new LegacyQueryHandler(ServerNetworkIo.this))
 											.addLast("splitter", new SplitterHandler())
-											.addLast("decoder", new DecoderHandler(NetworkSide.SERVERBOUND))
+											.addLast("decoder", new DecoderHandler(NetworkSide.field_11941))
 											.addLast("prepender", new SizePrepender())
-											.addLast("encoder", new PacketEncoder(NetworkSide.CLIENTBOUND));
-										ClientConnection clientConnection = new ClientConnection(NetworkSide.SERVERBOUND);
+											.addLast("encoder", new PacketEncoder(NetworkSide.field_11942));
+										ClientConnection clientConnection = new ClientConnection(NetworkSide.field_11941);
 										ServerNetworkIo.this.connections.add(clientConnection);
 										channel.pipeline().addLast("packet_handler", clientConnection);
 										clientConnection.setPacketListener(new ServerHandshakeNetworkHandler(ServerNetworkIo.this.server, clientConnection));
@@ -102,7 +102,7 @@ public class ServerNetworkIo {
 								}
 							)
 							.group(lazy.get())
-							.localAddress(address, port))
+							.localAddress(inetAddress, i))
 						.bind()
 						.syncUninterruptibly()
 				);
@@ -115,7 +115,7 @@ public class ServerNetworkIo {
 			channelFuture = ((ServerBootstrap)((ServerBootstrap)new ServerBootstrap().channel(LocalServerChannel.class))
 					.childHandler(new ChannelInitializer<Channel>() {
 						protected void initChannel(Channel channel) throws Exception {
-							ClientConnection clientConnection = new ClientConnection(NetworkSide.SERVERBOUND);
+							ClientConnection clientConnection = new ClientConnection(NetworkSide.field_11941);
 							clientConnection.setPacketListener(new IntegratedServerHandshakeNetworkHandler(ServerNetworkIo.this.server, clientConnection));
 							ServerNetworkIo.this.connections.add(clientConnection);
 							channel.pipeline().addLast("packet_handler", clientConnection);
@@ -163,7 +163,7 @@ public class ServerNetworkIo {
 
 							LOGGER.warn("Failed to handle packet for {}", clientConnection.getAddress(), var8);
 							Text text = new LiteralText("Internal server error");
-							clientConnection.method_20160(new DisconnectS2CPacket(text), future -> clientConnection.disconnect(text));
+							clientConnection.send(new DisconnectS2CPacket(text), future -> clientConnection.disconnect(text));
 							clientConnection.disableAutoRead();
 						}
 					} else {

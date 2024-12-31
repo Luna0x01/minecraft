@@ -4,11 +4,12 @@ import com.google.common.hash.Hashing;
 import com.mojang.authlib.GameProfile;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.DownloadedSkinParser;
 import net.minecraft.client.texture.PlayerSkinTexture;
+import net.minecraft.client.texture.SkinRemappingImageFilter;
 import net.minecraft.client.texture.Texture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.DefaultSkinHelper;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
@@ -16,28 +17,29 @@ import net.minecraft.item.Items;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.World;
 
 public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 	private PlayerListEntry cachedScoreboardEntry;
-	public float field_13449;
-	public float field_13450;
-	public float field_13451;
+	public float elytraPitch;
+	public float elytraYaw;
+	public float elytraRoll;
+	public final ClientWorld clientWorld;
 
-	public AbstractClientPlayerEntity(World world, GameProfile gameProfile) {
-		super(world, gameProfile);
+	public AbstractClientPlayerEntity(ClientWorld clientWorld, GameProfile gameProfile) {
+		super(clientWorld, gameProfile);
+		this.clientWorld = clientWorld;
 	}
 
 	@Override
 	public boolean isSpectator() {
 		PlayerListEntry playerListEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getGameProfile().getId());
-		return playerListEntry != null && playerListEntry.getGameMode() == GameMode.SPECTATOR;
+		return playerListEntry != null && playerListEntry.getGameMode() == GameMode.field_9219;
 	}
 
 	@Override
 	public boolean isCreative() {
 		PlayerListEntry playerListEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getGameProfile().getId());
-		return playerListEntry != null && playerListEntry.getGameMode() == GameMode.CREATIVE;
+		return playerListEntry != null && playerListEntry.getGameMode() == GameMode.field_9220;
 	}
 
 	public boolean canRenderCapeTexture() {
@@ -58,45 +60,45 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 		return playerListEntry != null && playerListEntry.hasSkinTexture();
 	}
 
-	public Identifier getCapeId() {
+	public Identifier getSkinTexture() {
 		PlayerListEntry playerListEntry = this.getPlayerListEntry();
 		return playerListEntry == null ? DefaultSkinHelper.getTexture(this.getUuid()) : playerListEntry.getSkinTexture();
 	}
 
 	@Nullable
-	public Identifier getSkinId() {
+	public Identifier getCapeTexture() {
 		PlayerListEntry playerListEntry = this.getPlayerListEntry();
-		return playerListEntry == null ? null : playerListEntry.getElytraTexture();
+		return playerListEntry == null ? null : playerListEntry.getCapeTexture();
 	}
 
-	public boolean method_12263() {
+	public boolean canRenderElytraTexture() {
 		return this.getPlayerListEntry() != null;
 	}
 
 	@Nullable
-	public Identifier method_12264() {
+	public Identifier getElytraTexture() {
 		PlayerListEntry playerListEntry = this.getPlayerListEntry();
-		return playerListEntry == null ? null : playerListEntry.method_12240();
+		return playerListEntry == null ? null : playerListEntry.getElytraTexture();
 	}
 
-	public static PlayerSkinTexture loadSkin(Identifier id, String playerName) {
+	public static PlayerSkinTexture loadSkin(Identifier identifier, String string) {
 		TextureManager textureManager = MinecraftClient.getInstance().getTextureManager();
-		Texture texture = textureManager.getTexture(id);
+		Texture texture = textureManager.getTexture(identifier);
 		if (texture == null) {
 			texture = new PlayerSkinTexture(
 				null,
-				String.format("http://skins.minecraft.net/MinecraftSkins/%s.png", ChatUtil.stripTextFormat(playerName)),
-				DefaultSkinHelper.getTexture(getOfflinePlayerUuid(playerName)),
-				new DownloadedSkinParser()
+				String.format("http://skins.minecraft.net/MinecraftSkins/%s.png", ChatUtil.stripTextFormat(string)),
+				DefaultSkinHelper.getTexture(getOfflinePlayerUuid(string)),
+				new SkinRemappingImageFilter()
 			);
-			textureManager.loadTexture(id, texture);
+			textureManager.registerTexture(identifier, texture);
 		}
 
 		return (PlayerSkinTexture)texture;
 	}
 
-	public static Identifier getSkinId(String playerName) {
-		return new Identifier("skins/" + Hashing.sha1().hashUnencodedChars(ChatUtil.stripTextFormat(playerName)));
+	public static Identifier getSkinId(String string) {
+		return new Identifier("skins/" + Hashing.sha1().hashUnencodedChars(ChatUtil.stripTextFormat(string)));
 	}
 
 	public String getModel() {
@@ -110,14 +112,14 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 			f *= 1.1F;
 		}
 
-		EntityAttributeInstance entityAttributeInstance = this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+		EntityAttributeInstance entityAttributeInstance = this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
 		f = (float)((double)f * ((entityAttributeInstance.getValue() / (double)this.abilities.getWalkSpeed() + 1.0) / 2.0));
 		if (this.abilities.getWalkSpeed() == 0.0F || Float.isNaN(f) || Float.isInfinite(f)) {
 			f = 1.0F;
 		}
 
-		if (this.method_13061() && this.method_13064().getItem() == Items.BOW) {
-			int i = this.method_13066();
+		if (this.isUsingItem() && this.getActiveItem().getItem() == Items.field_8102) {
+			int i = this.getItemUseTime();
 			float g = (float)i / 20.0F;
 			if (g > 1.0F) {
 				g = 1.0F;

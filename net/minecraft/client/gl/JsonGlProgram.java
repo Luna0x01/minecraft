@@ -22,9 +22,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class JsonGlProgram implements AutoCloseable {
+public class JsonGlProgram implements GlProgram, AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final DummyGlUniform dummyUniform = new DummyGlUniform();
+	private static final Uniform dummyUniform = new Uniform();
 	private static JsonGlProgram activeProgram;
 	private static int activeProgramRef = -1;
 	private final Map<String, Object> samplerBinds = Maps.newHashMap();
@@ -40,8 +40,8 @@ public class JsonGlProgram implements AutoCloseable {
 	private final GlBlendState blendState;
 	private final List<Integer> attribLocs;
 	private final List<String> attribNames;
-	private final GlShader vertex;
-	private final GlShader fragment;
+	private final GlShader vertexShader;
+	private final GlShader fragmentShader;
 
 	public JsonGlProgram(ResourceManager resourceManager, String string) throws IOException {
 		Identifier identifier = new Identifier("shaders/program/" + string + ".json");
@@ -50,7 +50,7 @@ public class JsonGlProgram implements AutoCloseable {
 
 		try {
 			resource = resourceManager.getResource(identifier);
-			JsonObject jsonObject = JsonHelper.method_21500(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
+			JsonObject jsonObject = JsonHelper.deserialize(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
 			String string2 = JsonHelper.getString(jsonObject, "vertex");
 			String string3 = JsonHelper.getString(jsonObject, "fragment");
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "samplers", null);
@@ -109,16 +109,16 @@ public class JsonGlProgram implements AutoCloseable {
 				}
 			}
 
-			this.blendState = GlBlendState.deserializeBlendState(JsonHelper.getObject(jsonObject, "blend", null));
+			this.blendState = deserializeBlendState(JsonHelper.getObject(jsonObject, "blend", null));
 			this.useCullFace = JsonHelper.getBoolean(jsonObject, "cull", true);
-			this.vertex = GlShader.createShader(resourceManager, GlShader.Type.VERTEX, string2);
-			this.fragment = GlShader.createShader(resourceManager, GlShader.Type.FRAGMENT, string3);
+			this.vertexShader = getShader(resourceManager, GlShader.Type.VERTEX, string2);
+			this.fragmentShader = getShader(resourceManager, GlShader.Type.FRAGMENT, string3);
 			this.programRef = GlProgramManager.getInstance().createProgram();
-			GlProgramManager.getInstance().attachProgram(this);
+			GlProgramManager.getInstance().linkProgram(this);
 			this.finalizeUniformsAndSamplers();
 			if (this.attribNames != null) {
 				for (String string4 : this.attribNames) {
-					int l = GLX.gl20GetAttribLocation(this.programRef, string4);
+					int l = GLX.glGetAttribLocation(this.programRef, string4);
 					this.attribLocs.add(l);
 				}
 			}
@@ -133,22 +133,96 @@ public class JsonGlProgram implements AutoCloseable {
 		this.markUniformsDirty();
 	}
 
+	public static GlShader getShader(ResourceManager resourceManager, GlShader.Type type, String string) throws IOException {
+		GlShader glShader = (GlShader)type.getLoadedShaders().get(string);
+		if (glShader == null) {
+			Identifier identifier = new Identifier("shaders/program/" + string + type.getFileExtension());
+			Resource resource = resourceManager.getResource(identifier);
+
+			try {
+				glShader = GlShader.createFromResource(type, string, resource.getInputStream());
+			} finally {
+				IOUtils.closeQuietly(resource);
+			}
+		}
+
+		return glShader;
+	}
+
+	public static GlBlendState deserializeBlendState(JsonObject jsonObject) {
+		if (jsonObject == null) {
+			return new GlBlendState();
+		} else {
+			int i = 32774;
+			int j = 1;
+			int k = 0;
+			int l = 1;
+			int m = 0;
+			boolean bl = true;
+			boolean bl2 = false;
+			if (JsonHelper.hasString(jsonObject, "func")) {
+				i = GlBlendState.getFuncFromString(jsonObject.get("func").getAsString());
+				if (i != 32774) {
+					bl = false;
+				}
+			}
+
+			if (JsonHelper.hasString(jsonObject, "srcrgb")) {
+				j = GlBlendState.getComponentFromString(jsonObject.get("srcrgb").getAsString());
+				if (j != 1) {
+					bl = false;
+				}
+			}
+
+			if (JsonHelper.hasString(jsonObject, "dstrgb")) {
+				k = GlBlendState.getComponentFromString(jsonObject.get("dstrgb").getAsString());
+				if (k != 0) {
+					bl = false;
+				}
+			}
+
+			if (JsonHelper.hasString(jsonObject, "srcalpha")) {
+				l = GlBlendState.getComponentFromString(jsonObject.get("srcalpha").getAsString());
+				if (l != 1) {
+					bl = false;
+				}
+
+				bl2 = true;
+			}
+
+			if (JsonHelper.hasString(jsonObject, "dstalpha")) {
+				m = GlBlendState.getComponentFromString(jsonObject.get("dstalpha").getAsString());
+				if (m != 0) {
+					bl = false;
+				}
+
+				bl2 = true;
+			}
+
+			if (bl) {
+				return new GlBlendState();
+			} else {
+				return bl2 ? new GlBlendState(j, k, l, m, i) : new GlBlendState(j, k, i);
+			}
+		}
+	}
+
 	public void close() {
 		for (GlUniform glUniform : this.uniformData) {
 			glUniform.close();
 		}
 
-		GlProgramManager.getInstance().destroyProgram(this);
+		GlProgramManager.getInstance().deleteProgram(this);
 	}
 
 	public void disable() {
-		GLX.gl20UseProgram(0);
+		GLX.glUseProgram(0);
 		activeProgramRef = -1;
 		activeProgram = null;
 
 		for (int i = 0; i < this.samplerShaderLocs.size(); i++) {
 			if (this.samplerBinds.get(this.samplerNames.get(i)) != null) {
-				GlStateManager.activeTexture(GLX.textureUnit + i);
+				GlStateManager.activeTexture(GLX.GL_TEXTURE0 + i);
 				GlStateManager.bindTexture(0);
 			}
 		}
@@ -159,7 +233,7 @@ public class JsonGlProgram implements AutoCloseable {
 		activeProgram = this;
 		this.blendState.enable();
 		if (this.programRef != activeProgramRef) {
-			GLX.gl20UseProgram(this.programRef);
+			GLX.glUseProgram(this.programRef);
 			activeProgramRef = this.programRef;
 		}
 
@@ -171,12 +245,12 @@ public class JsonGlProgram implements AutoCloseable {
 
 		for (int i = 0; i < this.samplerShaderLocs.size(); i++) {
 			if (this.samplerBinds.get(this.samplerNames.get(i)) != null) {
-				GlStateManager.activeTexture(GLX.textureUnit + i);
+				GlStateManager.activeTexture(GLX.GL_TEXTURE0 + i);
 				GlStateManager.enableTexture();
 				Object object = this.samplerBinds.get(this.samplerNames.get(i));
 				int j = -1;
-				if (object instanceof Framebuffer) {
-					j = ((Framebuffer)object).colorAttachment;
+				if (object instanceof GlFramebuffer) {
+					j = ((GlFramebuffer)object).colorAttachment;
 				} else if (object instanceof Texture) {
 					j = ((Texture)object).getGlId();
 				} else if (object instanceof Integer) {
@@ -185,7 +259,7 @@ public class JsonGlProgram implements AutoCloseable {
 
 				if (j != -1) {
 					GlStateManager.bindTexture(j);
-					GLX.gl20Uniform1(GLX.gl20GetUniformLocation(this.programRef, (CharSequence)this.samplerNames.get(i)), i);
+					GLX.glUniform1i(GLX.glGetUniformLocation(this.programRef, (CharSequence)this.samplerNames.get(i)), i);
 				}
 			}
 		}
@@ -195,18 +269,19 @@ public class JsonGlProgram implements AutoCloseable {
 		}
 	}
 
+	@Override
 	public void markUniformsDirty() {
 		this.uniformStateDirty = true;
 	}
 
 	@Nullable
-	public GlUniform getUniformByName(String name) {
-		return (GlUniform)this.uniformByName.get(name);
+	public GlUniform getUniformByName(String string) {
+		return (GlUniform)this.uniformByName.get(string);
 	}
 
-	public DummyGlUniform method_6937(String string) {
+	public Uniform getUniformByNameOrDummy(String string) {
 		GlUniform glUniform = this.getUniformByName(string);
-		return (DummyGlUniform)(glUniform == null ? dummyUniform : glUniform);
+		return (Uniform)(glUniform == null ? dummyUniform : glUniform);
 	}
 
 	private void finalizeUniformsAndSamplers() {
@@ -214,7 +289,7 @@ public class JsonGlProgram implements AutoCloseable {
 
 		for (int j = 0; i < this.samplerNames.size(); j++) {
 			String string = (String)this.samplerNames.get(i);
-			int k = GLX.gl20GetUniformLocation(this.programRef, string);
+			int k = GLX.glGetUniformLocation(this.programRef, string);
 			if (k == -1) {
 				LOGGER.warn("Shader {}could not find sampler named {} in the specified shader program.", this.name, string);
 				this.samplerBinds.remove(string);
@@ -229,7 +304,7 @@ public class JsonGlProgram implements AutoCloseable {
 
 		for (GlUniform glUniform : this.uniformData) {
 			String string2 = glUniform.getName();
-			int l = GLX.gl20GetUniformLocation(this.programRef, string2);
+			int l = GLX.glGetUniformLocation(this.programRef, string2);
 			if (l == -1) {
 				LOGGER.warn("Could not find uniform named {} in the specified shader program.", string2);
 			} else {
@@ -251,12 +326,12 @@ public class JsonGlProgram implements AutoCloseable {
 		}
 	}
 
-	public void bindSampler(String samplerName, Object object) {
-		if (this.samplerBinds.containsKey(samplerName)) {
-			this.samplerBinds.remove(samplerName);
+	public void bindSampler(String string, Object object) {
+		if (this.samplerBinds.containsKey(string)) {
+			this.samplerBinds.remove(string);
 		}
 
-		this.samplerBinds.put(samplerName, object);
+		this.samplerBinds.put(string, object);
 		this.markUniformsDirty();
 	}
 
@@ -294,25 +369,28 @@ public class JsonGlProgram implements AutoCloseable {
 			int l = j > 1 && j <= 4 && i < 8 ? j - 1 : 0;
 			GlUniform glUniform = new GlUniform(string, i + l, j, this);
 			if (i <= 3) {
-				glUniform.method_6981((int)fs[0], (int)fs[1], (int)fs[2], (int)fs[3]);
+				glUniform.set((int)fs[0], (int)fs[1], (int)fs[2], (int)fs[3]);
 			} else if (i <= 7) {
-				glUniform.method_6986(fs[0], fs[1], fs[2], fs[3]);
+				glUniform.setForDataType(fs[0], fs[1], fs[2], fs[3]);
 			} else {
-				glUniform.method_6984(fs);
+				glUniform.set(fs);
 			}
 
 			this.uniformData.add(glUniform);
 		}
 	}
 
-	public GlShader getVsh() {
-		return this.vertex;
+	@Override
+	public GlShader getVertexShader() {
+		return this.vertexShader;
 	}
 
-	public GlShader getFsh() {
-		return this.fragment;
+	@Override
+	public GlShader getFragmentShader() {
+		return this.fragmentShader;
 	}
 
+	@Override
 	public int getProgramRef() {
 		return this.programRef;
 	}

@@ -1,27 +1,21 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.render.model.ModelPart;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.model.Cuboid;
 
 public class SkullOverlayEntityModel extends SkullEntityModel {
-	private final ModelPart field_10555 = new ModelPart(this, 32, 0);
+	private final Cuboid field_3377 = new Cuboid(this, 32, 0);
 
 	public SkullOverlayEntityModel() {
 		super(0, 0, 64, 64);
-		this.field_10555.addCuboid(-4.0F, -8.0F, -4.0F, 8, 8, 8, 0.25F);
-		this.field_10555.setPivot(0.0F, 0.0F, 0.0F);
+		this.field_3377.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, 0.25F);
+		this.field_3377.setRotationPoint(0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
-	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
-		super.render(entity, handSwing, handSwingAmount, tickDelta, age, headPitch, scale);
-		this.field_10555.render(scale);
-	}
-
-	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_10555.posY = this.field_5131.posY;
-		this.field_10555.posX = this.field_5131.posX;
+	public void render(float f, float g, float h, float i, float j, float k) {
+		super.render(f, g, h, i, j, k);
+		this.field_3377.yaw = this.skull.yaw;
+		this.field_3377.pitch = this.skull.pitch;
+		this.field_3377.render(k);
 	}
 }

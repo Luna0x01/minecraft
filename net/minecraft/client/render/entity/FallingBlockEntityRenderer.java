@@ -18,32 +18,32 @@ import net.minecraft.world.World;
 public class FallingBlockEntityRenderer extends EntityRenderer<FallingBlockEntity> {
 	public FallingBlockEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.shadowSize = 0.5F;
+		this.field_4673 = 0.5F;
 	}
 
-	public void render(FallingBlockEntity fallingBlockEntity, double d, double e, double f, float g, float h) {
+	public void method_3965(FallingBlockEntity fallingBlockEntity, double d, double e, double f, float g, float h) {
 		BlockState blockState = fallingBlockEntity.getBlockState();
-		if (blockState.getRenderType() == BlockRenderType.MODEL) {
-			World world = fallingBlockEntity.method_3056();
-			if (blockState != world.getBlockState(new BlockPos(fallingBlockEntity)) && blockState.getRenderType() != BlockRenderType.INVISIBLE) {
+		if (blockState.getRenderType() == BlockRenderType.field_11458) {
+			World world = fallingBlockEntity.getWorldClient();
+			if (blockState != world.getBlockState(new BlockPos(fallingBlockEntity)) && blockState.getRenderType() != BlockRenderType.field_11455) {
 				this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 				GlStateManager.pushMatrix();
 				GlStateManager.disableLighting();
 				Tessellator tessellator = Tessellator.getInstance();
-				BufferBuilder bufferBuilder = tessellator.getBuffer();
-				if (this.field_13631) {
+				BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+				if (this.renderOutlines) {
 					GlStateManager.enableColorMaterial();
-					GlStateManager.method_12309(this.method_12454(fallingBlockEntity));
+					GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(fallingBlockEntity));
 				}
 
-				bufferBuilder.begin(7, VertexFormats.BLOCK);
+				bufferBuilder.begin(7, VertexFormats.POSITION_COLOR_UV_LMAP);
 				BlockPos blockPos = new BlockPos(fallingBlockEntity.x, fallingBlockEntity.getBoundingBox().maxY, fallingBlockEntity.z);
-				GlStateManager.translate((float)(d - (double)blockPos.getX() - 0.5), (float)(e - (double)blockPos.getY()), (float)(f - (double)blockPos.getZ() - 0.5));
+				GlStateManager.translatef((float)(d - (double)blockPos.getX() - 0.5), (float)(e - (double)blockPos.getY()), (float)(f - (double)blockPos.getZ() - 0.5));
 				BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 				blockRenderManager.getModelRenderer()
-					.method_19197(
+					.tesselate(
 						world,
-						blockRenderManager.method_12346(blockState),
+						blockRenderManager.getModel(blockState),
 						blockState,
 						blockPos,
 						bufferBuilder,
@@ -52,8 +52,8 @@ public class FallingBlockEntityRenderer extends EntityRenderer<FallingBlockEntit
 						blockState.getRenderingSeed(fallingBlockEntity.getFallingBlockPos())
 					);
 				tessellator.draw();
-				if (this.field_13631) {
-					GlStateManager.method_12315();
+				if (this.renderOutlines) {
+					GlStateManager.tearDownSolidRenderingTextureCombine();
 					GlStateManager.disableColorMaterial();
 				}
 
@@ -64,7 +64,7 @@ public class FallingBlockEntityRenderer extends EntityRenderer<FallingBlockEntit
 		}
 	}
 
-	protected Identifier getTexture(FallingBlockEntity fallingBlockEntity) {
+	protected Identifier method_3964(FallingBlockEntity fallingBlockEntity) {
 		return SpriteAtlasTexture.BLOCK_ATLAS_TEX;
 	}
 }

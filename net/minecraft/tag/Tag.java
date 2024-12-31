@@ -9,27 +9,27 @@ import com.google.gson.JsonParseException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class Tag<T> {
-	private final Identifier identifier;
+	private final Identifier id;
 	private final Set<T> values;
 	private final Collection<Tag.Entry<T>> entries;
 
 	public Tag(Identifier identifier) {
-		this.identifier = identifier;
+		this.id = identifier;
 		this.values = Collections.emptySet();
 		this.entries = Collections.emptyList();
 	}
 
 	public Tag(Identifier identifier, Collection<Tag.Entry<T>> collection, boolean bl) {
-		this.identifier = identifier;
+		this.id = identifier;
 		this.values = (Set<T>)(bl ? Sets.newLinkedHashSet() : Sets.newHashSet());
 		this.entries = collection;
 
@@ -51,8 +51,8 @@ public class Tag<T> {
 		return jsonObject;
 	}
 
-	public boolean contains(T value) {
-		return this.values.contains(value);
+	public boolean contains(T object) {
+		return this.values.contains(object);
 	}
 
 	public Collection<T> values() {
@@ -69,7 +69,7 @@ public class Tag<T> {
 	}
 
 	public Identifier getId() {
-		return this.identifier;
+		return this.id;
 	}
 
 	public static class Builder<T> {
@@ -96,23 +96,13 @@ public class Tag<T> {
 			return this;
 		}
 
-		public Tag.Builder<T> add(Collection<T> collection) {
-			this.entries.add(new Tag.CollectionEntry(collection));
-			return this;
-		}
-
-		public Tag.Builder<T> add(Identifier identifier) {
-			this.entries.add(new Tag.TagEntry(identifier));
-			return this;
-		}
-
 		public Tag.Builder<T> add(Tag<T> tag) {
 			this.entries.add(new Tag.TagEntry<>(tag));
 			return this;
 		}
 
-		public Tag.Builder<T> setOrdered(boolean ordered) {
-			this.ordered = ordered;
+		public Tag.Builder<T> ordered(boolean bl) {
+			this.ordered = bl;
 			return this;
 		}
 
@@ -130,27 +120,29 @@ public class Tag<T> {
 			return new Tag<>(identifier, this.entries, this.ordered);
 		}
 
-		public Tag.Builder<T> fromJson(Predicate<Identifier> predicate, Function<Identifier, T> function, JsonObject jsonObject) {
+		public Tag.Builder<T> fromJson(Function<Identifier, Optional<T>> function, JsonObject jsonObject) {
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "values");
+			List<Tag.Entry<T>> list = Lists.newArrayList();
+
+			for (JsonElement jsonElement : jsonArray) {
+				String string = JsonHelper.asString(jsonElement, "value");
+				if (string.startsWith("#")) {
+					list.add(new Tag.TagEntry(new Identifier(string.substring(1))));
+				} else {
+					Identifier identifier = new Identifier(string);
+					list.add(
+						new Tag.CollectionEntry(
+							Collections.singleton(((Optional)function.apply(identifier)).orElseThrow(() -> new JsonParseException("Unknown value '" + identifier + "'")))
+						)
+					);
+				}
+			}
+
 			if (JsonHelper.getBoolean(jsonObject, "replace", false)) {
 				this.entries.clear();
 			}
 
-			for (JsonElement jsonElement : jsonArray) {
-				String string = JsonHelper.asString(jsonElement, "value");
-				if (!string.startsWith("#")) {
-					Identifier identifier = new Identifier(string);
-					T object = (T)function.apply(identifier);
-					if (object == null || !predicate.test(identifier)) {
-						throw new JsonParseException("Unknown value '" + identifier + "'");
-					}
-
-					this.add(object);
-				} else {
-					this.add(new Identifier(string.substring(1)));
-				}
-			}
-
+			this.entries.addAll(list);
 			return this;
 		}
 	}

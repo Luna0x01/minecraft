@@ -1,47 +1,46 @@
 package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.entity.SheepEntityRenderer;
+import net.minecraft.client.render.entity.model.SheepEntityModel;
 import net.minecraft.client.render.entity.model.SheepWoolEntityModel;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 
-public class SheepWoolFeatureRenderer implements FeatureRenderer<SheepEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/sheep/sheep_fur.png");
-	private final SheepEntityRenderer sheepRenderer;
-	private final SheepWoolEntityModel model = new SheepWoolEntityModel();
+public class SheepWoolFeatureRenderer extends FeatureRenderer<SheepEntity, SheepEntityModel<SheepEntity>> {
+	private static final Identifier SKIN = new Identifier("textures/entity/sheep/sheep_fur.png");
+	private final SheepWoolEntityModel<SheepEntity> model = new SheepWoolEntityModel<>();
 
-	public SheepWoolFeatureRenderer(SheepEntityRenderer sheepEntityRenderer) {
-		this.sheepRenderer = sheepEntityRenderer;
+	public SheepWoolFeatureRenderer(FeatureRendererContext<SheepEntity, SheepEntityModel<SheepEntity>> featureRendererContext) {
+		super(featureRendererContext);
 	}
 
-	public void render(SheepEntity sheepEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void method_4198(SheepEntity sheepEntity, float f, float g, float h, float i, float j, float k, float l) {
 		if (!sheepEntity.isSheared() && !sheepEntity.isInvisible()) {
-			this.sheepRenderer.bindTexture(TEXTURE);
-			if (sheepEntity.hasCustomName() && "jeb_".equals(sheepEntity.method_15540().computeValue())) {
+			this.bindTexture(SKIN);
+			if (sheepEntity.hasCustomName() && "jeb_".equals(sheepEntity.getName().asString())) {
 				int m = 25;
-				int n = sheepEntity.ticksAlive / 25 + sheepEntity.getEntityId();
+				int n = sheepEntity.age / 25 + sheepEntity.getEntityId();
 				int o = DyeColor.values().length;
 				int p = n % o;
 				int q = (n + 1) % o;
-				float r = ((float)(sheepEntity.ticksAlive % 25) + h) / 25.0F;
-				float[] fs = SheepEntity.getDyedColor(DyeColor.byId(p));
-				float[] gs = SheepEntity.getDyedColor(DyeColor.byId(q));
-				GlStateManager.color(fs[0] * (1.0F - r) + gs[0] * r, fs[1] * (1.0F - r) + gs[1] * r, fs[2] * (1.0F - r) + gs[2] * r);
+				float r = ((float)(sheepEntity.age % 25) + h) / 25.0F;
+				float[] fs = SheepEntity.getRgbColor(DyeColor.byId(p));
+				float[] gs = SheepEntity.getRgbColor(DyeColor.byId(q));
+				GlStateManager.color3f(fs[0] * (1.0F - r) + gs[0] * r, fs[1] * (1.0F - r) + gs[1] * r, fs[2] * (1.0F - r) + gs[2] * r);
 			} else {
-				float[] hs = SheepEntity.getDyedColor(sheepEntity.getColor());
-				GlStateManager.color(hs[0], hs[1], hs[2]);
+				float[] hs = SheepEntity.getRgbColor(sheepEntity.getColor());
+				GlStateManager.color3f(hs[0], hs[1], hs[2]);
 			}
 
-			this.model.copy(this.sheepRenderer.getModel());
-			this.model.animateModel(sheepEntity, f, g, h);
+			this.getModel().copyStateTo(this.model);
+			this.model.method_17118(sheepEntity, f, g, h);
 			this.model.render(sheepEntity, f, g, i, j, k, l);
 		}
 	}
 
 	@Override
-	public boolean combineTextures() {
+	public boolean hasHurtOverlay() {
 		return true;
 	}
 }

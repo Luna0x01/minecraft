@@ -1,20 +1,20 @@
 package net.minecraft.entity.data;
 
 public class TrackedData<T> {
-	private final int field_13816;
-	private final TrackedDataHandler<T> field_13817;
+	private final int id;
+	private final TrackedDataHandler<T> dataType;
 
 	public TrackedData(int i, TrackedDataHandler<T> trackedDataHandler) {
-		this.field_13816 = i;
-		this.field_13817 = trackedDataHandler;
+		this.id = i;
+		this.dataType = trackedDataHandler;
 	}
 
-	public int method_12713() {
-		return this.field_13816;
+	public int getId() {
+		return this.id;
 	}
 
-	public TrackedDataHandler<T> method_12714() {
-		return this.field_13817;
+	public TrackedDataHandler<T> getType() {
+		return this.dataType;
 	}
 
 	public boolean equals(Object object) {
@@ -22,13 +22,17 @@ public class TrackedData<T> {
 			return true;
 		} else if (object != null && this.getClass() == object.getClass()) {
 			TrackedData<?> trackedData = (TrackedData<?>)object;
-			return this.field_13816 == trackedData.field_13816;
+			return this.id == trackedData.id;
 		} else {
 			return false;
 		}
 	}
 
 	public int hashCode() {
-		return this.field_13816;
+		return this.id;
+	}
+
+	public String toString() {
+		return "<entity data: " + this.id + ">";
 	}
 }

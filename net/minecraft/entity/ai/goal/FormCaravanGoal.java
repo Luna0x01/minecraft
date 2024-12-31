@@ -1,88 +1,124 @@
 package net.minecraft.entity.ai.goal;
 
+import java.util.EnumSet;
 import java.util.List;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.util.RandomVectorGenerator;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class FormCaravanGoal extends Goal {
-	private final VillagerEntity villager;
-	private LivingEntity field_6854;
-	private final double speed;
+	public final LlamaEntity llama;
+	private double speed;
 	private int counter;
 
-	public FormCaravanGoal(VillagerEntity villagerEntity, double d) {
-		this.villager = villagerEntity;
+	public FormCaravanGoal(LlamaEntity llamaEntity, double d) {
+		this.llama = llamaEntity;
 		this.speed = d;
-		this.setCategoryBits(1);
+		this.setControls(EnumSet.of(Goal.Control.field_18405));
 	}
 
 	@Override
 	public boolean canStart() {
-		if (this.villager.age() >= 0) {
-			return false;
-		} else if (this.villager.getRandom().nextInt(400) != 0) {
-			return false;
-		} else {
-			List<VillagerEntity> list = this.villager.world.getEntitiesInBox(VillagerEntity.class, this.villager.getBoundingBox().expand(6.0, 3.0, 6.0));
+		if (!this.llama.isLeashed() && !this.llama.isFollowing()) {
+			List<Entity> list = this.llama.world.getEntities(this.llama, this.llama.getBoundingBox().expand(9.0, 4.0, 9.0), entity -> {
+				EntityType<?> entityType = entity.getType();
+				return entityType == EntityType.field_6074 || entityType == EntityType.field_17714;
+			});
+			LlamaEntity llamaEntity = null;
 			double d = Double.MAX_VALUE;
 
-			for (VillagerEntity villagerEntity : list) {
-				if (villagerEntity != this.villager && !villagerEntity.method_3117() && villagerEntity.age() < 0) {
-					double e = villagerEntity.squaredDistanceTo(this.villager);
+			for (Entity entity : list) {
+				LlamaEntity llamaEntity2 = (LlamaEntity)entity;
+				if (llamaEntity2.isFollowing() && !llamaEntity2.method_6793()) {
+					double e = this.llama.squaredDistanceTo(llamaEntity2);
 					if (!(e > d)) {
 						d = e;
-						this.field_6854 = villagerEntity;
+						llamaEntity = llamaEntity2;
 					}
 				}
 			}
 
-			if (this.field_6854 == null) {
-				Vec3d vec3d = RandomVectorGenerator.method_2799(this.villager, 16, 3);
-				if (vec3d == null) {
-					return false;
+			if (llamaEntity == null) {
+				for (Entity entity2 : list) {
+					LlamaEntity llamaEntity3 = (LlamaEntity)entity2;
+					if (llamaEntity3.isLeashed() && !llamaEntity3.method_6793()) {
+						double f = this.llama.squaredDistanceTo(llamaEntity3);
+						if (!(f > d)) {
+							d = f;
+							llamaEntity = llamaEntity3;
+						}
+					}
 				}
 			}
 
-			return true;
+			if (llamaEntity == null) {
+				return false;
+			} else if (d < 4.0) {
+				return false;
+			} else if (!llamaEntity.isLeashed() && !this.canFollow(llamaEntity, 1)) {
+				return false;
+			} else {
+				this.llama.method_6791(llamaEntity);
+				return true;
+			}
+		} else {
+			return false;
 		}
 	}
 
 	@Override
 	public boolean shouldContinue() {
-		return this.counter > 0;
-	}
+		if (this.llama.isFollowing() && this.llama.getFollowing().isAlive() && this.canFollow(this.llama, 0)) {
+			double d = this.llama.squaredDistanceTo(this.llama.getFollowing());
+			if (d > 676.0) {
+				if (this.speed <= 3.0) {
+					this.speed *= 1.2;
+					this.counter = 40;
+					return true;
+				}
 
-	@Override
-	public void start() {
-		if (this.field_6854 != null) {
-			this.villager.method_3114(true);
+				if (this.counter == 0) {
+					return false;
+				}
+			}
+
+			if (this.counter > 0) {
+				this.counter--;
+			}
+
+			return true;
+		} else {
+			return false;
 		}
-
-		this.counter = 1000;
 	}
 
 	@Override
 	public void stop() {
-		this.villager.method_3114(false);
-		this.field_6854 = null;
+		this.llama.method_6797();
+		this.speed = 2.1;
 	}
 
 	@Override
 	public void tick() {
-		this.counter--;
-		if (this.field_6854 != null) {
-			if (this.villager.squaredDistanceTo(this.field_6854) > 4.0) {
-				this.villager.getNavigation().startMovingTo(this.field_6854, this.speed);
-			}
-		} else if (this.villager.getNavigation().isIdle()) {
-			Vec3d vec3d = RandomVectorGenerator.method_2799(this.villager, 16, 3);
-			if (vec3d == null) {
-				return;
-			}
+		if (this.llama.isFollowing()) {
+			LlamaEntity llamaEntity = this.llama.getFollowing();
+			double d = (double)this.llama.distanceTo(llamaEntity);
+			float f = 2.0F;
+			Vec3d vec3d = new Vec3d(llamaEntity.x - this.llama.x, llamaEntity.y - this.llama.y, llamaEntity.z - this.llama.z)
+				.normalize()
+				.multiply(Math.max(d - 2.0, 0.0));
+			this.llama.getNavigation().startMovingTo(this.llama.x + vec3d.x, this.llama.y + vec3d.y, this.llama.z + vec3d.z, this.speed);
+		}
+	}
 
-			this.villager.getNavigation().startMovingTo(vec3d.x, vec3d.y, vec3d.z, this.speed);
+	private boolean canFollow(LlamaEntity llamaEntity, int i) {
+		if (i > 8) {
+			return false;
+		} else if (llamaEntity.isFollowing()) {
+			return llamaEntity.getFollowing().isLeashed() ? true : this.canFollow(llamaEntity.getFollowing(), ++i);
+		} else {
+			return false;
 		}
 	}
 }

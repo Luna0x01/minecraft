@@ -3,79 +3,68 @@ package net.minecraft.block;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.material.Material;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
 public class IceBlock extends TransparentBlock {
-	public IceBlock(Block.Builder builder) {
-		super(builder);
+	public IceBlock(Block.Settings settings) {
+		super(settings);
 	}
 
 	@Override
-	public int getLightSubtracted(BlockState state, BlockView world, BlockPos pos) {
-		return Blocks.WATER.getDefaultState().method_16885(world, pos);
+	public BlockRenderLayer getRenderLayer() {
+		return BlockRenderLayer.field_9179;
 	}
 
 	@Override
-	public RenderLayer getRenderLayerType() {
-		return RenderLayer.TRANSLUCENT;
-	}
-
-	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
-		player.method_15932(Stats.MINED.method_21429(this));
-		player.addExhaustion(0.005F);
-		if (this.requiresSilkTouch() && EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) > 0) {
-			onBlockBreak(world, pos, this.createStackFromBlock(state));
-		} else {
+	public void afterBreak(
+		World world, PlayerEntity playerEntity, BlockPos blockPos, BlockState blockState, @Nullable BlockEntity blockEntity, ItemStack itemStack
+	) {
+		super.afterBreak(world, playerEntity, blockPos, blockState, blockEntity, itemStack);
+		if (EnchantmentHelper.getLevel(Enchantments.field_9099, itemStack) == 0) {
 			if (world.dimension.doesWaterVaporize()) {
-				world.method_8553(pos);
+				world.clearBlockState(blockPos, false);
 				return;
 			}
 
-			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
-			state.method_16867(world, pos, i);
-			Material material = world.getBlockState(pos.down()).getMaterial();
-			if (material.blocksMovement() || material.isFluid()) {
-				world.setBlockState(pos, Blocks.WATER.getDefaultState());
+			Material material = world.getBlockState(blockPos.down()).getMaterial();
+			if (material.blocksMovement() || material.isLiquid()) {
+				world.setBlockState(blockPos, Blocks.field_10382.getDefaultState());
 			}
 		}
 	}
 
 	@Override
-	public int getDropCount(BlockState state, Random random) {
-		return 0;
-	}
-
-	@Override
-	public void scheduledTick(BlockState state, World world, BlockPos pos, Random random) {
-		if (world.method_16370(LightType.BLOCK, pos) > 11 - state.method_16885(world, pos)) {
-			this.method_11617(state, world, pos);
+	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+		if (world.getLightLevel(LightType.field_9282, blockPos) > 11 - blockState.getLightSubtracted(world, blockPos)) {
+			this.melt(blockState, world, blockPos);
 		}
 	}
 
-	protected void method_11617(BlockState blockState, World world, BlockPos blockPos) {
+	protected void melt(BlockState blockState, World world, BlockPos blockPos) {
 		if (world.dimension.doesWaterVaporize()) {
-			world.method_8553(blockPos);
+			world.clearBlockState(blockPos, false);
 		} else {
-			blockState.method_16867(world, blockPos, 0);
-			world.setBlockState(blockPos, Blocks.WATER.getDefaultState());
-			world.updateNeighbor(blockPos, Blocks.WATER, blockPos);
+			world.setBlockState(blockPos, Blocks.field_10382.getDefaultState());
+			world.updateNeighbor(blockPos, Blocks.field_10382, blockPos);
 		}
 	}
 
 	@Override
-	public PistonBehavior getPistonBehavior(BlockState state) {
-		return PistonBehavior.NORMAL;
+	public PistonBehavior getPistonBehavior(BlockState blockState) {
+		return PistonBehavior.field_15974;
+	}
+
+	@Override
+	public boolean allowsSpawning(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityType<?> entityType) {
+		return entityType == EntityType.field_6042;
 	}
 }

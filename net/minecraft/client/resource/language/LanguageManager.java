@@ -7,31 +7,31 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import net.minecraft.class_4454;
 import net.minecraft.client.resource.metadata.LanguageResourceMetadata;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.resource.ResourcePack;
+import net.minecraft.resource.SynchronousResourceReloadListener;
 import net.minecraft.util.Language;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class LanguageManager implements ResourceReloadListener {
+public class LanguageManager implements SynchronousResourceReloadListener {
 	private static final Logger LOGGER = LogManager.getLogger();
-	protected static final TranslationStorage translationStorage = new TranslationStorage();
+	protected static final TranslationStorage STORAGE = new TranslationStorage();
 	private String currentLanguageCode;
 	private final Map<String, LanguageDefinition> languageDefs = Maps.newHashMap();
 
 	public LanguageManager(String string) {
 		this.currentLanguageCode = string;
-		I18n.setTranslationStorage(translationStorage);
+		I18n.setLanguage(STORAGE);
 	}
 
-	public void reloadResourceLanguages(List<class_4454> resourcePacks) {
+	public void reloadResources(List<ResourcePack> list) {
 		this.languageDefs.clear();
 
-		for (class_4454 lv : resourcePacks) {
+		for (ResourcePack resourcePack : list) {
 			try {
-				LanguageResourceMetadata languageResourceMetadata = lv.method_21329(LanguageResourceMetadata.field_21049);
+				LanguageResourceMetadata languageResourceMetadata = resourcePack.parseMetadata(LanguageResourceMetadata.READER);
 				if (languageResourceMetadata != null) {
 					for (LanguageDefinition languageDefinition : languageResourceMetadata.getLanguageDefinitions()) {
 						if (!this.languageDefs.containsKey(languageDefinition.getCode())) {
@@ -40,28 +40,28 @@ public class LanguageManager implements ResourceReloadListener {
 					}
 				}
 			} catch (IOException | RuntimeException var7) {
-				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", lv.method_5899(), var7);
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", resourcePack.getName(), var7);
 			}
 		}
 	}
 
 	@Override
-	public void reload(ResourceManager resourceManager) {
+	public void apply(ResourceManager resourceManager) {
 		List<String> list = Lists.newArrayList(new String[]{"en_us"});
 		if (!"en_us".equals(this.currentLanguageCode)) {
 			list.add(this.currentLanguageCode);
 		}
 
-		translationStorage.method_19557(resourceManager, list);
-		Language.load(translationStorage.translations);
+		STORAGE.load(resourceManager, list);
+		Language.load(STORAGE.translations);
 	}
 
 	public boolean isRightToLeft() {
 		return this.getLanguage() != null && this.getLanguage().isRightToLeft();
 	}
 
-	public void setLanguage(LanguageDefinition language) {
-		this.currentLanguageCode = language.getCode();
+	public void setLanguage(LanguageDefinition languageDefinition) {
+		this.currentLanguageCode = languageDefinition.getCode();
 	}
 
 	public LanguageDefinition getLanguage() {
@@ -73,7 +73,7 @@ public class LanguageManager implements ResourceReloadListener {
 		return Sets.newTreeSet(this.languageDefs.values());
 	}
 
-	public LanguageDefinition method_14698(String string) {
+	public LanguageDefinition getLanguage(String string) {
 		return (LanguageDefinition)this.languageDefs.get(string);
 	}
 }

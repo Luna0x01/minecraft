@@ -5,22 +5,24 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.class_2876;
+import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
 public class BuiltinBakedModel implements BakedModel {
 	private final ModelTransformation transformation;
-	private final class_2876 field_13658;
+	private final ModelItemPropertyOverrideList itemPropertyOverrides;
+	private final Sprite sprite;
 
-	public BuiltinBakedModel(ModelTransformation modelTransformation, class_2876 arg) {
+	public BuiltinBakedModel(ModelTransformation modelTransformation, ModelItemPropertyOverrideList modelItemPropertyOverrideList, Sprite sprite) {
 		this.transformation = modelTransformation;
-		this.field_13658 = arg;
+		this.itemPropertyOverrides = modelItemPropertyOverrideList;
+		this.sprite = sprite;
 	}
 
 	@Override
-	public List<BakedQuad> method_19561(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
+	public List<BakedQuad> getQuads(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
 		return Collections.emptyList();
 	}
 
@@ -30,7 +32,7 @@ public class BuiltinBakedModel implements BakedModel {
 	}
 
 	@Override
-	public boolean hasDepth() {
+	public boolean hasDepthInGui() {
 		return true;
 	}
 
@@ -40,8 +42,8 @@ public class BuiltinBakedModel implements BakedModel {
 	}
 
 	@Override
-	public Sprite getParticleSprite() {
-		return null;
+	public Sprite getSprite() {
+		return this.sprite;
 	}
 
 	@Override
@@ -50,7 +52,7 @@ public class BuiltinBakedModel implements BakedModel {
 	}
 
 	@Override
-	public class_2876 method_12503() {
-		return this.field_13658;
+	public ModelItemPropertyOverrideList getItemPropertyOverrides() {
+		return this.itemPropertyOverrides;
 	}
 }

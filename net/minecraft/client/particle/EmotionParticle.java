@@ -1,76 +1,81 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.class_4343;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.entity.Entity;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class EmotionParticle extends Particle {
-	private final float prevScale;
-
-	protected EmotionParticle(World world, double d, double e, double f, double g, double h, double i) {
-		this(world, d, e, f, g, h, i, 2.0F);
-	}
-
-	protected EmotionParticle(World world, double d, double e, double f, double g, double h, double i, float j) {
+public class EmotionParticle extends SpriteBillboardParticle {
+	private EmotionParticle(World world, double d, double e, double f) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.velocityX *= 0.01F;
 		this.velocityY *= 0.01F;
 		this.velocityZ *= 0.01F;
 		this.velocityY += 0.1;
-		this.scale *= 0.75F;
-		this.scale *= j;
-		this.prevScale = this.scale;
+		this.scale *= 1.5F;
 		this.maxAge = 16;
-		this.setMiscTexture(80);
-		this.field_14950 = false;
+		this.collidesWithWorld = false;
 	}
 
 	@Override
-	public void draw(BufferBuilder builder, Entity entity, float tickDelta, float g, float h, float i, float j, float k) {
-		float f = ((float)this.age + tickDelta) / (float)this.maxAge * 32.0F;
-		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		this.scale = this.prevScale * f;
-		super.draw(builder, entity, tickDelta, g, h, i, j, k);
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
 	}
 
 	@Override
-	public void method_12241() {
-		this.field_13425 = this.field_13428;
-		this.field_13426 = this.field_13429;
-		this.field_13427 = this.field_13430;
+	public float getSize(float f) {
+		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
+	}
+
+	@Override
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
 		if (this.age++ >= this.maxAge) {
-			this.method_12251();
-		}
+			this.markDead();
+		} else {
+			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			if (this.y == this.prevPosY) {
+				this.velocityX *= 1.1;
+				this.velocityZ *= 1.1;
+			}
 
-		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.field_13429 == this.field_13426) {
-			this.velocityX *= 1.1;
-			this.velocityZ *= 1.1;
-		}
-
-		this.velocityX *= 0.86F;
-		this.velocityY *= 0.86F;
-		this.velocityZ *= 0.86F;
-		if (this.field_13434) {
-			this.velocityX *= 0.7F;
-			this.velocityZ *= 0.7F;
-		}
-	}
-
-	public static class Factory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			Particle particle = new EmotionParticle(world, d, e + 0.5, f, g, h, i);
-			particle.setMiscTexture(81);
-			particle.setColor(1.0F, 1.0F, 1.0F);
-			return particle;
+			this.velocityX *= 0.86F;
+			this.velocityY *= 0.86F;
+			this.velocityZ *= 0.86F;
+			if (this.onGround) {
+				this.velocityX *= 0.7F;
+				this.velocityZ *= 0.7F;
+			}
 		}
 	}
 
-	public static class HealthFactory implements ParticleFactory<class_4343> {
-		public Particle method_19020(class_4343 arg, World world, double d, double e, double f, double g, double h, double i) {
-			return new EmotionParticle(world, d, e, f, g, h, i);
+	public static class AngryVillagerFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17813;
+
+		public AngryVillagerFactory(SpriteProvider spriteProvider) {
+			this.field_17813 = spriteProvider;
+		}
+
+		public Particle method_3034(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			EmotionParticle emotionParticle = new EmotionParticle(world, d, e + 0.5, f);
+			emotionParticle.setSprite(this.field_17813);
+			emotionParticle.setColor(1.0F, 1.0F, 1.0F);
+			return emotionParticle;
+		}
+	}
+
+	public static class HeartFactory implements ParticleFactory<DefaultParticleType> {
+		private final SpriteProvider field_17814;
+
+		public HeartFactory(SpriteProvider spriteProvider) {
+			this.field_17814 = spriteProvider;
+		}
+
+		public Particle method_3035(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+			EmotionParticle emotionParticle = new EmotionParticle(world, d, e, f);
+			emotionParticle.setSprite(this.field_17814);
+			return emotionParticle;
 		}
 	}
 }

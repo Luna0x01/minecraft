@@ -7,72 +7,71 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LightningBoltEntity;
+import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.Validate;
 
 public abstract class AbstractDecorationEntity extends Entity {
-	protected static final Predicate<Entity> field_16989 = entity -> entity instanceof AbstractDecorationEntity;
-	private int obstructionCheckCounter;
-	protected BlockPos pos;
-	@Nullable
-	public Direction direction;
+	protected static final Predicate<Entity> PREDICATE = entity -> entity instanceof AbstractDecorationEntity;
+	private int field_7097;
+	protected BlockPos blockPos;
+	protected Direction facing = Direction.field_11035;
 
-	protected AbstractDecorationEntity(EntityType<?> entityType, World world) {
+	protected AbstractDecorationEntity(EntityType<? extends AbstractDecorationEntity> entityType, World world) {
 		super(entityType, world);
-		this.setBounds(0.5F, 0.5F);
 	}
 
-	protected AbstractDecorationEntity(EntityType<?> entityType, World world, BlockPos blockPos) {
+	protected AbstractDecorationEntity(EntityType<? extends AbstractDecorationEntity> entityType, World world, BlockPos blockPos) {
 		this(entityType, world);
-		this.pos = blockPos;
+		this.blockPos = blockPos;
 	}
 
 	@Override
 	protected void initDataTracker() {
 	}
 
-	protected void setDirection(Direction direction) {
+	protected void setFacing(Direction direction) {
 		Validate.notNull(direction);
 		Validate.isTrue(direction.getAxis().isHorizontal());
-		this.direction = direction;
-		this.yaw = (float)(this.direction.getHorizontal() * 90);
+		this.facing = direction;
+		this.yaw = (float)(this.facing.getHorizontal() * 90);
 		this.prevYaw = this.yaw;
-		this.updateAttachmentPosition();
+		this.method_6895();
 	}
 
-	protected void updateAttachmentPosition() {
-		if (this.direction != null) {
-			double d = (double)this.pos.getX() + 0.5;
-			double e = (double)this.pos.getY() + 0.5;
-			double f = (double)this.pos.getZ() + 0.5;
+	protected void method_6895() {
+		if (this.facing != null) {
+			double d = (double)this.blockPos.getX() + 0.5;
+			double e = (double)this.blockPos.getY() + 0.5;
+			double f = (double)this.blockPos.getZ() + 0.5;
 			double g = 0.46875;
-			double h = this.method_11146(this.getWidth());
-			double i = this.method_11146(this.getHeight());
-			d -= (double)this.direction.getOffsetX() * 0.46875;
-			f -= (double)this.direction.getOffsetZ() * 0.46875;
+			double h = this.method_6893(this.getWidthPixels());
+			double i = this.method_6893(this.getHeightPixels());
+			d -= (double)this.facing.getOffsetX() * 0.46875;
+			f -= (double)this.facing.getOffsetZ() * 0.46875;
 			e += i;
-			Direction direction = this.direction.rotateYCounterclockwise();
+			Direction direction = this.facing.rotateYCounterclockwise();
 			d += h * (double)direction.getOffsetX();
 			f += h * (double)direction.getOffsetZ();
 			this.x = d;
 			this.y = e;
 			this.z = f;
-			double j = (double)this.getWidth();
-			double k = (double)this.getHeight();
-			double l = (double)this.getWidth();
-			if (this.direction.getAxis() == Direction.Axis.Z) {
+			double j = (double)this.getWidthPixels();
+			double k = (double)this.getHeightPixels();
+			double l = (double)this.getWidthPixels();
+			if (this.facing.getAxis() == Direction.Axis.field_11051) {
 				l = 1.0;
 			} else {
 				j = 1.0;
@@ -85,7 +84,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 		}
 	}
 
-	private double method_11146(int i) {
+	private double method_6893(int i) {
 		return i % 32 == 0 ? 0.5 : 0.0;
 	}
 
@@ -94,38 +93,38 @@ public abstract class AbstractDecorationEntity extends Entity {
 		this.prevX = this.x;
 		this.prevY = this.y;
 		this.prevZ = this.z;
-		if (this.obstructionCheckCounter++ == 100 && !this.world.isClient) {
-			this.obstructionCheckCounter = 0;
-			if (!this.removed && !this.isPosValid()) {
+		if (this.field_7097++ == 100 && !this.world.isClient) {
+			this.field_7097 = 0;
+			if (!this.removed && !this.method_6888()) {
 				this.remove();
 				this.onBreak(null);
 			}
 		}
 	}
 
-	public boolean isPosValid() {
-		if (!this.world.method_16387(this, this.getBoundingBox())) {
+	public boolean method_6888() {
+		if (!this.world.doesNotCollide(this)) {
 			return false;
 		} else {
-			int i = Math.max(1, this.getWidth() / 16);
-			int j = Math.max(1, this.getHeight() / 16);
-			BlockPos blockPos = this.pos.offset(this.direction.getOpposite());
-			Direction direction = this.direction.rotateYCounterclockwise();
+			int i = Math.max(1, this.getWidthPixels() / 16);
+			int j = Math.max(1, this.getHeightPixels() / 16);
+			BlockPos blockPos = this.blockPos.offset(this.facing.getOpposite());
+			Direction direction = this.facing.rotateYCounterclockwise();
 			BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 			for (int k = 0; k < i; k++) {
 				for (int l = 0; l < j; l++) {
 					int m = (i - 1) / -2;
 					int n = (j - 1) / -2;
-					mutable.set(blockPos).move(direction, k + m).move(Direction.UP, l + n);
+					mutable.set(blockPos).setOffset(direction, k + m).setOffset(Direction.field_11036, l + n);
 					BlockState blockState = this.world.getBlockState(mutable);
-					if (!blockState.getMaterial().isSolid() && !AbstractRedstoneGateBlock.isRedstoneGateBlock(blockState)) {
+					if (!blockState.getMaterial().isSolid() && !AbstractRedstoneGateBlock.isRedstoneGate(blockState)) {
 						return false;
 					}
 				}
 			}
 
-			return this.world.method_16288(this, this.getBoundingBox(), field_16989).isEmpty();
+			return this.world.getEntities(this, this.getBoundingBox(), PREDICATE).isEmpty();
 		}
 	}
 
@@ -135,24 +134,24 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public boolean handleAttack(Entity attacker) {
-		return attacker instanceof PlayerEntity ? this.damage(DamageSource.player((PlayerEntity)attacker), 0.0F) : false;
+	public boolean handleAttack(Entity entity) {
+		return entity instanceof PlayerEntity ? this.damage(DamageSource.player((PlayerEntity)entity), 0.0F) : false;
 	}
 
 	@Override
-	public Direction getHorizontalDirection() {
-		return this.direction;
+	public Direction getHorizontalFacing() {
+		return this.facing;
 	}
 
 	@Override
-	public boolean damage(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
+	public boolean damage(DamageSource damageSource, float f) {
+		if (this.isInvulnerableTo(damageSource)) {
 			return false;
 		} else {
 			if (!this.removed && !this.world.isClient) {
 				this.remove();
 				this.scheduleVelocityUpdate();
-				this.onBreak(source.getAttacker());
+				this.onBreak(damageSource.getAttacker());
 			}
 
 			return true;
@@ -160,55 +159,55 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public void move(MovementType type, double movementX, double movementY, double movementZ) {
-		if (!this.world.isClient && !this.removed && movementX * movementX + movementY * movementY + movementZ * movementZ > 0.0) {
+	public void move(MovementType movementType, Vec3d vec3d) {
+		if (!this.world.isClient && !this.removed && vec3d.lengthSquared() > 0.0) {
 			this.remove();
 			this.onBreak(null);
 		}
 	}
 
 	@Override
-	public void addVelocity(double x, double y, double z) {
-		if (!this.world.isClient && !this.removed && x * x + y * y + z * z > 0.0) {
+	public void addVelocity(double d, double e, double f) {
+		if (!this.world.isClient && !this.removed && d * d + e * e + f * f > 0.0) {
 			this.remove();
 			this.onBreak(null);
 		}
 	}
 
 	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putByte("Facing", (byte)this.direction.getHorizontal());
-		BlockPos blockPos = this.getTilePos();
-		nbt.putInt("TileX", blockPos.getX());
-		nbt.putInt("TileY", blockPos.getY());
-		nbt.putInt("TileZ", blockPos.getZ());
+	public void writeCustomDataToTag(CompoundTag compoundTag) {
+		compoundTag.putByte("Facing", (byte)this.facing.getHorizontal());
+		BlockPos blockPos = this.getDecorationBlockPos();
+		compoundTag.putInt("TileX", blockPos.getX());
+		compoundTag.putInt("TileY", blockPos.getY());
+		compoundTag.putInt("TileZ", blockPos.getZ());
 	}
 
 	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.pos = new BlockPos(nbt.getInt("TileX"), nbt.getInt("TileY"), nbt.getInt("TileZ"));
-		this.setDirection(Direction.fromHorizontal(nbt.getByte("Facing")));
+	public void readCustomDataFromTag(CompoundTag compoundTag) {
+		this.blockPos = new BlockPos(compoundTag.getInt("TileX"), compoundTag.getInt("TileY"), compoundTag.getInt("TileZ"));
+		this.facing = Direction.fromHorizontal(compoundTag.getByte("Facing"));
 	}
 
-	public abstract int getWidth();
+	public abstract int getWidthPixels();
 
-	public abstract int getHeight();
+	public abstract int getHeightPixels();
 
 	public abstract void onBreak(@Nullable Entity entity);
 
 	public abstract void onPlace();
 
 	@Override
-	public ItemEntity dropItem(ItemStack stack, float yOffset) {
+	public ItemEntity dropStack(ItemStack itemStack, float f) {
 		ItemEntity itemEntity = new ItemEntity(
 			this.world,
-			this.x + (double)((float)this.direction.getOffsetX() * 0.15F),
-			this.y + (double)yOffset,
-			this.z + (double)((float)this.direction.getOffsetZ() * 0.15F),
-			stack
+			this.x + (double)((float)this.facing.getOffsetX() * 0.15F),
+			this.y + (double)f,
+			this.z + (double)((float)this.facing.getOffsetZ() * 0.15F),
+			itemStack
 		);
 		itemEntity.setToDefaultPickupDelay();
-		this.world.method_3686(itemEntity);
+		this.world.spawnEntity(itemEntity);
 		return itemEntity;
 	}
 
@@ -218,38 +217,38 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public void updatePosition(double x, double y, double z) {
-		this.pos = new BlockPos(x, y, z);
-		this.updateAttachmentPosition();
+	public void setPosition(double d, double e, double f) {
+		this.blockPos = new BlockPos(d, e, f);
+		this.method_6895();
 		this.velocityDirty = true;
 	}
 
-	public BlockPos getTilePos() {
-		return this.pos;
+	public BlockPos getDecorationBlockPos() {
+		return this.blockPos;
 	}
 
 	@Override
-	public float applyRotation(BlockRotation rotation) {
-		if (this.direction != null && this.direction.getAxis() != Direction.Axis.Y) {
-			switch (rotation) {
-				case CLOCKWISE_180:
-					this.direction = this.direction.getOpposite();
+	public float applyRotation(BlockRotation blockRotation) {
+		if (this.facing.getAxis() != Direction.Axis.field_11052) {
+			switch (blockRotation) {
+				case field_11464:
+					this.facing = this.facing.getOpposite();
 					break;
-				case COUNTERCLOCKWISE_90:
-					this.direction = this.direction.rotateYCounterclockwise();
+				case field_11465:
+					this.facing = this.facing.rotateYCounterclockwise();
 					break;
-				case CLOCKWISE_90:
-					this.direction = this.direction.rotateYClockwise();
+				case field_11463:
+					this.facing = this.facing.rotateYClockwise();
 			}
 		}
 
 		float f = MathHelper.wrapDegrees(this.yaw);
-		switch (rotation) {
-			case CLOCKWISE_180:
+		switch (blockRotation) {
+			case field_11464:
 				return f + 180.0F;
-			case COUNTERCLOCKWISE_90:
+			case field_11465:
 				return f + 90.0F;
-			case CLOCKWISE_90:
+			case field_11463:
 				return f + 270.0F;
 			default:
 				return f;
@@ -257,11 +256,15 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public float applyMirror(BlockMirror mirror) {
-		return this.applyRotation(mirror.getRotation(this.direction));
+	public float applyMirror(BlockMirror blockMirror) {
+		return this.applyRotation(blockMirror.getRotation(this.facing));
 	}
 
 	@Override
-	public void onLightningStrike(LightningBoltEntity lightning) {
+	public void onStruckByLightning(LightningEntity lightningEntity) {
+	}
+
+	@Override
+	public void calculateDimensions() {
 	}
 }

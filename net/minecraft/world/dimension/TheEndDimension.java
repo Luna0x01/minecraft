@@ -2,77 +2,79 @@ package net.minecraft.world.dimension;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.class_3811;
 import net.minecraft.block.Blocks;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.DragonRespawnAnimation;
-import net.minecraft.server.world.ChunkGenerator;
+import net.minecraft.entity.boss.dragon.EnderDragonFight;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.biome.BiomeSourceType;
+import net.minecraft.world.World;
+import net.minecraft.world.biome.source.BiomeSourceType;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorType;
+import net.minecraft.world.gen.chunk.FloatingIslandsChunkGeneratorConfig;
 
 public class TheEndDimension extends Dimension {
-	public static final BlockPos field_18968 = new BlockPos(100, 50, 0);
-	private DragonRespawnAnimation dragonFight;
+	public static final BlockPos SPAWN_POINT = new BlockPos(100, 50, 0);
+	private final EnderDragonFight enderDragonFight;
 
-	@Override
-	public void init() {
-		NbtCompound nbtCompound = this.world.method_3588().method_11954(DimensionType.THE_END);
-		this.dragonFight = this.world instanceof ServerWorld ? new DragonRespawnAnimation((ServerWorld)this.world, nbtCompound.getCompound("DragonFight")) : null;
-		this.field_18953 = false;
+	public TheEndDimension(World world, DimensionType dimensionType) {
+		super(world, dimensionType);
+		CompoundTag compoundTag = world.getLevelProperties().getWorldData(DimensionType.field_13078);
+		this.enderDragonFight = world instanceof ServerWorld ? new EnderDragonFight((ServerWorld)world, compoundTag.getCompound("DragonFight")) : null;
 	}
 
 	@Override
-	public ChunkGenerator<?> method_17193() {
-		class_3811 lv = ChunkGeneratorType.FLOATING_ISLANDS.method_17040();
-		lv.method_17212(Blocks.END_STONE.getDefaultState());
-		lv.method_17213(Blocks.AIR.getDefaultState());
-		lv.method_17279(this.getForcedSpawnPoint());
-		return ChunkGeneratorType.FLOATING_ISLANDS
-			.create(this.world, BiomeSourceType.THE_END.method_16484(BiomeSourceType.THE_END.method_16486().method_16544(this.world.method_3581())), lv);
+	public ChunkGenerator<?> createChunkGenerator() {
+		FloatingIslandsChunkGeneratorConfig floatingIslandsChunkGeneratorConfig = ChunkGeneratorType.field_12770.createSettings();
+		floatingIslandsChunkGeneratorConfig.setDefaultBlock(Blocks.field_10471.getDefaultState());
+		floatingIslandsChunkGeneratorConfig.setDefaultFluid(Blocks.field_10124.getDefaultState());
+		floatingIslandsChunkGeneratorConfig.withCenter(this.getForcedSpawnPoint());
+		return ChunkGeneratorType.field_12770
+			.create(
+				this.world, BiomeSourceType.THE_END.applyConfig(BiomeSourceType.THE_END.getConfig().method_9205(this.world.getSeed())), floatingIslandsChunkGeneratorConfig
+			);
 	}
 
 	@Override
-	public float getSkyAngle(long timeOfDay, float tickDelta) {
+	public float getSkyAngle(long l, float f) {
 		return 0.0F;
 	}
 
 	@Nullable
 	@Override
-	public float[] getBackgroundColor(float skyAngle, float tickDelta) {
+	public float[] getBackgroundColor(float f, float g) {
 		return null;
 	}
 
 	@Override
-	public Vec3d getFogColor(float skyAngle, float tickDelta) {
+	public Vec3d getFogColor(float f, float g) {
 		int i = 10518688;
-		float f = MathHelper.cos(skyAngle * (float) (Math.PI * 2)) * 2.0F + 0.5F;
-		f = MathHelper.clamp(f, 0.0F, 1.0F);
-		float g = 0.627451F;
-		float h = 0.5019608F;
+		float h = MathHelper.cos(f * (float) (Math.PI * 2)) * 2.0F + 0.5F;
+		h = MathHelper.clamp(h, 0.0F, 1.0F);
 		float j = 0.627451F;
-		g *= f * 0.0F + 0.15F;
-		h *= f * 0.0F + 0.15F;
-		j *= f * 0.0F + 0.15F;
-		return new Vec3d((double)g, (double)h, (double)j);
+		float k = 0.5019608F;
+		float l = 0.627451F;
+		j *= h * 0.0F + 0.15F;
+		k *= h * 0.0F + 0.15F;
+		l *= h * 0.0F + 0.15F;
+		return new Vec3d((double)j, (double)k, (double)l);
 	}
 
 	@Override
-	public boolean hasGround() {
-		return false;
-	}
-
-	@Override
-	public boolean containsWorldSpawn() {
+	public boolean method_12449() {
 		return false;
 	}
 
 	@Override
 	public boolean canPlayersSleep() {
+		return false;
+	}
+
+	@Override
+	public boolean hasVisibleSky() {
 		return false;
 	}
 
@@ -83,52 +85,52 @@ public class TheEndDimension extends Dimension {
 
 	@Nullable
 	@Override
-	public BlockPos method_17191(ChunkPos chunkPos, boolean bl) {
-		Random random = new Random(this.world.method_3581());
-		BlockPos blockPos = new BlockPos(chunkPos.getActualX() + random.nextInt(15), 0, chunkPos.getOppositeZ() + random.nextInt(15));
-		return this.world.method_8540(blockPos).getMaterial().blocksMovement() ? blockPos : null;
+	public BlockPos getSpawningBlockInChunk(ChunkPos chunkPos, boolean bl) {
+		Random random = new Random(this.world.getSeed());
+		BlockPos blockPos = new BlockPos(chunkPos.getStartX() + random.nextInt(15), 0, chunkPos.getEndZ() + random.nextInt(15));
+		return this.world.getTopNonAirState(blockPos).getMaterial().blocksMovement() ? blockPos : null;
 	}
 
 	@Override
 	public BlockPos getForcedSpawnPoint() {
-		return field_18968;
+		return SPAWN_POINT;
 	}
 
 	@Nullable
 	@Override
-	public BlockPos method_17190(int i, int j, boolean bl) {
-		return this.method_17191(new ChunkPos(i >> 4, j >> 4), bl);
+	public BlockPos getTopSpawningBlockPosition(int i, int j, boolean bl) {
+		return this.getSpawningBlockInChunk(new ChunkPos(i >> 4, j >> 4), bl);
 	}
 
 	@Override
-	public boolean isFogThick(int x, int z) {
+	public boolean shouldRenderFog(int i, int j) {
 		return false;
 	}
 
 	@Override
-	public DimensionType method_11789() {
-		return DimensionType.THE_END;
+	public DimensionType getType() {
+		return DimensionType.field_13078;
 	}
 
 	@Override
-	public void method_11790() {
-		NbtCompound nbtCompound = new NbtCompound();
-		if (this.dragonFight != null) {
-			nbtCompound.put("DragonFight", this.dragonFight.toTag());
+	public void saveWorldData() {
+		CompoundTag compoundTag = new CompoundTag();
+		if (this.enderDragonFight != null) {
+			compoundTag.put("DragonFight", this.enderDragonFight.toTag());
 		}
 
-		this.world.method_3588().method_11955(DimensionType.THE_END, nbtCompound);
+		this.world.getLevelProperties().setWorldData(DimensionType.field_13078, compoundTag);
 	}
 
 	@Override
-	public void method_11791() {
-		if (this.dragonFight != null) {
-			this.dragonFight.method_11805();
+	public void update() {
+		if (this.enderDragonFight != null) {
+			this.enderDragonFight.tick();
 		}
 	}
 
 	@Nullable
-	public DragonRespawnAnimation method_11818() {
-		return this.dragonFight;
+	public EnderDragonFight method_12513() {
+		return this.enderDragonFight;
 	}
 }

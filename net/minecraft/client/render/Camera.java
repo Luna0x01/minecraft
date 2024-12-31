@@ -1,105 +1,181 @@
 package net.minecraft.client.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.nio.FloatBuffer;
-import net.minecraft.class_4307;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.util.GlAllocationUtils;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.RayTraceContext;
 
 public class Camera {
-	private static final FloatBuffer MODEL_MATRIX = GlAllocationUtils.allocateFloatBuffer(16);
-	private static Vec3d position = new Vec3d(0.0, 0.0, 0.0);
-	private static float rotationX;
-	private static float rotationXZ;
-	private static float rotationZ;
-	private static float rotationYZ;
-	private static float rotationXY;
+	private boolean ready;
+	private BlockView area;
+	private Entity focusedEntity;
+	private net.minecraft.util.math.Vec3d pos = net.minecraft.util.math.Vec3d.ZERO;
+	private final BlockPos.Mutable blockPos = new BlockPos.Mutable();
+	private net.minecraft.util.math.Vec3d horizontalPlane;
+	private net.minecraft.util.math.Vec3d verticalPlane;
+	private net.minecraft.util.math.Vec3d diagonalPlane;
+	private float pitch;
+	private float yaw;
+	private boolean thirdPerson;
+	private boolean inverseView;
+	private float cameraY;
+	private float lastCameraY;
 
-	public static void method_18134(PlayerEntity playerEntity, boolean bl, float f) {
-		MODEL_MATRIX.clear();
-		GlStateManager.getFloat(2982, MODEL_MATRIX);
-		Matrix4f matrix4f = new Matrix4f();
-		matrix4f.method_19648(MODEL_MATRIX);
-		matrix4f.method_19654();
-		float g = 0.05F;
-		float h = f * MathHelper.SQUARE_ROOT_OF_TWO;
-		class_4307 lv = new class_4307(0.0F, 0.0F, -2.0F * h * 0.05F / (h + 0.05F), 1.0F);
-		lv.method_19675(matrix4f);
-		position = new Vec3d((double)lv.method_19673(), (double)lv.method_19678(), (double)lv.method_19679());
-		float i = playerEntity.pitch;
-		float j = playerEntity.yaw;
-		int k = bl ? -1 : 1;
-		rotationX = MathHelper.cos(j * (float) (Math.PI / 180.0)) * (float)k;
-		rotationZ = MathHelper.sin(j * (float) (Math.PI / 180.0)) * (float)k;
-		rotationYZ = -rotationZ * MathHelper.sin(i * (float) (Math.PI / 180.0)) * (float)k;
-		rotationXY = rotationX * MathHelper.sin(i * (float) (Math.PI / 180.0)) * (float)k;
-		rotationXZ = MathHelper.cos(i * (float) (Math.PI / 180.0));
+	public void update(BlockView blockView, Entity entity, boolean bl, boolean bl2, float f) {
+		this.ready = true;
+		this.area = blockView;
+		this.focusedEntity = entity;
+		this.thirdPerson = bl;
+		this.inverseView = bl2;
+		this.setRotation(entity.getYaw(f), entity.getPitch(f));
+		this.setPos(
+			MathHelper.lerp((double)f, entity.prevX, entity.x),
+			MathHelper.lerp((double)f, entity.prevY, entity.y) + (double)MathHelper.lerp(f, this.lastCameraY, this.cameraY),
+			MathHelper.lerp((double)f, entity.prevZ, entity.z)
+		);
+		if (bl) {
+			if (bl2) {
+				this.yaw += 180.0F;
+				this.pitch = this.pitch + -this.pitch * 2.0F;
+				this.updateRotation();
+			}
+
+			this.moveBy(-this.clipToSpace(4.0), 0.0, 0.0);
+		} else if (entity instanceof LivingEntity && ((LivingEntity)entity).isSleeping()) {
+			Direction direction = ((LivingEntity)entity).getSleepingDirection();
+			this.setRotation(direction != null ? direction.asRotation() - 180.0F : 0.0F, 0.0F);
+			this.moveBy(0.0, 0.3, 0.0);
+		}
+
+		GlStateManager.rotatef(this.pitch, 1.0F, 0.0F, 0.0F);
+		GlStateManager.rotatef(this.yaw + 180.0F, 0.0F, 1.0F, 0.0F);
 	}
 
-	public static Vec3d getEntityPos(Entity entity, double delta) {
-		double d = entity.prevX + (entity.x - entity.prevX) * delta;
-		double e = entity.prevY + (entity.y - entity.prevY) * delta;
-		double f = entity.prevZ + (entity.z - entity.prevZ) * delta;
-		double g = d + position.x;
-		double h = e + position.y;
-		double i = f + position.z;
-		return new Vec3d(g, h, i);
+	public void updateEyeHeight() {
+		if (this.focusedEntity != null) {
+			this.lastCameraY = this.cameraY;
+			this.cameraY = this.cameraY + (this.focusedEntity.getStandingEyeHeight() - this.cameraY) * 0.5F;
+		}
 	}
 
-	public static BlockState method_18135(BlockView blockView, Entity entity, float f) {
-		Vec3d vec3d = getEntityPos(entity, (double)f);
-		BlockPos blockPos = new BlockPos(vec3d);
-		BlockState blockState = blockView.getBlockState(blockPos);
-		FluidState fluidState = blockView.getFluidState(blockPos);
-		if (!fluidState.isEmpty()) {
-			float g = (float)blockPos.getY() + fluidState.method_17810() + 0.11111111F;
-			if (vec3d.y >= (double)g) {
-				blockState = blockView.getBlockState(blockPos.up());
+	private double clipToSpace(double d) {
+		for (int i = 0; i < 8; i++) {
+			float f = (float)((i & 1) * 2 - 1);
+			float g = (float)((i >> 1 & 1) * 2 - 1);
+			float h = (float)((i >> 2 & 1) * 2 - 1);
+			f *= 0.1F;
+			g *= 0.1F;
+			h *= 0.1F;
+			net.minecraft.util.math.Vec3d vec3d = this.pos.add((double)f, (double)g, (double)h);
+			net.minecraft.util.math.Vec3d vec3d2 = new net.minecraft.util.math.Vec3d(
+				this.pos.x - this.horizontalPlane.x * d + (double)f + (double)h,
+				this.pos.y - this.horizontalPlane.y * d + (double)g,
+				this.pos.z - this.horizontalPlane.z * d + (double)h
+			);
+			HitResult hitResult = this.area
+				.rayTrace(new RayTraceContext(vec3d, vec3d2, RayTraceContext.ShapeType.field_17558, RayTraceContext.FluidHandling.field_1348, this.focusedEntity));
+			if (hitResult.getType() != HitResult.Type.field_1333) {
+				double e = hitResult.getPos().distanceTo(this.pos);
+				if (e < d) {
+					d = e;
+				}
 			}
 		}
 
-		return blockState;
+		return d;
 	}
 
-	public static FluidState method_18136(BlockView blockView, Entity entity, float f) {
-		Vec3d vec3d = getEntityPos(entity, (double)f);
-		BlockPos blockPos = new BlockPos(vec3d);
-		FluidState fluidState = blockView.getFluidState(blockPos);
-		if (!fluidState.isEmpty()) {
-			float g = (float)blockPos.getY() + fluidState.method_17810() + 0.11111111F;
-			if (vec3d.y >= (double)g) {
-				fluidState = blockView.getFluidState(blockPos.up());
-			}
+	protected void moveBy(double d, double e, double f) {
+		double g = this.horizontalPlane.x * d + this.verticalPlane.x * e + this.diagonalPlane.x * f;
+		double h = this.horizontalPlane.y * d + this.verticalPlane.y * e + this.diagonalPlane.y * f;
+		double i = this.horizontalPlane.z * d + this.verticalPlane.z * e + this.diagonalPlane.z * f;
+		this.setPos(new net.minecraft.util.math.Vec3d(this.pos.x + g, this.pos.y + h, this.pos.z + i));
+	}
+
+	protected void updateRotation() {
+		float f = MathHelper.cos((this.yaw + 90.0F) * (float) (Math.PI / 180.0));
+		float g = MathHelper.sin((this.yaw + 90.0F) * (float) (Math.PI / 180.0));
+		float h = MathHelper.cos(-this.pitch * (float) (Math.PI / 180.0));
+		float i = MathHelper.sin(-this.pitch * (float) (Math.PI / 180.0));
+		float j = MathHelper.cos((-this.pitch + 90.0F) * (float) (Math.PI / 180.0));
+		float k = MathHelper.sin((-this.pitch + 90.0F) * (float) (Math.PI / 180.0));
+		this.horizontalPlane = new net.minecraft.util.math.Vec3d((double)(f * h), (double)i, (double)(g * h));
+		this.verticalPlane = new net.minecraft.util.math.Vec3d((double)(f * j), (double)k, (double)(g * j));
+		this.diagonalPlane = this.horizontalPlane.crossProduct(this.verticalPlane).multiply(-1.0);
+	}
+
+	protected void setRotation(float f, float g) {
+		this.pitch = g;
+		this.yaw = f;
+		this.updateRotation();
+	}
+
+	protected void setPos(double d, double e, double f) {
+		this.setPos(new net.minecraft.util.math.Vec3d(d, e, f));
+	}
+
+	protected void setPos(net.minecraft.util.math.Vec3d vec3d) {
+		this.pos = vec3d;
+		this.blockPos.set(vec3d.x, vec3d.y, vec3d.z);
+	}
+
+	public net.minecraft.util.math.Vec3d getPos() {
+		return this.pos;
+	}
+
+	public BlockPos getBlockPos() {
+		return this.blockPos;
+	}
+
+	public float getPitch() {
+		return this.pitch;
+	}
+
+	public float getYaw() {
+		return this.yaw;
+	}
+
+	public Entity getFocusedEntity() {
+		return this.focusedEntity;
+	}
+
+	public boolean isReady() {
+		return this.ready;
+	}
+
+	public boolean isThirdPerson() {
+		return this.thirdPerson;
+	}
+
+	public FluidState getSubmergedFluidState() {
+		if (!this.ready) {
+			return Fluids.field_15906.getDefaultState();
+		} else {
+			FluidState fluidState = this.area.getFluidState(this.blockPos);
+			return !fluidState.isEmpty() && this.pos.y >= (double)((float)this.blockPos.getY() + fluidState.getHeight(this.area, this.blockPos))
+				? Fluids.field_15906.getDefaultState()
+				: fluidState;
 		}
-
-		return fluidState;
 	}
 
-	public static float getRotationX() {
-		return rotationX;
+	public final net.minecraft.util.math.Vec3d getHorizontalPlane() {
+		return this.horizontalPlane;
 	}
 
-	public static float getRotationXZ() {
-		return rotationXZ;
+	public final net.minecraft.util.math.Vec3d getVerticalPlane() {
+		return this.verticalPlane;
 	}
 
-	public static float getRotationZ() {
-		return rotationZ;
-	}
-
-	public static float getRotationYZ() {
-		return rotationYZ;
-	}
-
-	public static float getRotationXY() {
-		return rotationXY;
+	public void reset() {
+		this.area = null;
+		this.focusedEntity = null;
+		this.ready = false;
 	}
 }

@@ -25,7 +25,7 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 
 	public TeleportSpectatorMenu(Collection<PlayerListEntry> collection) {
 		for (PlayerListEntry playerListEntry : ORDERING.sortedCopy(collection)) {
-			if (playerListEntry.getGameMode() != GameMode.SPECTATOR) {
+			if (playerListEntry.getGameMode() != GameMode.field_9219) {
 				this.elements.add(new TeleportToSpecificPlayerSpectatorCommand(playerListEntry.getProfile()));
 			}
 		}
@@ -42,8 +42,8 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 	}
 
 	@Override
-	public void use(SpectatorMenu menu) {
-		menu.selectElement(this);
+	public void use(SpectatorMenu spectatorMenu) {
+		spectatorMenu.selectElement(this);
 	}
 
 	@Override
@@ -52,9 +52,9 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 	}
 
 	@Override
-	public void renderIcon(float brightness, int alpha) {
-		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEXTURE);
-		DrawableHelper.drawTexture(0, 0, 0.0F, 0.0F, 16, 16, 256.0F, 256.0F);
+	public void renderIcon(float f, int i) {
+		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEX);
+		DrawableHelper.blit(0, 0, 0.0F, 0.0F, 16, 16, 256, 256);
 	}
 
 	@Override

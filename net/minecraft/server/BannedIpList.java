@@ -14,22 +14,22 @@ public class BannedIpList extends ServerConfigList<String, BannedIpEntry> {
 		return new BannedIpEntry(jsonObject);
 	}
 
-	public boolean isBanned(SocketAddress ip) {
-		String string = this.stringifyAddress(ip);
+	public boolean isBanned(SocketAddress socketAddress) {
+		String string = this.stringifyAddress(socketAddress);
 		return this.contains(string);
 	}
 
-	public boolean method_21380(String string) {
+	public boolean isBanned(String string) {
 		return this.contains(string);
 	}
 
-	public BannedIpEntry get(SocketAddress address) {
-		String string = this.stringifyAddress(address);
+	public BannedIpEntry get(SocketAddress socketAddress) {
+		String string = this.stringifyAddress(socketAddress);
 		return this.get(string);
 	}
 
-	private String stringifyAddress(SocketAddress address) {
-		String string = address.toString();
+	private String stringifyAddress(SocketAddress socketAddress) {
+		String string = socketAddress.toString();
 		if (string.contains("/")) {
 			string = string.substring(string.indexOf(47) + 1);
 		}

@@ -1,42 +1,52 @@
 package net.minecraft.world.gen.feature;
 
+import com.mojang.datafixers.Dynamic;
 import java.util.Random;
-import net.minecraft.class_3798;
-import net.minecraft.class_3843;
-import net.minecraft.class_3844;
+import java.util.function.Function;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
-import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.dimension.TheEndDimension;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
-public class EndGatewayFeature extends class_3844<class_3843> {
-	public boolean method_17343(IWorld iWorld, ChunkGenerator<? extends class_3798> chunkGenerator, Random random, BlockPos blockPos, class_3843 arg) {
-		for (BlockPos.Mutable mutable : BlockPos.mutableIterate(blockPos.add(-1, -2, -1), blockPos.add(1, 2, 1))) {
-			boolean bl = mutable.getX() == blockPos.getX();
-			boolean bl2 = mutable.getY() == blockPos.getY();
-			boolean bl3 = mutable.getZ() == blockPos.getZ();
-			boolean bl4 = Math.abs(mutable.getY() - blockPos.getY()) == 2;
+public class EndGatewayFeature extends Feature<EndGatewayFeatureConfig> {
+	public EndGatewayFeature(Function<Dynamic<?>, ? extends EndGatewayFeatureConfig> function) {
+		super(function);
+	}
+
+	public boolean method_13142(
+		IWorld iWorld,
+		ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator,
+		Random random,
+		BlockPos blockPos,
+		EndGatewayFeatureConfig endGatewayFeatureConfig
+	) {
+		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-1, -2, -1), blockPos.add(1, 2, 1))) {
+			boolean bl = blockPos2.getX() == blockPos.getX();
+			boolean bl2 = blockPos2.getY() == blockPos.getY();
+			boolean bl3 = blockPos2.getZ() == blockPos.getZ();
+			boolean bl4 = Math.abs(blockPos2.getY() - blockPos.getY()) == 2;
 			if (bl && bl2 && bl3) {
-				BlockPos blockPos2 = mutable.toImmutable();
-				this.method_17344(iWorld, blockPos2, Blocks.END_GATEWAY.getDefaultState());
-				if (arg.method_17339()) {
-					BlockEntity blockEntity = iWorld.getBlockEntity(blockPos2);
+				BlockPos blockPos3 = blockPos2.toImmutable();
+				this.setBlockState(iWorld, blockPos3, Blocks.field_10613.getDefaultState());
+				endGatewayFeatureConfig.getExitPos().ifPresent(blockPos2x -> {
+					BlockEntity blockEntity = iWorld.getBlockEntity(blockPos3);
 					if (blockEntity instanceof EndGatewayBlockEntity) {
 						EndGatewayBlockEntity endGatewayBlockEntity = (EndGatewayBlockEntity)blockEntity;
-						endGatewayBlockEntity.setExitPortal(TheEndDimension.field_18968);
+						endGatewayBlockEntity.setExitPortalPos(blockPos2x, endGatewayFeatureConfig.isExact());
+						blockEntity.markDirty();
 					}
-				}
+				});
 			} else if (bl2) {
-				this.method_17344(iWorld, mutable, Blocks.AIR.getDefaultState());
+				this.setBlockState(iWorld, blockPos2, Blocks.field_10124.getDefaultState());
 			} else if (bl4 && bl && bl3) {
-				this.method_17344(iWorld, mutable, Blocks.BEDROCK.getDefaultState());
+				this.setBlockState(iWorld, blockPos2, Blocks.field_9987.getDefaultState());
 			} else if ((bl || bl3) && !bl4) {
-				this.method_17344(iWorld, mutable, Blocks.BEDROCK.getDefaultState());
+				this.setBlockState(iWorld, blockPos2, Blocks.field_9987.getDefaultState());
 			} else {
-				this.method_17344(iWorld, mutable, Blocks.AIR.getDefaultState());
+				this.setBlockState(iWorld, blockPos2, Blocks.field_10124.getDefaultState());
 			}
 		}
 

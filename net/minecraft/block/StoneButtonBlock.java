@@ -1,15 +1,15 @@
 package net.minecraft.block;
 
-import net.minecraft.sound.Sound;
-import net.minecraft.sound.Sounds;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 
 public class StoneButtonBlock extends AbstractButtonBlock {
-	protected StoneButtonBlock(Block.Builder builder) {
-		super(false, builder);
+	protected StoneButtonBlock(Block.Settings settings) {
+		super(false, settings);
 	}
 
 	@Override
-	protected Sound getClickSound(boolean powered) {
-		return powered ? Sounds.BLOCK_STONE_BUTTON_CLICK_ON : Sounds.BLOCK_STONE_BUTTON_CLICK_OFF;
+	protected SoundEvent getClickSound(boolean bl) {
+		return bl ? SoundEvents.field_14791 : SoundEvents.field_14954;
 	}
 }

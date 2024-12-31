@@ -1,12 +1,12 @@
 package net.minecraft.client.render.entity.feature;
 
-import net.minecraft.client.render.entity.LlamaEntityRenderer;
 import net.minecraft.client.render.entity.model.LlamaEntityModel;
-import net.minecraft.entity.LlamaEntity;
+import net.minecraft.entity.passive.LlamaEntity;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 
-public class LlamaDecorFeatureRenderer implements FeatureRenderer<LlamaEntity> {
-	private static final Identifier[] TEXTURES = new Identifier[]{
+public class LlamaDecorFeatureRenderer extends FeatureRenderer<LlamaEntity, LlamaEntityModel<LlamaEntity>> {
+	private static final Identifier[] LLAMA_DECOR = new Identifier[]{
 		new Identifier("textures/entity/llama/decor/white.png"),
 		new Identifier("textures/entity/llama/decor/orange.png"),
 		new Identifier("textures/entity/llama/decor/magenta.png"),
@@ -24,23 +24,31 @@ public class LlamaDecorFeatureRenderer implements FeatureRenderer<LlamaEntity> {
 		new Identifier("textures/entity/llama/decor/red.png"),
 		new Identifier("textures/entity/llama/decor/black.png")
 	};
-	private final LlamaEntityRenderer field_15318;
-	private final LlamaEntityModel model = new LlamaEntityModel(0.5F);
+	private static final Identifier TRADER_LLAMA_DECOR = new Identifier("textures/entity/llama/decor/trader_llama.png");
+	private final LlamaEntityModel<LlamaEntity> model = new LlamaEntityModel<>(0.5F);
 
-	public LlamaDecorFeatureRenderer(LlamaEntityRenderer llamaEntityRenderer) {
-		this.field_15318 = llamaEntityRenderer;
+	public LlamaDecorFeatureRenderer(FeatureRendererContext<LlamaEntity, LlamaEntityModel<LlamaEntity>> featureRendererContext) {
+		super(featureRendererContext);
 	}
 
-	public void render(LlamaEntity llamaEntity, float f, float g, float h, float i, float j, float k, float l) {
-		if (llamaEntity.method_14026()) {
-			this.field_15318.bindTexture(TEXTURES[llamaEntity.method_14027().getId()]);
-			this.model.copy(this.field_15318.getModel());
-			this.model.render(llamaEntity, f, g, i, j, k, l);
+	public void method_4191(LlamaEntity llamaEntity, float f, float g, float h, float i, float j, float k, float l) {
+		DyeColor dyeColor = llamaEntity.getCarpetColor();
+		if (dyeColor != null) {
+			this.bindTexture(LLAMA_DECOR[dyeColor.getId()]);
+		} else {
+			if (!llamaEntity.isTrader()) {
+				return;
+			}
+
+			this.bindTexture(TRADER_LLAMA_DECOR);
 		}
+
+		this.getModel().copyStateTo(this.model);
+		this.model.method_17100(llamaEntity, f, g, i, j, k, l);
 	}
 
 	@Override
-	public boolean combineTextures() {
+	public boolean hasHurtOverlay() {
 		return false;
 	}
 }

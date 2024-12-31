@@ -17,17 +17,17 @@ public class RconClient extends RconBase {
 	private final byte[] packetBuffer = new byte[1460];
 	private final String password;
 
-	RconClient(DedicatedServer dedicatedServer, Socket socket) {
+	RconClient(DedicatedServer dedicatedServer, String string, Socket socket) {
 		super(dedicatedServer, "RCON Client");
 		this.socket = socket;
 
 		try {
 			this.socket.setSoTimeout(0);
-		} catch (Exception var4) {
+		} catch (Exception var5) {
 			this.running = false;
 		}
 
-		this.password = dedicatedServer.getOrDefault("rcon.password", "");
+		this.password = string;
 		this.info("Rcon connection from: " + socket.getInetAddress());
 	}
 
@@ -58,29 +58,29 @@ public class RconClient extends RconBase {
 								String string2 = BufferHelper.getString(this.packetBuffer, j, i);
 
 								try {
-									this.method_2247(l, this.server.executeRconCommand(string2));
+									this.method_14789(l, this.server.executeRconCommand(string2));
 								} catch (Exception var16) {
-									this.method_2247(l, "Error executing: " + string2 + " (" + var16.getMessage() + ")");
+									this.method_14789(l, "Error executing: " + string2 + " (" + var16.getMessage() + ")");
 								}
 								break;
 							}
 
-							this.method_2248();
+							this.method_14787();
 							break;
 						case 3:
 							String string = BufferHelper.getString(this.packetBuffer, j, i);
 							j += string.length();
 							if (!string.isEmpty() && string.equals(this.password)) {
 								this.authenticated = true;
-								this.method_2246(l, 2, "");
+								this.method_14790(l, 2, "");
 								break;
 							}
 
 							this.authenticated = false;
-							this.method_2248();
+							this.method_14787();
 							break;
 						default:
-							this.method_2247(l, String.format("Unknown request %s", Integer.toHexString(m)));
+							this.method_14789(l, String.format("Unknown request %s", Integer.toHexString(m)));
 					}
 				}
 
@@ -95,7 +95,7 @@ public class RconClient extends RconBase {
 		}
 	}
 
-	private void method_2246(int i, int j, String string) throws IOException {
+	private void method_14790(int i, int j, String string) throws IOException {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(1248);
 		DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
 		byte[] bs = string.getBytes("UTF-8");
@@ -108,19 +108,25 @@ public class RconClient extends RconBase {
 		this.socket.getOutputStream().write(byteArrayOutputStream.toByteArray());
 	}
 
-	private void method_2248() throws IOException {
-		this.method_2246(-1, 2, "");
+	private void method_14787() throws IOException {
+		this.method_14790(-1, 2, "");
 	}
 
-	private void method_2247(int i, String string) throws IOException {
+	private void method_14789(int i, String string) throws IOException {
 		int j = string.length();
 
 		do {
 			int k = 4096 <= j ? 4096 : j;
-			this.method_2246(i, 0, string.substring(0, k));
+			this.method_14790(i, 0, string.substring(0, k));
 			string = string.substring(k);
 			j = string.length();
 		} while (0 != j);
+	}
+
+	@Override
+	public void stop() {
+		super.stop();
+		this.close();
 	}
 
 	private void close() {

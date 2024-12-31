@@ -1,38 +1,37 @@
 package net.minecraft.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.class_4342;
+import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Packet;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.world.World;
+import net.minecraft.world.explosion.Explosion;
 
 public class TntEntity extends Entity {
 	private static final TrackedData<Integer> FUSE = DataTracker.registerData(TntEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	@Nullable
-	private LivingEntity igniter;
+	private LivingEntity causingEntity;
 	private int fuseTimer = 80;
 
-	public TntEntity(World world) {
-		super(EntityType.TNT, world);
+	public TntEntity(EntityType<? extends TntEntity> entityType, World world) {
+		super(entityType, world);
 		this.inanimate = true;
-		this.isFireImmune = true;
-		this.setBounds(0.98F, 0.98F);
 	}
 
 	public TntEntity(World world, double d, double e, double f, @Nullable LivingEntity livingEntity) {
-		this(world);
-		this.updatePosition(d, e, f);
-		float g = (float)(Math.random() * (float) (Math.PI * 2));
-		this.velocityX = (double)(-((float)Math.sin((double)g)) * 0.02F);
-		this.velocityY = 0.2F;
-		this.velocityZ = (double)(-((float)Math.cos((double)g)) * 0.02F);
+		this(EntityType.field_6063, world);
+		this.setPosition(d, e, f);
+		double g = world.random.nextDouble() * (float) (Math.PI * 2);
+		this.setVelocity(-Math.sin(g) * 0.02, 0.2F, -Math.cos(g) * 0.02);
 		this.setFuse(80);
 		this.prevX = d;
 		this.prevY = e;
 		this.prevZ = f;
-		this.igniter = livingEntity;
+		this.causingEntity = livingEntity;
 	}
 
 	@Override
@@ -56,17 +55,13 @@ public class TntEntity extends Entity {
 		this.prevY = this.y;
 		this.prevZ = this.z;
 		if (!this.hasNoGravity()) {
-			this.velocityY -= 0.04F;
+			this.setVelocity(this.getVelocity().add(0.0, -0.04, 0.0));
 		}
 
-		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
-		this.velocityX *= 0.98F;
-		this.velocityY *= 0.98F;
-		this.velocityZ *= 0.98F;
+		this.move(MovementType.field_6308, this.getVelocity());
+		this.setVelocity(this.getVelocity().multiply(0.98));
 		if (this.onGround) {
-			this.velocityX *= 0.7F;
-			this.velocityZ *= 0.7F;
-			this.velocityY *= -0.5;
+			this.setVelocity(this.getVelocity().multiply(0.7, -0.5, 0.7));
 		}
 
 		this.fuseTimer--;
@@ -76,44 +71,44 @@ public class TntEntity extends Entity {
 				this.explode();
 			}
 		} else {
-			this.updateWaterState();
-			this.world.method_16343(class_4342.field_21363, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.checkWaterState();
+			this.world.addParticle(ParticleTypes.field_11251, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
 		}
 	}
 
 	private void explode() {
 		float f = 4.0F;
-		this.world.createExplosion(this, this.x, this.y + (double)(this.height / 16.0F), this.z, 4.0F, true);
+		this.world.createExplosion(this, this.x, this.y + (double)(this.getHeight() / 16.0F), this.z, 4.0F, Explosion.DestructionType.field_18686);
 	}
 
 	@Override
-	protected void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putShort("Fuse", (short)this.getRemainingFuse());
+	protected void writeCustomDataToTag(CompoundTag compoundTag) {
+		compoundTag.putShort("Fuse", (short)this.getFuseTimer());
 	}
 
 	@Override
-	protected void readCustomDataFromNbt(NbtCompound nbt) {
-		this.setFuse(nbt.getShort("Fuse"));
+	protected void readCustomDataFromTag(CompoundTag compoundTag) {
+		this.setFuse(compoundTag.getShort("Fuse"));
 	}
 
 	@Nullable
-	public LivingEntity getIgniter() {
-		return this.igniter;
+	public LivingEntity getCausingEntity() {
+		return this.causingEntity;
 	}
 
 	@Override
-	public float getEyeHeight() {
+	protected float getEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
 		return 0.0F;
 	}
 
-	public void setFuse(int fuse) {
-		this.dataTracker.set(FUSE, fuse);
-		this.fuseTimer = fuse;
+	public void setFuse(int i) {
+		this.dataTracker.set(FUSE, i);
+		this.fuseTimer = i;
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> data) {
-		if (FUSE.equals(data)) {
+	public void onTrackedDataSet(TrackedData<?> trackedData) {
+		if (FUSE.equals(trackedData)) {
 			this.fuseTimer = this.getFuse();
 		}
 	}
@@ -122,7 +117,12 @@ public class TntEntity extends Entity {
 		return this.dataTracker.get(FUSE);
 	}
 
-	public int getRemainingFuse() {
+	public int getFuseTimer() {
 		return this.fuseTimer;
+	}
+
+	@Override
+	public Packet<?> createSpawnPacket() {
+		return new EntitySpawnS2CPacket(this);
 	}
 }

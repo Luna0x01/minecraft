@@ -1,21 +1,21 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.class_3462;
+import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EquipmentSlot;
 
 public class ImpalingEnchantment extends Enchantment {
-	public ImpalingEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
-		super(rarity, EnchantmentTarget.TRIDENT, equipmentSlots);
+	public ImpalingEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
+		super(weight, EnchantmentTarget.field_9073, equipmentSlots);
 	}
 
 	@Override
-	public int getMinimumPower(int level) {
-		return 1 + (level - 1) * 8;
+	public int getMinimumPower(int i) {
+		return 1 + (i - 1) * 8;
 	}
 
 	@Override
-	public int getMaximumPower(int level) {
-		return this.getMinimumPower(level) + 20;
+	public int getMaximumPower(int i) {
+		return this.getMinimumPower(i) + 20;
 	}
 
 	@Override
@@ -24,7 +24,7 @@ public class ImpalingEnchantment extends Enchantment {
 	}
 
 	@Override
-	public float method_5489(int i, class_3462 arg) {
-		return arg == class_3462.field_16822 ? (float)i * 2.5F : 0.0F;
+	public float getAttackDamage(int i, EntityGroup entityGroup) {
+		return entityGroup == EntityGroup.AQUATIC ? (float)i * 2.5F : 0.0F;
 	}
 }
